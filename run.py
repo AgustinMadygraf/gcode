@@ -1,130 +1,157 @@
+#!/usr/bin/env python3
 """
-run.py — Generador de G‑code basado en HersheyFonts.
+simple_svg2gcode.py
+Convierte un archivo SVG en un recorrido G-code para plotters o CNC sencillos.
+Requiere: svgpathtools, numpy.
 """
 
 from __future__ import annotations
 
-import argparse
-import json
-import logging
-import os
+import math
 import sys
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Iterable, List, Tuple
 
-from HersheyFonts import HersheyFonts
-from mecode import G
+import numpy as np
+from svgpathtools import svg2paths2
 
-DEFAULT_CONFIG_FILE = "config.json"
+# ---------------------- Parámetros de usuario ---------------------- #
+def select_svg_file() -> Path:
+    " Selecciona un archivo SVG de la carpeta svg_input."
+    svg_dir = Path("svg_input")
+    svg_files = sorted(svg_dir.glob("*.svg"))
+    if not svg_files:
+        sys.exit("No se encontraron archivos SVG en svg_input.")
+    print("Archivos SVG disponibles:")
+    for idx, f in enumerate(svg_files, 1):
+        print(f"  {idx}. {f.name}")
+    while True:
+        try:
+            sel = int(input(f"Seleccione un archivo SVG (1-{len(svg_files)}): "))
+            if 1 <= sel <= len(svg_files):
+                return svg_files[sel-1]
+        except (ValueError, TypeError):
+            pass
+        print("Selección inválida. Intente de nuevo.")
+
+def next_gcode_filename(svg_file: Path) -> Path:
+    "Genera un nombre de archivo de salida con sufijo _vXX.gcode, incrementando XX si ya existe."
+    out_dir = Path("gcode_output")
+    stem = svg_file.stem
+    for i in range(100):
+        candidate = out_dir / f"{stem}_v{i:02d}.gcode"
+        if not candidate.exists():
+            return candidate
+    sys.exit("Demasiados archivos de salida para este SVG.")
+
+SVG_FILE   = select_svg_file()
+GCODE_FILE = next_gcode_filename(SVG_FILE)
+
+FEED      = 400          # mm/min
+Z_UP      = 5            # altura segura
+Z_DOWN    = 0            # altura de dibujo / corte
+CMD_DOWN  = "M3 S50"     # baja herramienta / prende láser
+CMD_UP    = "M5"         # levanta herramienta / apaga láser
+STEP_MM   = 0.3          # resolución de muestreo sobre cada segmento
+DWELL_MS  = 150          # pausa (ms) tras subir/bajar herramienta
+# ------------------------------------------------------------------ #
 
 
-def load_config(path: str | os.PathLike) -> Dict[str, Any]:
-    """Carga un archivo JSON y devuelve un diccionario.
-
-    Lanza ``FileNotFoundError`` o ``json.JSONDecodeError`` si falla la
-    apertura o el parseo.
+def _viewbox_scale(svg_attr: dict) -> float:
     """
-    path = Path(path)
-    if not path.is_file():
-        raise FileNotFoundError(f"No se encontró el archivo de configuración: {path}")
-
-    with path.open("r", encoding="utf-8") as fp:
-        return json.load(fp)
-
-
-def setup_logging(level_name: str = "INFO") -> None:
-    """Configura el sistema de logging global."""
-    level = getattr(logging, level_name.upper(), logging.INFO)
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    Intenta deducir la escala px→mm a partir del viewBox y del ancho/alto declarados.
+    Si no es posible, usa 1.0 (asume que el SVG ya está en mm).
+    """
+    vb = svg_attr.get("viewBox")
+    width = svg_attr.get("width")
+    if vb and width:
+        try:
+            _, _, vb_w, _ = map(float, vb.split())
+            width_px = float(width.rstrip("px"))
+            return width_px / vb_w
+        except ValueError:
+            pass
+    return 1.0
 
 
-def generate_output_filename(font_name: str, outdir: Path) -> Path:
-    """Genera un nombre de archivo único usando timestamp."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return outdir / f"{font_name}_{timestamp}.gcode"
+def sample_path(path, step: float) -> Iterable[Tuple[float, float]]:
+    """
+    Devuelve puntos (x, y) equiespaciados a lo largo de un Path de svgpathtools.
+    """
+    for seg in path:
+        seg_len = seg.length()
+        n = max(1, int(math.ceil(seg_len / step)))
+        for t in np.linspace(0, 1, n + 1):
+            z = seg.point(t)
+            yield z.real, z.imag
 
 
-def validate_font(hf: HersheyFonts, font_name: str) -> None:
-    """Verifica que la fuente exista dentro de HersheyFonts."""
-    try:
-        hf.load_default_font(font_name)
-    except (FileNotFoundError, ValueError) as exc:
-        available = ", ".join(sorted(hf.fonts.keys()))  # type: ignore[attr-defined]
-        logging.error("La fuente '%s' no existe. Fuentes disponibles: %s", font_name, available)
-        raise SystemExit(1) from exc
+def get_svg_bbox(paths):
+    """Obtiene el bounding box (xmin, xmax, ymin, ymax) de todos los paths."""
+    xs, ys = [], []
+    for p in paths:
+        for seg in p:
+            for t in np.linspace(0, 1, 20):
+                z = seg.point(t)
+                xs.append(z.real)
+                ys.append(z.imag)
+    return min(xs), max(xs), min(ys), max(ys)
+
+def write_gcode(paths, scale: float) -> List[str]:
+    """
+    Genera una lista de líneas G-code a partir de una colección de paths, girando 180° el resultado.
+    """
+    g: List[str] = []
+    g.append("(Generated by simple_svg2gcode)")
+    g += ["G90", "G21", f"G0 Z{Z_UP}"]   # absoluto, mm, altura segura
+
+    # Calcular bounding box para girar 180° respecto al centro
+    xmin, xmax, ymin, ymax = get_svg_bbox(paths)
+    cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
+
+    def rotate180(x, y):
+        # Rotar 180° respecto al centro
+        x2 = 2*cx - x
+        y2 = 2*cy - y
+        return x2, y2
+
+    def mirror_horizontal(x, y):
+        # Espejar horizontalmente respecto al centro cx
+        return 2*cx - x, y
+
+    for p in paths:
+        first_point = True
+        for x, y in sample_path(p, STEP_MM):
+            x, y = rotate180(x, y)
+            x, y = mirror_horizontal(x, y)
+            x_mm, y_mm = x * scale, y * scale
+            if first_point:
+                # Levantar lapicera y moverse rápido al inicio del trazo
+                g += [f"G0 Z{Z_UP}", f"G0 X{x_mm:.3f} Y{y_mm:.3f}",
+                      f"G0 Z{Z_DOWN}", CMD_DOWN, f"G4 P{DWELL_MS / 1000.0:.3f}"]
+                first_point = False
+            g.append(f"G1 X{x_mm:.3f} Y{y_mm:.3f} F{FEED}")
+        # Al terminar el trazo, levantar lapicera
+        g += [CMD_UP, f"G4 P{DWELL_MS / 1000.0:.3f}", f"G0 Z{Z_UP}"]
+
+    g += ["M5", "G0 X0 Y0", "(End)"]
+    return g
 
 
-def main() -> None:  # noqa: C901 ‑ ninguna función debe superar 50 líneas ➔ aquí es intencional
-    parser = argparse.ArgumentParser(
-        description="Genera G‑code a partir de texto usando HersheyFonts",
-    )
-    parser.add_argument("text", nargs="?", help="Texto a escribir (si falta, se solicitará por stdin)")
-    parser.add_argument(
-        "-c",
-        "--config",
-        default=DEFAULT_CONFIG_FILE,
-        help="Ruta del archivo JSON de configuración (por defecto: %(default)s)",
-    )
+def main() -> None:
+    "Genera un archivo G-code a partir de un SVG seleccionado."
+    if not SVG_FILE.is_file():
+        sys.exit(f"No se encuentra el archivo: {SVG_FILE}")
 
-    args = parser.parse_args()
+    paths, _, svg_attr = svg2paths2(str(SVG_FILE))
+    scale = _viewbox_scale(svg_attr)
 
-    # Cargar configuración
-    try:
-        cfg = load_config(args.config)
-    except (FileNotFoundError, json.JSONDecodeError) as e:  # pragma: no cover
-        logging.critical("Error al cargar la configuración: %s", e)
-        sys.exit(1)
+    gcode_lines = write_gcode(paths, scale)
 
-    setup_logging(cfg.get("log_level", "INFO"))
+    with GCODE_FILE.open("w", encoding="utf-8") as f:
+        f.write("\n".join(gcode_lines))
 
-    texto = args.text or input("Texto a escribir: ").strip()
-    if not texto:
-        logging.error("No se ingresó texto. Abortando…")
-        sys.exit(1)
-
-    altura_mm: float = cfg.get("altura_mm", 10)
-    feed: float = cfg.get("feed", 300)
-    pen_delay: float = cfg.get("pen_delay", 0.2)
-    fuente: str = cfg.get("fuente", "futural")
-    outdir = Path(cfg.get("outdir", "gcode_output"))
-    cmd_safe: str = cfg.get("cmd_safe", "M5")
-    cmd_draw: str = cfg.get("cmd_draw", "M3")
-
-    outdir.mkdir(parents=True, exist_ok=True)
-    outfile = generate_output_filename(fuente, outdir)
-
-    logging.info("Generando G‑code en '%s'…", outfile)
-
-    hf = HersheyFonts()
-    validate_font(hf, fuente)
-    hf.normalize_rendering(altura_mm)
-
-    with G(outfile=str(outfile), print_lines=False) as g:
-        g.absolute()
-        g.write("; === Header ===")
-        g.write("G21")
-        g.feed(feed)
-        g.write(cmd_safe)
-        g.dwell(pen_delay)
-
-        for stroke in hf.strokes_for_text(texto):
-            x0, y0 = stroke[0]
-            g.move(x=x0, y=y0, rapid=True)
-            g.write(cmd_draw)
-            g.dwell(pen_delay)
-            for x, y in stroke[1:]:
-                g.move(x=x, y=y)
-            g.write(cmd_safe)
-            g.dwell(pen_delay)
-
-        g.write("M2")
-
-    logging.info("Proceso finalizado correctamente. Archivo creado: %s", outfile)
+    print("✅ Listo ➜", GCODE_FILE)
 
 
 if __name__ == "__main__":
