@@ -21,12 +21,15 @@ class SvgLoader:
         self.attributes = attr
 
     def get_paths(self) -> List[SvgPath]:
+        " Devuelve una lista de paths SVG cargados. "
         return self.paths
 
     def get_attributes(self) -> dict:
+        " Devuelve los atributos del SVG. "
         return self.attributes
 
     def get_viewbox(self) -> Tuple[float, float, float, float]:
+        " Devuelve el viewBox del SVG como una tupla (x, y, width, height). "
         vb = self.attributes.get("viewBox")
         if vb:
             return tuple(map(float, vb.split()))

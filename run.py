@@ -11,6 +11,7 @@ import math
 import sys
 from pathlib import Path
 from typing import Iterable, List, Tuple
+import logging
 
 import numpy as np
 from svg_loader import SvgLoader
@@ -54,8 +55,15 @@ CMD_DOWN  = "M3 S50"     # baja herramienta / prende láser
 CMD_UP    = "M5"         # levanta herramienta / apaga láser
 STEP_MM   = 0.3          # resolución de muestreo sobre cada segmento
 DWELL_MS  = 150          # pausa (ms) tras subir/bajar herramienta
+MAX_HEIGHT_MM = 250      # altura máxima permitida en mm
 # ------------------------------------------------------------------ #
 
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(levelname)s] %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def _viewbox_scale(svg_attr: dict) -> float:
     """
@@ -119,23 +127,39 @@ def write_gcode(paths, scale: float) -> List[str]:
         # Espejar horizontalmente respecto al centro cx
         return 2*cx - x, y
 
-    for p in paths:
+    for idx, p in enumerate(paths):
+        logger.info("Procesando path %d/%d", idx+1, len(paths))
         first_point = True
         for x, y in sample_path(p, STEP_MM):
             x, y = rotate180(x, y)
             x, y = mirror_horizontal(x, y)
             x_mm, y_mm = x * scale, y * scale
             if first_point:
+                logger.debug("Inicio de trazo en X=%.3f, Y=%.3f", x_mm, y_mm)
                 # Levantar lapicera y moverse rápido al inicio del trazo
                 g += [f"G0 Z{Z_UP}", f"G0 X{x_mm:.3f} Y{y_mm:.3f}",
                       f"G0 Z{Z_DOWN}", CMD_DOWN, f"G4 P{DWELL_MS / 1000.0:.3f}"]
                 first_point = False
             g.append(f"G1 X{x_mm:.3f} Y{y_mm:.3f} F{FEED}")
         # Al terminar el trazo, levantar lapicera
+        logger.debug("Fin de trazo %d, levantando lapicera", idx+1)
         g += [CMD_UP, f"G4 P{DWELL_MS / 1000.0:.3f}", f"G0 Z{Z_UP}"]
 
     g += ["M5", "G0 X0 Y0", "(End)"]
     return g
+
+
+def adjust_scale_for_max_height(paths, scale, max_height_mm):
+    """
+    Ajusta la escala para que la altura máxima no supere max_height_mm.
+    Si la altura ya es menor o igual, retorna la escala original.
+    """
+    _, _, ymin, ymax = get_svg_bbox(paths)
+    height = abs(ymax - ymin) * scale
+    if height > max_height_mm:
+        factor = max_height_mm / (abs(ymax - ymin) * scale)
+        return scale * factor
+    return scale
 
 
 def main() -> None:
@@ -147,6 +171,8 @@ def main() -> None:
     paths = svg.get_paths()
     svg_attr = svg.get_attributes()
     scale = _viewbox_scale(svg_attr)
+    # Ajustar escala si la altura máxima supera el límite
+    scale = adjust_scale_for_max_height(paths, scale, MAX_HEIGHT_MM)
 
     gcode_lines = write_gcode(paths, scale)
 
