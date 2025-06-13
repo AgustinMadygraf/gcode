@@ -5,6 +5,6 @@ import logging
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='[%(levelname)s] %(message)s'
+    format='[%(levelname)-5s- %(filename)s:%(lineno)s] %(message)s'
 )
 logger = logging.getLogger("svg2gcode")
