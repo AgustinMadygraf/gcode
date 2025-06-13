@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-simple_svg2gcode.py
+run.py
 Convierte un archivo SVG en un recorrido G-code para plotters o CNC sencillos.
 Requiere: svgpathtools, numpy.
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Iterable, List, Tuple
 
 import numpy as np
-from svgpathtools import svg2paths2
+from svg_loader import SvgLoader
 
 # ---------------------- Parámetros de usuario ---------------------- #
 def select_svg_file() -> Path:
@@ -143,7 +143,9 @@ def main() -> None:
     if not SVG_FILE.is_file():
         sys.exit(f"No se encuentra el archivo: {SVG_FILE}")
 
-    paths, _, svg_attr = svg2paths2(str(SVG_FILE))
+    svg = SvgLoader(SVG_FILE)
+    paths = svg.get_paths()
+    svg_attr = svg.get_attributes()
     scale = _viewbox_scale(svg_attr)
 
     gcode_lines = write_gcode(paths, scale)
