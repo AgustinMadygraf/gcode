@@ -21,9 +21,9 @@ def select_svg_file() -> Path:
     svg_files = sorted(svg_dir.glob("*.svg"))
     if not svg_files:
         sys.exit("No SVG files found in svg_input.")
-    print("Available SVG files:")
+    logger.info("Available SVG files:")
     for idx, f in enumerate(svg_files, 1):
-        print(f"  {idx}. {f.name}")
+        logger.info("  %d. %s", idx, f.name)
     while True:
         try:
             sel = int(input(f"Select an SVG file (1-{len(svg_files)}): "))
@@ -31,7 +31,7 @@ def select_svg_file() -> Path:
                 return svg_files[sel-1]
         except (ValueError, TypeError):
             pass
-        print("Invalid selection. Try again.")
+        logger.warning("Invalid selection. Try again.")
 
 def next_gcode_filename(svg_file: Path) -> Path:
     """Generate a new output filename with _vXX.gcode suffix."""
@@ -46,10 +46,20 @@ def next_gcode_filename(svg_file: Path) -> Path:
 def main():
     "Main function to run the SVG to G-code conversion."
     svg_file = select_svg_file()
+    logger.debug("Selected SVG file: %s", svg_file)
+
     gcode_file = next_gcode_filename(svg_file)
+    logger.debug("Output G-code file: %s", gcode_file)
+
     svg = SvgLoader(svg_file)
+    logger.debug('Created object "svg" from class "SvgLoader"')
+
     paths = svg.get_paths()
+    logger.debug("Extracted %d paths from SVG.", len(paths))
+
     svg_attr = svg.get_attributes()
+    logger.debug("SVG attributes: %s", svg_attr)
+
     generator = GCodeGenerator(
         feed=FEED,
         cmd_down=CMD_DOWN,
@@ -59,10 +69,11 @@ def main():
         max_height_mm=MAX_HEIGHT_MM,
         logger=logger
     )
+    logger.debug("Initialized GCodeGenerator with parameters: %s", generator)
+
     gcode_lines = generator.generate(paths, svg_attr)
+    logger.debug("Generated G-code with %d lines.", len(gcode_lines))
+
     with gcode_file.open("w", encoding="utf-8") as f:
         f.write("\n".join(gcode_lines))
     logger.info("G-code file written to: %s", gcode_file)
-
-if __name__ == "__main__":
-    main()
