@@ -1,0 +1,68 @@
+"""
+Main CLI entry point for SVG to G-code conversion.
+"""
+
+from pathlib import Path
+import sys
+
+from src.config import (
+    SVG_INPUT_DIR, GCODE_OUTPUT_DIR,
+    FEED, CMD_DOWN, CMD_UP,
+    STEP_MM, DWELL_MS, MAX_HEIGHT_MM
+)
+from src.svg_loader import SvgLoader
+from domain.gcode_generator import GCodeGenerator
+from infrastructure.logger import logger
+
+
+def select_svg_file() -> Path:
+    """Select an SVG file from the input directory."""
+    svg_dir = SVG_INPUT_DIR
+    svg_files = sorted(svg_dir.glob("*.svg"))
+    if not svg_files:
+        sys.exit("No SVG files found in svg_input.")
+    print("Available SVG files:")
+    for idx, f in enumerate(svg_files, 1):
+        print(f"  {idx}. {f.name}")
+    while True:
+        try:
+            sel = int(input(f"Select an SVG file (1-{len(svg_files)}): "))
+            if 1 <= sel <= len(svg_files):
+                return svg_files[sel-1]
+        except (ValueError, TypeError):
+            pass
+        print("Invalid selection. Try again.")
+
+def next_gcode_filename(svg_file: Path) -> Path:
+    """Generate a new output filename with _vXX.gcode suffix."""
+    out_dir = GCODE_OUTPUT_DIR
+    stem = svg_file.stem
+    for i in range(100):
+        candidate = out_dir / f"{stem}_v{i:02d}.gcode"
+        if not candidate.exists():
+            return candidate
+    sys.exit("Too many output files for this SVG.")
+
+def main():
+    "Main function to run the SVG to G-code conversion."
+    svg_file = select_svg_file()
+    gcode_file = next_gcode_filename(svg_file)
+    svg = SvgLoader(svg_file)
+    paths = svg.get_paths()
+    svg_attr = svg.get_attributes()
+    generator = GCodeGenerator(
+        feed=FEED,
+        cmd_down=CMD_DOWN,
+        cmd_up=CMD_UP,
+        step_mm=STEP_MM,
+        dwell_ms=DWELL_MS,
+        max_height_mm=MAX_HEIGHT_MM,
+        logger=logger
+    )
+    gcode_lines = generator.generate(paths, svg_attr)
+    with gcode_file.open("w", encoding="utf-8") as f:
+        f.write("\n".join(gcode_lines))
+    logger.info("G-code file written to: %s", gcode_file)
+
+if __name__ == "__main__":
+    main()
