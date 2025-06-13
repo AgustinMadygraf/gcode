@@ -74,7 +74,6 @@ def _viewbox_scale(svg_attr: dict) -> float:
             pass
     return 1.0
 
-
 def sample_path(path, step: float) -> Iterable[Tuple[float, float]]:
     """
     Devuelve puntos (x, y) equiespaciados a lo largo de un Path de svgpathtools.
@@ -85,7 +84,6 @@ def sample_path(path, step: float) -> Iterable[Tuple[float, float]]:
         for t in np.linspace(0, 1, n + 1):
             z = seg.point(t)
             yield z.real, z.imag
-
 
 def get_svg_bbox(paths):
     """Obtiene el bounding box (xmin, xmax, ymin, ymax) de todos los paths."""
@@ -152,7 +150,6 @@ def write_gcode(paths, scale: float) -> List[str]:
     logger.info("Secuencia final: M5, G0 X0 Y0, (End)")
     return g
 
-
 def adjust_scale_for_max_height(paths, scale, max_height_mm):
     """
     Ajusta la escala para que la altura máxima no supere max_height_mm.
@@ -164,7 +161,6 @@ def adjust_scale_for_max_height(paths, scale, max_height_mm):
         factor = max_height_mm / (abs(ymax - ymin) * scale)
         return scale * factor
     return scale
-
 
 def main() -> None:
     "Genera un archivo G-code a partir de un SVG seleccionado."
@@ -184,7 +180,5 @@ def main() -> None:
         f.write("\n".join(gcode_lines))
     logger.info("Archivo G-code escrito en: %s", GCODE_FILE)
 
-if __name__ == "__main__":
-    main()
 if __name__ == "__main__":
     main()

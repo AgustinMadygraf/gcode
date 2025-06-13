@@ -16,5 +16,4 @@ CMD_UP = "M5"         # levanta herramienta / apaga láser
 STEP_MM = 0.3         # resolución de muestreo sobre cada segmento
 DWELL_MS = 150        # pausa (ms) tras subir/bajar herramienta
 MAX_HEIGHT_MM = 250   # altura máxima permitida en mm
-DWELL_MS = 150        # pausa (ms) tras subir/bajar herramienta
-MAX_HEIGHT_MM = 250   # altura máxima permitida en mm
+
