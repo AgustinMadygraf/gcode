@@ -14,7 +14,7 @@ from typing import Iterable, List, Tuple
 import logging
 
 import numpy as np
-from svg_loader import SvgLoader
+from src.svg_loader import SvgLoader
 
 # ---------------------- Parámetros de usuario ---------------------- #
 def select_svg_file() -> Path:
