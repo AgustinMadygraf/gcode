@@ -15,11 +15,15 @@ import logging
 
 import numpy as np
 from src.svg_loader import SvgLoader
+from src.config import (
+    SVG_INPUT_DIR, GCODE_OUTPUT_DIR, FEED, Z_UP, Z_DOWN,
+    CMD_DOWN, CMD_UP, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
+)
 
 # ---------------------- Parámetros de usuario ---------------------- #
 def select_svg_file() -> Path:
     " Selecciona un archivo SVG de la carpeta svg_input."
-    svg_dir = Path("svg_input")
+    svg_dir = SVG_INPUT_DIR
     svg_files = sorted(svg_dir.glob("*.svg"))
     if not svg_files:
         sys.exit("No se encontraron archivos SVG en svg_input.")
@@ -37,7 +41,7 @@ def select_svg_file() -> Path:
 
 def next_gcode_filename(svg_file: Path) -> Path:
     "Genera un nombre de archivo de salida con sufijo _vXX.gcode, incrementando XX si ya existe."
-    out_dir = Path("gcode_output")
+    out_dir = GCODE_OUTPUT_DIR
     stem = svg_file.stem
     for i in range(100):
         candidate = out_dir / f"{stem}_v{i:02d}.gcode"
@@ -47,17 +51,6 @@ def next_gcode_filename(svg_file: Path) -> Path:
 
 SVG_FILE   = select_svg_file()
 GCODE_FILE = next_gcode_filename(SVG_FILE)
-
-FEED      = 400          # mm/min
-Z_UP      = 5            # altura segura
-Z_DOWN    = 0            # altura de dibujo / corte
-CMD_DOWN  = "M3 S50"     # baja herramienta / prende láser
-CMD_UP    = "M5"         # levanta herramienta / apaga láser
-STEP_MM   = 0.3          # resolución de muestreo sobre cada segmento
-DWELL_MS  = 150          # pausa (ms) tras subir/bajar herramienta
-MAX_HEIGHT_MM = 250      # altura máxima permitida en mm
-# ------------------------------------------------------------------ #
-
 
 logging.basicConfig(
     level=logging.INFO,
