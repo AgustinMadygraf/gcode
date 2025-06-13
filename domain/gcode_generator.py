@@ -1,13 +1,25 @@
 """
 GCodeGenerator: Core logic for SVG to G-code conversion.
 """
-from typing import List
+from typing import List, Optional
 import math
 import numpy as np
+from domain.path_transform_strategy import PathTransformStrategy, ScaleStrategy
 
 class GCodeGenerator:
     " Class to generate G-code from SVG paths. "
-    def __init__(self, feed, cmd_down, cmd_up, step_mm, dwell_ms, max_height_mm, logger=None):
+    def __init__(
+        self,
+        *,
+        feed: float,
+        cmd_down: str,
+        cmd_up: str,
+        step_mm: float,
+        dwell_ms: int,
+        max_height_mm: float,
+        logger=None,
+        transform_strategies: Optional[List[PathTransformStrategy]] = None
+    ):
         self.feed = feed
         self.cmd_down = cmd_down
         self.cmd_up = cmd_up
@@ -15,6 +27,7 @@ class GCodeGenerator:
         self.dwell_ms = dwell_ms
         self.max_height_mm = max_height_mm
         self.logger = logger
+        self.transform_strategies = transform_strategies or []
 
     def _viewbox_scale(self, svg_attr: dict) -> float:
         vb = svg_attr.get("viewBox")
@@ -72,11 +85,13 @@ class GCodeGenerator:
             )
             self.logger.info(f"Rotation center: cx={cx:.3f}, cy={cy:.3f}")
             self.logger.info(f"Scale applied: {scale:.3f}")
-        def rotate180(x, y):
+
+        def _rotate180(x, y):
             x2 = 2*cx - x
             y2 = 2*cy - y
             return x2, y2
-        def mirror_horizontal(x, y):
+
+        def _mirror_horizontal(x, y):
             return 2*cx - x, y
         for idx, p in enumerate(paths):
             if self.logger:
@@ -84,9 +99,13 @@ class GCodeGenerator:
             first_point = True
             path_gcode_count = 0
             for x, y in self.sample_path(p, self.step_mm):
-                x, y = rotate180(x, y)
-                x, y = mirror_horizontal(x, y)
-                x_mm, y_mm = x * scale, y * scale
+                # Aplicar estrategias de transformación en orden
+                for strategy in self.transform_strategies:
+                    x, y = strategy.transform(x, y)
+                x_mm, y_mm = x, y
+                # Si la estrategia de escalado no está incluida, aplicar el escalado aquí
+                if not any(isinstance(s, ScaleStrategy) for s in self.transform_strategies):
+                    x_mm, y_mm = x_mm * scale, y_mm * scale
                 if first_point:
                     if self.logger:
                         self.logger.info(f"Start of stroke {idx+1}: X={x_mm:.3f}, Y={y_mm:.3f}")

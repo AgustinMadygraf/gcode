@@ -12,6 +12,7 @@ from src.config import (
 )
 from src.svg_loader import SvgLoader
 from domain.gcode_generator import GCodeGenerator
+from domain.path_transform_strategy import MirrorVerticalStrategy
 from infrastructure.logger import logger
 
 
@@ -60,6 +61,24 @@ def main():
     svg_attr = svg.get_attributes()
     logger.debug("SVG attributes: %s", svg_attr)
 
+    # Calcular bbox y centro para las estrategias
+    xmin, xmax, ymin, ymax = (
+        svg.get_bbox() if hasattr(svg, 'get_bbox') else (None, None, None, None)
+    )
+    if xmin is None:
+        # fallback: calcular bbox manualmente
+        xs, ys = [], []
+        for p in paths:
+            for seg in p:
+                for t in range(21):
+                    z = seg.point(t/20)
+                    xs.append(z.real)
+                    ys.append(z.imag)
+        xmin, xmax, ymin, ymax = min(xs), max(xs), min(ys), max(ys)
+    _cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    # Definir estrategias de transformación (ejemplo: vertical mirror)
+    transform_strategies = [MirrorVerticalStrategy(cy)]
+
     generator = GCodeGenerator(
         feed=FEED,
         cmd_down=CMD_DOWN,
@@ -67,7 +86,8 @@ def main():
         step_mm=STEP_MM,
         dwell_ms=DWELL_MS,
         max_height_mm=MAX_HEIGHT_MM,
-        logger=logger
+        logger=logger,
+        transform_strategies=transform_strategies
     )
     logger.debug("Initialized GCodeGenerator with parameters: %s", generator)
 
