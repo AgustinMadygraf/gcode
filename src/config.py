@@ -7,7 +7,6 @@ from pathlib import Path
 # Rutas principales
 SVG_INPUT_DIR = Path("svg_input")
 GCODE_OUTPUT_DIR = Path("gcode_output")
-LOGS_DIR = Path("logs")
 
 # Parámetros de G-code
 FEED = 400            # mm/min
