@@ -5,15 +5,15 @@ Main CLI entry point for SVG to G-code conversion.
 from pathlib import Path
 import sys
 
-from src.config import (
+from config.config import (
     SVG_INPUT_DIR, GCODE_OUTPUT_DIR,
     FEED, CMD_DOWN, CMD_UP,
     STEP_MM, DWELL_MS, MAX_HEIGHT_MM
 )
-from src.svg_loader import SvgLoader
+from infrastructure.svg_loader import SvgLoader
+from infrastructure.logger import logger
 from domain.gcode_generator import GCodeGenerator
 from domain.path_transform_strategy import MirrorVerticalStrategy
-from infrastructure.logger import logger
 
 
 def select_svg_file() -> Path:

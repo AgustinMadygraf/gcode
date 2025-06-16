@@ -9,7 +9,7 @@ SVG_INPUT_DIR = Path("svg_input")
 GCODE_OUTPUT_DIR = Path("gcode_output")
 
 # Parámetros de G-code
-FEED = 400            # mm/min
+FEED = 4000            # mm/min
 CMD_DOWN = "M3 S50"   # baja herramienta / prende láser
 CMD_UP = "M5"         # levanta herramienta / apaga láser
 STEP_MM = 0.3         # resolución de muestreo sobre cada segmento
