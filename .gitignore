@@ -2,3 +2,4 @@ gcode_output/
 svg_input/
 __pycache__/
 todo.md
+config/config.json
