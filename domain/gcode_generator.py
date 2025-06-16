@@ -1,10 +1,34 @@
 """
 GCodeGenerator: Core logic for SVG to G-code conversion.
+
+- Utiliza PathSampler para muestrear puntos de rutas SVG a intervalos regulares.
+- Utiliza TransformManager para aplicar estrategias de transformación a cada punto.
+- El método generate() produce una lista de líneas G-code a partir de rutas SVG y atributos.
+
+Ejemplo de uso:
+    from domain.gcode_generator import GCodeGenerator
+    from domain.path_transform_strategy import MirrorVerticalStrategy
+    generator = GCodeGenerator(
+        feed=1000,
+        cmd_down="M3 S1000",
+        cmd_up="M5",
+        step_mm=2.0,
+        dwell_ms=100,
+        max_height_mm=50,
+        logger=None,
+        transform_strategies=[MirrorVerticalStrategy(25)]
+    )
+    gcode_lines = generator.generate(paths, svg_attr)
+    for line in gcode_lines:
+        print(line)
 """
+
 from typing import List, Optional
-import math
 import numpy as np
+from domain.models import Point
 from domain.path_transform_strategy import PathTransformStrategy, ScaleStrategy
+from infrastructure.path_sampler import PathSampler
+from infrastructure.transform_manager import TransformManager
 
 class GCodeGenerator:
     " Class to generate G-code from SVG paths. "
@@ -28,6 +52,10 @@ class GCodeGenerator:
         self.max_height_mm = max_height_mm
         self.logger = logger
         self.transform_strategies = transform_strategies or []
+        self.path_sampler = PathSampler(self.step_mm)
+        self.transform_manager = TransformManager([
+            s.transform for s in (transform_strategies or [])
+        ])
 
     def _viewbox_scale(self, svg_attr: dict) -> float:
         vb = svg_attr.get("viewBox")
@@ -40,15 +68,6 @@ class GCodeGenerator:
             except ValueError:
                 pass
         return 1.0
-
-    def sample_path(self, path, step: float):
-        " Sample points along the SVG path at specified intervals. "
-        for seg in path:
-            seg_len = seg.length()
-            n = max(1, int(math.ceil(seg_len / step)))
-            for t in np.linspace(0, 1, n + 1):
-                z = seg.point(t)
-                yield z.real, z.imag
 
     def get_svg_bbox(self, paths):
         " Calculate the bounding box of the SVG paths. "
@@ -70,52 +89,30 @@ class GCodeGenerator:
             return scale * factor
         return scale
 
-    def generate(self, paths, svg_attr) -> List[str]:
-        " Generate G-code from SVG paths. "
-        g: List[str] = []
-        g += ["G90", "G21", self.cmd_up]
-        xmin, xmax, ymin, ymax = self.get_svg_bbox(paths)
-        cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
-        scale = self._viewbox_scale(svg_attr)
-        scale = self.adjust_scale_for_max_height(paths, scale, self.max_height_mm)
-        if self.logger:
-            self.logger.info(
-                f"Bounding box: xmin={xmin:.3f}, xmax={xmax:.3f}, "
-                f"ymin={ymin:.3f}, ymax={ymax:.3f}"
-            )
-            self.logger.info(f"Rotation center: cx={cx:.3f}, cy={cy:.3f}")
-            self.logger.info(f"Scale applied: {scale:.3f}")
-
-        def _rotate180(x, y):
-            x2 = 2*cx - x
-            y2 = 2*cy - y
-            return x2, y2
-
-        def _mirror_horizontal(x, y):
-            return 2*cx - x, y
-        for idx, p in enumerate(paths):
-            if self.logger:
-                self.logger.info(f"Processing path {idx+1}/{len(paths)}")
-            first_point = True
-            path_gcode_count = 0
-            for x, y in self.sample_path(p, self.step_mm):
-                # Aplicar estrategias de transformación en orden
-                for strategy in self.transform_strategies:
-                    x, y = strategy.transform(x, y)
-                x_mm, y_mm = x, y
+    def sample_and_transform(self, paths, scale) -> List[List[Point]]:
+        """Devuelve una lista de listas de puntos transformados y escalados para cada path."""
+        result = []
+        for p in paths:
+            points = []
+            for pt in self.path_sampler.sample(p):
+                x, y = self.transform_manager.apply(pt.x, pt.y)
                 # Si la estrategia de escalado no está incluida, aplicar el escalado aquí
                 if not any(isinstance(s, ScaleStrategy) for s in self.transform_strategies):
-                    x_mm, y_mm = x_mm * scale, y_mm * scale
+                    x, y = x * scale, y * scale
+                points.append(Point(x, y))
+            result.append(points)
+        return result
+
+    def generate_gcode_commands(self, all_points: List[List[Point]]) -> List[str]:
+        """Genera las líneas de G-code a partir de los puntos procesados."""
+        g: List[str] = []
+        g += ["G90", "G21", self.cmd_up]
+        for points in all_points:
+            first_point = True
+            path_gcode_count = 0
+            for pt in points:
+                x_mm, y_mm = pt.x, pt.y
                 if first_point:
-                    if self.logger:
-                        self.logger.info(f"Start of stroke {idx+1}: X={x_mm:.3f}, Y={y_mm:.3f}")
-                    if self.logger:
-                        msg = (
-                            f"Position: X={x_mm:.3f}, "
-                            f"Y={y_mm:.3f}, "
-                            f"Dwell={self.dwell_ms/1000.0:.3f}"
-                        )
-                        self.logger.debug(msg)
                     g.extend([
                         f"G0 X{x_mm:.3f} Y{y_mm:.3f}",
                         self.cmd_down,
@@ -127,15 +124,21 @@ class GCodeGenerator:
                 path_gcode_count += 1
             g += [self.cmd_up, f"G4 P{self.dwell_ms / 1000.0:.3f}"]
             path_gcode_count += 2
-            if self.logger:
-                msg = (f"End of stroke {idx+1}, "
-                      f"commands: {self.cmd_up}, "
-                      f"G4 P{self.dwell_ms/1000.0}")
-                self.logger.info(msg)
-                msg = (f"G-code instructions generated "
-                      f"for path {idx+1}: {path_gcode_count}")
-                self.logger.info(msg)
         g += ["M5", "G0 X0 Y0", "(End)"]
-        if self.logger:
-            self.logger.info("Final sequence: M5, G0 X0 Y0, (End)")
         return g
+
+    def generate(self, paths, svg_attr) -> List[str]:
+        " Generate G-code from SVG paths. "
+        xmin, xmax, ymin, ymax = self.get_svg_bbox(paths)
+        scale = self._viewbox_scale(svg_attr)
+        scale = self.adjust_scale_for_max_height(paths, scale, self.max_height_mm)
+        if self.logger:
+            self.logger.info(
+                f"Bounding box: xmin={xmin:.3f}, xmax={xmax:.3f}, "
+                f"ymin={ymin:.3f}, ymax={ymax:.3f}")
+            self.logger.info(f"Scale applied: {scale:.3f}")
+        all_points = self.sample_and_transform(paths, scale)
+        gcode = self.generate_gcode_commands(all_points)
+        if self.logger:
+            self.logger.info(f"G-code lines generated: {len(gcode)}")
+        return gcode

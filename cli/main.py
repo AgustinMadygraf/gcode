@@ -89,6 +89,7 @@ def main():
         logger=logger,
         transform_strategies=transform_strategies
     )
+
     logger.debug("Initialized GCodeGenerator with parameters: %s", generator)
 
     gcode_lines = generator.generate(paths, svg_attr)
