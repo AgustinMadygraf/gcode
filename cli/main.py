@@ -44,6 +44,17 @@ def next_gcode_filename(svg_file: Path) -> Path:
             return candidate
     sys.exit("Too many output files for this SVG.")
 
+def filter_nontrivial_paths(paths, min_length=1e-3):
+    """Filtra paths que sean solo un punto o tengan longitud despreciable."""
+    filtered = []
+    for i, p in enumerate(paths):
+        total_length = sum(seg.length() for seg in p)
+        if total_length > min_length:
+            filtered.append(p)
+        else:
+            logger.info("Path %d omitido por longitud despreciable: %.6f", i+1, total_length)
+    return filtered
+
 def main():
     "Main function to run the SVG to G-code conversion."
     svg_file = select_svg_file()
@@ -57,6 +68,24 @@ def main():
 
     paths = svg.get_paths()
     logger.debug("Extracted %d paths from SVG.", len(paths))
+
+    # Instrumentación: imprimir puntos de inicio y fin de cada path SVG real
+    for i, p in enumerate(paths):
+        xs, ys = [], []
+        for seg in p:
+            z0 = seg.point(0)
+            z1 = seg.point(1)
+            xs.extend([z0.real, z1.real])
+            ys.extend([z0.imag, z1.imag])
+        if xs and ys:
+            logger.info(
+                "Path %d: inicio=(%.3f, %.3f), fin=(%.3f, %.3f)",
+                i+1, xs[0], ys[0], xs[-1], ys[-1]
+            )
+
+    # Filtrar paths triviales
+    paths = filter_nontrivial_paths(paths)
+    logger.info("Paths útiles tras filtrado: %d", len(paths))
 
     svg_attr = svg.get_attributes()
     logger.debug("SVG attributes: %s", svg_attr)
@@ -92,9 +121,14 @@ def main():
 
     logger.debug("Initialized GCodeGenerator with parameters: %s", generator)
 
+    # --- Lógica de IO separada de la lógica de negocio ---
     gcode_lines = generator.generate(paths, svg_attr)
     logger.debug("Generated G-code with %d lines.", len(gcode_lines))
 
+    write_gcode_file(gcode_file, gcode_lines)
+    logger.info("G-code file written to: %s", gcode_file)
+
+def write_gcode_file(gcode_file: Path, gcode_lines):
+    """Escribe las líneas de G-code en el archivo de salida."""
     with gcode_file.open("w", encoding="utf-8") as f:
         f.write("\n".join(gcode_lines))
-    logger.info("G-code file written to: %s", gcode_file)

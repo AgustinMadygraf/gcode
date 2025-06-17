@@ -52,10 +52,13 @@ class GCodeGenerator:
         self.max_height_mm = max_height_mm
         self.logger = logger
         self.transform_strategies = transform_strategies or []
-        self.path_sampler = PathSampler(self.step_mm)
-        self.transform_manager = TransformManager([
-            s.transform for s in (transform_strategies or [])
-        ])
+        # Validar que todas las estrategias implementen PathTransformStrategy
+        if self.transform_strategies:
+            for s in self.transform_strategies:
+                if not isinstance(s, PathTransformStrategy):
+                    raise TypeError("Todas las estrategias deben implementar PathTransformStrategy")
+        self.path_sampler = PathSampler(self.step_mm, logger=self.logger)
+        self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
 
     def _viewbox_scale(self, svg_attr: dict) -> float:
         vb = svg_attr.get("viewBox")
@@ -103,27 +106,51 @@ class GCodeGenerator:
             result.append(points)
         return result
 
+    def process_points_pipeline(self, paths, scale) -> List[List[Point]]:
+        """Pipeline fijo: muestreo -> transformación -> escalado (si corresponde)."""
+        result = []
+        for p in paths:
+            points = []
+            for pt in self.path_sampler.sample(p):
+                x, y = self.transform_manager.apply(pt.x, pt.y)
+                # Si la estrategia de escalado no está incluida, aplicar el escalado aquí
+                if not any(isinstance(s, ScaleStrategy) for s in self.transform_strategies):
+                    x, y = x * scale, y * scale
+                points.append(Point(x, y))
+            result.append(points)
+        return result
+
     def generate_gcode_commands(self, all_points: List[List[Point]]) -> List[str]:
         """Genera las líneas de G-code a partir de los puntos procesados."""
         g: List[str] = []
         g += ["G90", "G21", self.cmd_up]
+        last_end = None
         for points in all_points:
+            if not points:
+                continue
+            # Si hay un trazo anterior,
+            # moverse rápido al inicio del nuevo trazo con el cabezal levantado
+            if last_end is not None:
+                g.append(self.cmd_up)
+                g.append(f"G0 X{points[0].x:.3f} Y{points[0].y:.3f}")
+                g.append(f"G4 P{self.dwell_ms / 1000.0:.3f}")
             first_point = True
             path_gcode_count = 0
             for pt in points:
                 x_mm, y_mm = pt.x, pt.y
                 if first_point:
                     g.extend([
-                        f"G0 X{x_mm:.3f} Y{y_mm:.3f}",
                         self.cmd_down,
                         f"G4 P{self.dwell_ms / 1000.0:.3f}"
                     ])
-                    path_gcode_count += 3
+                    path_gcode_count += 2
                     first_point = False
                 g.append(f"G1 X{x_mm:.3f} Y{y_mm:.3f} F{self.feed}")
                 path_gcode_count += 1
-            g += [self.cmd_up, f"G4 P{self.dwell_ms / 1000.0:.3f}"]
+            g.append(self.cmd_up)
+            g.append(f"G4 P{self.dwell_ms / 1000.0:.3f}")
             path_gcode_count += 2
+            last_end = (points[-1].x, points[-1].y)
         g += ["M5", "G0 X0 Y0", "(End)"]
         return g
 
@@ -137,7 +164,7 @@ class GCodeGenerator:
                 f"Bounding box: xmin={xmin:.3f}, xmax={xmax:.3f}, "
                 f"ymin={ymin:.3f}, ymax={ymax:.3f}")
             self.logger.info(f"Scale applied: {scale:.3f}")
-        all_points = self.sample_and_transform(paths, scale)
+        all_points = self.process_points_pipeline(paths, scale)
         gcode = self.generate_gcode_commands(all_points)
         if self.logger:
             self.logger.info(f"G-code lines generated: {len(gcode)}")

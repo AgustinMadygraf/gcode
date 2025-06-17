@@ -16,10 +16,11 @@ from domain.models import Point
 
 class PathSampler:
     """Samples points along SVG paths at specified intervals."""
-    def __init__(self, step: float):
+    def __init__(self, step: float, logger=None):
         if step <= 0:
             raise ValueError("step must be positive")
         self.step = step
+        self.logger = logger
 
     def sample(self, path):
         """Yield Point objects sampled along the path at the given step interval.
@@ -33,4 +34,6 @@ class PathSampler:
             n = max(1, int(math.ceil(seg_len / self.step)))
             for t in np.linspace(0, 1, n + 1):
                 z = seg.point(t)
+#                if self.logger:
+#                    self.logger.debug(f"Sampled point: ({z.real:.3f}, {z.imag:.3f})")
                 yield Point(z.real, z.imag)
