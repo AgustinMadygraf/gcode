@@ -66,7 +66,7 @@ def main():
     svg = SvgLoader(svg_file)
     logger.debug('Created object "svg" from class "SvgLoader"')
 
-    paths = svg.get_paths()
+    paths = svg.get_paths()  #REVISAR ESTE PUNTO
     logger.debug("Extracted %d paths from SVG.", len(paths))
 
     # Instrumentación: imprimir puntos de inicio y fin de cada path SVG real
@@ -84,10 +84,10 @@ def main():
             )
 
     # Filtrar paths triviales
-    paths = filter_nontrivial_paths(paths)
+    paths = filter_nontrivial_paths(paths)  #REVISAR ESTE PUNTO
     logger.info("Paths útiles tras filtrado: %d", len(paths))
 
-    svg_attr = svg.get_attributes()
+    svg_attr = svg.get_attributes()  #REVISAR ESTE PUNTO
     logger.debug("SVG attributes: %s", svg_attr)
 
     # Calcular bbox y centro para las estrategias
@@ -122,7 +122,7 @@ def main():
     logger.debug("Initialized GCodeGenerator with parameters: %s", generator)
 
     # --- Lógica de IO separada de la lógica de negocio ---
-    gcode_lines = generator.generate(paths, svg_attr)
+    gcode_lines = generator.generate(paths, svg_attr) #REVISAR ESTE PUNTO
     logger.debug("Generated G-code with %d lines.", len(gcode_lines))
 
     write_gcode_file(gcode_file, gcode_lines)

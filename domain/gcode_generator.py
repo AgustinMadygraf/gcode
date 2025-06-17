@@ -124,33 +124,23 @@ class GCodeGenerator:
         """Genera las líneas de G-code a partir de los puntos procesados."""
         g: List[str] = []
         g += ["G90", "G21", self.cmd_up]
-        last_end = None
-        for points in all_points:
+        for i, points in enumerate(all_points):
             if not points:
                 continue
-            # Si hay un trazo anterior,
-            # moverse rápido al inicio del nuevo trazo con el cabezal levantado
-            if last_end is not None:
+            # Siempre moverse rápido al inicio del nuevo trazo con el cabezal levantado
+            if i > 0:
                 g.append(self.cmd_up)
                 g.append(f"G0 X{points[0].x:.3f} Y{points[0].y:.3f}")
                 g.append(f"G4 P{self.dwell_ms / 1000.0:.3f}")
-            first_point = True
-            path_gcode_count = 0
+            g.extend([
+                self.cmd_down,
+                f"G4 P{self.dwell_ms / 1000.0:.3f}"
+            ])
             for pt in points:
                 x_mm, y_mm = pt.x, pt.y
-                if first_point:
-                    g.extend([
-                        self.cmd_down,
-                        f"G4 P{self.dwell_ms / 1000.0:.3f}"
-                    ])
-                    path_gcode_count += 2
-                    first_point = False
                 g.append(f"G1 X{x_mm:.3f} Y{y_mm:.3f} F{self.feed}")
-                path_gcode_count += 1
             g.append(self.cmd_up)
             g.append(f"G4 P{self.dwell_ms / 1000.0:.3f}")
-            path_gcode_count += 2
-            last_end = (points[-1].x, points[-1].y)
         g += ["M5", "G0 X0 Y0", "(End)"]
         return g
 
