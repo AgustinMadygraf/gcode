@@ -64,7 +64,9 @@ class GCodeGenerator:
         self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
 
     def generate_gcode_commands(self, all_points: List[List[Point]]) -> List[str]:
-        """Genera las líneas de G-code a partir de los puntos procesados usando GCodeCommandBuilder."""
+        """Genera las líneas de G-code a partir de los puntos procesados usando GCodeCommandBuilder.
+        El primer punto de cada trazo se mueve con G0 (rápido), los siguientes con G1 (trazando).
+        """
         builder = GCodeCommandBuilder()
         builder.tool_up(self.cmd_up)
         builder.move_to(0, 0, rapid=True)
@@ -78,7 +80,10 @@ class GCodeGenerator:
                 builder.dwell(self.dwell_ms / 1000.0)
             builder.tool_down(self.cmd_down)
             builder.dwell(self.dwell_ms / 1000.0)
-            for pt in points:
+            # Primer punto: G0 (rápido)
+            builder.move_to(points[0].x, points[0].y, rapid=True)
+            # Siguientes puntos: G1 (trazando)
+            for pt in points[1:]:
                 builder.move_to(pt.x, pt.y, feed=self.feed, rapid=False)
             builder.tool_up(self.cmd_up)
             builder.dwell(self.dwell_ms / 1000.0)
