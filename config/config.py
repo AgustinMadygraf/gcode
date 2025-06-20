@@ -10,8 +10,8 @@ _DEFAULTS = {
     "SVG_INPUT_DIR": "svg_input",
     "GCODE_OUTPUT_DIR": "gcode_output",
     "FEED": 4000,
-    "CMD_DOWN": "M3 S50",
-    "CMD_UP": "M5",
+    "CMD_DOWN": "M3 S255 G4 P0.2 ; baja lapicera",
+    "CMD_UP": "M5 G4 P0.2 ; sube lapicera",
     "STEP_MM": 0.3,
     "DWELL_MS": 150,
     "MAX_HEIGHT_MM": 250
