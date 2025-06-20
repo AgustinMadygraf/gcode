@@ -1,0 +1,35 @@
+"""
+GCodeCommandBuilder: Permite construir secuencias de comandos G-code de forma fluida.
+"""
+from typing import List
+from domain.gcode.commands.base_command import BaseCommand
+from domain.gcode.commands.tool_up_command import ToolUpCommand
+from domain.gcode.commands.tool_down_command import ToolDownCommand
+from domain.gcode.commands.move_command import MoveCommand
+from domain.gcode.commands.dwell_command import DwellCommand
+
+class GCodeCommandBuilder:
+    def __init__(self):
+        self.commands: List[BaseCommand] = []
+
+    def tool_up(self, cmd_up: str):
+        self.commands.append(ToolUpCommand(cmd_up))
+        return self
+
+    def tool_down(self, cmd_down: str):
+        self.commands.append(ToolDownCommand(cmd_down))
+        return self
+
+    def move_to(self, x: float, y: float, feed: float = None, rapid: bool = False):
+        self.commands.append(MoveCommand(x, y, feed, rapid))
+        return self
+
+    def dwell(self, seconds: float):
+        self.commands.append(DwellCommand(seconds))
+        return self
+
+    def build(self) -> List[BaseCommand]:
+        return self.commands
+
+    def to_gcode_lines(self) -> List[str]:
+        return [cmd.to_gcode() for cmd in self.commands]
