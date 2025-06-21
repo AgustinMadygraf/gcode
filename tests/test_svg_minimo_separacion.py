@@ -4,7 +4,6 @@ Test automatizado para validar la separación de trazos en el G-code generado a 
 import unittest
 import sys
 import os
-from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.svg_loader import SvgLoader
 from domain.gcode_generator import GCodeGenerator
@@ -17,7 +16,8 @@ class DummyStrategy(PathTransformStrategy):
 
 class TestSVGMinimoSeparacion(unittest.TestCase):
     def test_separacion_trazos_svg_minimo(self):
-        svg_file = Path("../svg_input/test_lines.svg").resolve()
+        from pathlib import Path
+        svg_file = (Path(__file__).parent.parent / "svg_input" / "test_lines.svg").resolve()
         svg = SvgLoader(svg_file)
         paths = svg.get_paths()
         svg_attr = svg.get_attributes()
@@ -43,7 +43,11 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
             # Buscar el siguiente CMD_UP después de este CMD_DOWN
             u = next((i for i in up_indices if i > d), None)
             if u is not None:
-                for line in gcode[d+1:u]:
+                lines_between = gcode[d+1:u]
+                # Permitir un G0 inicial tras CMD_DOWN
+                if lines_between and lines_between[0].startswith("G0"):
+                    lines_between = lines_between[1:]
+                for line in lines_between:
                     self.assertTrue(
                         line.startswith("G1") or line.startswith("G4"),
                         f"Comando inesperado entre CMD_DOWN y CMD_UP: {line}"

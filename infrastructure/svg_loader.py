@@ -56,10 +56,31 @@ class SvgLoader(ISvgLoader):
     def get_subpaths(self) -> List[SvgPath]:
         """
         Devuelve una lista de sub-paths simples a partir de los paths cargados.
-        Si un path es compuesto, lo divide en sub-paths simples.
+        Preserva la continuidad de los paths y solo divide cuando hay una discontinuidad real.
+        Una discontinuidad se detecta si la distancia entre el final de un segmento y el inicio del siguiente
+        es mayor que una tolerancia pequeña.
         """
+        import math
+        TOLERANCIA = 1e-4  # Ajustable según precisión deseada
+
+        def hay_discontinuidad(seg_anterior, seg_actual):
+            # Obtiene el punto final del segmento anterior y el inicial del actual
+            end_prev = seg_anterior.end
+            start_curr = seg_actual.start
+            dx = end_prev.real - start_curr.real
+            dy = end_prev.imag - start_curr.imag
+            distancia = math.hypot(dx, dy)
+            return distancia > TOLERANCIA
+
         subpaths = []
         for p in self.paths:
-            for seg in p:
-                subpaths.append(type(p)([seg]))
+            current_subpath = []
+            for i, seg in enumerate(p):
+                if i == 0 or hay_discontinuidad(p[i-1], seg):
+                    if current_subpath:
+                        subpaths.append(type(p)(*current_subpath))  # Desempaquetar segmentos
+                        current_subpath = []
+                current_subpath.append(seg)
+            if current_subpath:
+                subpaths.append(type(p)(*current_subpath))
         return subpaths

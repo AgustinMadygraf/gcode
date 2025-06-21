@@ -1,10 +1,10 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 """
 Script para imprimir y analizar el flujo de comandos G-code generado para varios trazos.
 """
+
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from domain.gcode_generator import GCodeGenerator
 from domain.path_transform_strategy import PathTransformStrategy
 
@@ -40,7 +40,7 @@ def print_gcode_for_multiple_strokes():
         transform_strategies=[DummyStrategy()]
     )
     # Imprimir puntos de inicio y fin de cada trazo
-    all_points = generator.process_points_pipeline(paths, 1.0)
+    all_points = generator.get_points_for_paths(paths, 1.0)
     for i, points in enumerate(all_points):
         if points:
             print(f"Trazo {i+1}: inicio=({points[0].x:.3f}, {points[0].y:.3f}), fin=({points[-1].x:.3f}, {points[-1].y:.3f})")

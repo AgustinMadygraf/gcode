@@ -66,14 +66,29 @@ class GCodeGenerator:
     def generate_gcode_commands(self, all_points: List[List[Point]]) -> List[str]:
         """Genera las líneas de G-code a partir de los puntos procesados usando GCodeCommandBuilder.
         El primer punto de cada trazo se mueve con G0 (rápido), los siguientes con G1 (trazando).
+        Deduplica puntos consecutivos idénticos (con tolerancia) para evitar comandos redundantes.
         """
+        import math
+        TOLERANCIA = 1e-4  # Ajustable según precisión deseada
+
+        def diferentes(p1, p2):
+            dx = p1.x - p2.x
+            dy = p1.y - p2.y
+            return math.hypot(dx, dy) > TOLERANCIA
+
         builder = GCodeCommandBuilder()
-        builder.tool_up(self.cmd_up)
+        # builder.tool_up(self.cmd_up)  # Eliminar para evitar M5 inicial redundante
         builder.move_to(0, 0, rapid=True)
         builder.dwell(self.dwell_ms / 1000.0)
         for i, points in enumerate(all_points):
             if not points:
                 continue
+            # Deduplicar puntos consecutivos
+            dedup_points = [points[0]]
+            for j in range(1, len(points)):
+                if diferentes(points[j], points[j-1]):
+                    dedup_points.append(points[j])
+            points = dedup_points
             if i > 0:
                 builder.tool_up(self.cmd_up)
                 builder.move_to(points[0].x, points[0].y, rapid=True)
@@ -85,9 +100,7 @@ class GCodeGenerator:
             # Siguientes puntos: G1 (trazando)
             for pt in points[1:]:
                 builder.move_to(pt.x, pt.y, feed=self.feed, rapid=False)
-            builder.tool_up(self.cmd_up)
-            builder.dwell(self.dwell_ms / 1000.0)
-        builder.tool_up("M5")
+        builder.tool_up(self.cmd_up)  # Solo una vez al final
         builder.move_to(0, 0, rapid=True)
         # Comentario de fin
         builder.commands.append(type('EndComment', (), {'to_gcode': lambda self: "(End)"})())

@@ -1,7 +1,5 @@
-# Script para imprimir el G-code generado por el SVG mínimo y depurar el flujo
 import sys
 import os
-from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.svg_loader import SvgLoader
 from domain.gcode_generator import GCodeGenerator
