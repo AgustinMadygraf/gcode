@@ -1,4 +1,5 @@
 """
+Path: cli/main.py
 Main CLI entry point for SVG to G-code conversion.
 """
 
@@ -14,6 +15,10 @@ from infrastructure.svg_loader import SvgLoader
 from infrastructure.logger import logger
 from domain.gcode_generator import GCodeGenerator
 from domain.path_transform_strategy import MirrorVerticalStrategy
+from domain.path_filter import PathFilter
+from cli.svg_file_selector import SvgFileSelector
+from cli.gcode_filename_generator import GcodeFilenameGenerator
+from cli.bounding_box_calculator import BoundingBoxCalculator
 
 
 def select_svg_file() -> Path:
@@ -56,13 +61,17 @@ def filter_nontrivial_paths(paths, min_length=1e-3):
     return filtered
 
 def main():
-    "Main function to run the SVG to G-code conversion."
-    svg_file = select_svg_file()
+    """Main function to run the SVG to G-code conversion."""
+    # --- Lógica de presentación ---
+    selector = SvgFileSelector(SVG_INPUT_DIR)
+    svg_file = selector.select()
     logger.debug("Selected SVG file: %s", svg_file)
 
-    gcode_file = next_gcode_filename(svg_file)
+    filename_gen = GcodeFilenameGenerator(GCODE_OUTPUT_DIR)
+    gcode_file = filename_gen.next_filename(svg_file)
     logger.debug("Output G-code file: %s", gcode_file)
 
+    # --- Lógica de negocio ---
     svg = SvgLoader(svg_file)
     logger.debug('Created object "svg" from class "SvgLoader"')
 
@@ -84,27 +93,23 @@ def main():
             )
 
     # Filtrar paths triviales
-    paths = filter_nontrivial_paths(paths)  #REVISAR ESTE PUNTO
+    path_filter = PathFilter(min_length=1e-3)
+    paths = path_filter.filter_nontrivial(paths)
     logger.info("Paths útiles tras filtrado: %d", len(paths))
+#    logger.debug("Filtered paths: %s", paths)
 
-    svg_attr = svg.get_attributes()  #REVISAR ESTE PUNTO
+    svg_attr = svg.get_attributes()
     logger.debug("SVG attributes: %s", svg_attr)
 
     # Calcular bbox y centro para las estrategias
-    xmin, xmax, ymin, ymax = (
-        svg.get_bbox() if hasattr(svg, 'get_bbox') else (None, None, None, None)
-    )
-    if xmin is None:
-        # fallback: calcular bbox manualmente
-        xs, ys = [], []
-        for p in paths:
-            for seg in p:
-                for t in range(21):
-                    z = seg.point(t/20)
-                    xs.append(z.real)
-                    ys.append(z.imag)
-        xmin, xmax, ymin, ymax = min(xs), max(xs), min(ys), max(ys)
-    _cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    try:
+        bbox = (svg.get_bbox()
+                if hasattr(svg, 'get_bbox')
+                else BoundingBoxCalculator.calculate_bbox(paths))
+    except (AttributeError, ValueError):
+        bbox = BoundingBoxCalculator.calculate_bbox(paths)
+    _xmin, _xmax, _ymin, _ymax = bbox
+    _cx, cy = BoundingBoxCalculator.center(bbox)
     # Definir estrategias de transformación (ejemplo: vertical mirror)
     transform_strategies = [MirrorVerticalStrategy(cy)]
 
@@ -122,7 +127,7 @@ def main():
     logger.debug("Initialized GCodeGenerator with parameters: %s", generator)
 
     # --- Lógica de IO separada de la lógica de negocio ---
-    gcode_lines = generator.generate(paths, svg_attr) #REVISAR ESTE PUNTO
+    gcode_lines = generator.generate(paths, svg_attr)
     logger.debug("Generated G-code with %d lines.", len(gcode_lines))
 
     write_gcode_file(gcode_file, gcode_lines)
