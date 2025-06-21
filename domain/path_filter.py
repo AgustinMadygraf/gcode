@@ -1,4 +1,5 @@
 """
+Path: domain/path_filter.py
 PathFilter: Encapsula la lógica de filtrado de paths SVG según criterios configurables.
 Permite inyectar estrategias de filtrado adicionales.
 """
