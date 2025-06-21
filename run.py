@@ -3,8 +3,9 @@ Path: run.py
 """
 
 import os
-from cli.main import main
+from cli.main import SvgToGcodeApp
 
 if __name__ == "__main__":
     os.system('cls' if os.name == 'nt' else 'clear')
-    main()
+    app = SvgToGcodeApp()
+    app.run()
