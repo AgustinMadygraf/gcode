@@ -4,7 +4,6 @@ Main CLI entry point for SVG to G-code conversion (OOP version).
 """
 
 from pathlib import Path
-import sys
 
 from config.config import (
     SVG_INPUT_DIR, GCODE_OUTPUT_DIR,
@@ -32,44 +31,6 @@ class SvgToGcodeApp:
         self.step_mm = STEP_MM
         self.dwell_ms = DWELL_MS
         self.max_height_mm = MAX_HEIGHT_MM
-
-    def _select_svg_file(self) -> Path:
-        svg_dir = SVG_INPUT_DIR
-        svg_files = sorted(svg_dir.glob("*.svg"))
-        if not svg_files:
-            sys.exit("No SVG files found in svg_input.")
-        self.logger.info("Available SVG files:")
-        for idx, f in enumerate(svg_files, 1):
-            self.logger.info("  %d. %s", idx, f.name)
-        while True:
-            try:
-                sel = int(input(f"Select an SVG file (1-{len(svg_files)}): "))
-                if 1 <= sel <= len(svg_files):
-                    return svg_files[sel-1]
-            except (ValueError, TypeError):
-                pass
-            self.logger.warning("Invalid selection. Try again.")
-
-    def _next_gcode_filename(self, svg_file: Path) -> Path:
-        out_dir = GCODE_OUTPUT_DIR
-        stem = svg_file.stem
-        for i in range(100):
-            candidate = out_dir / f"{stem}_v{i:02d}.gcode"
-            if not candidate.exists():
-                return candidate
-        sys.exit("Too many output files for this SVG.")
-
-    def _filter_nontrivial_paths(self, paths, min_length=1e-3):
-        filtered = []
-        for i, p in enumerate(paths):
-            total_length = sum(seg.length() for seg in p)
-            if total_length > min_length:
-                filtered.append(p)
-            else:
-                self.logger.info(
-                    "Path %d omitido por longitud despreciable: %.6f",
-                    i+1, total_length)
-        return filtered
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
