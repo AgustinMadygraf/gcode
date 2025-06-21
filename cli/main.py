@@ -10,9 +10,7 @@ from config.config import (
     FEED, CMD_DOWN, CMD_UP,
     STEP_MM, DWELL_MS, MAX_HEIGHT_MM
 )
-from infrastructure.svg_loader import SvgLoader
 from infrastructure.logger import logger
-from domain.gcode_generator import GCodeGenerator
 from domain.path_transform_strategy import MirrorVerticalStrategy
 from domain.path_processing_service import PathProcessingService
 from domain.gcode_generation_service import GCodeGenerationService
@@ -44,8 +42,13 @@ class SvgToGcodeApp:
         gcode_file = self.filename_gen.next_filename(svg_file)
         self.logger.debug("Output G-code file: %s", gcode_file)
 
-        svg = SvgLoader(svg_file)
-        self.logger.debug('Created object "svg" from class "SvgLoader"')
+        # svg = SvgLoader(svg_file)
+        loader_module = __import__(
+            'infrastructure.adapters.legacy_svg_loader_adapter',
+            fromlist=['LegacySvgLoaderAdapter']
+        )
+        svg = loader_module.LegacySvgLoaderAdapter(svg_file)
+        self.logger.debug('Created object "svg" from class "LegacySvgLoaderAdapter"')
         self.logger.info("Carga de SVG: %s", svg_file)
 
         paths = svg.get_paths()
@@ -82,7 +85,13 @@ class SvgToGcodeApp:
         self.logger.info("Paths útiles tras procesamiento: %d", len(processed_paths))
 
         # --- Generación de G-code mediante servicio de dominio ---
-        generator = GCodeGenerator(
+        # generator = GCodeGenerator(
+        module_name = 'infrastructure.adapters.legacy_gcode_generator_adapter'
+        GeneratorClass = __import__(
+            module_name,
+            fromlist=['LegacyGcodeGeneratorAdapter']
+        ).LegacyGcodeGeneratorAdapter
+        generator = GeneratorClass(
             feed=self.feed,
             cmd_down=self.cmd_down,
             cmd_up=self.cmd_up,
