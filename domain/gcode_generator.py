@@ -32,6 +32,8 @@ from domain.ports.path_sampler_port import IPathSampler
 from infrastructure.transform_manager import TransformManager
 from domain.geometry.scale_manager import ScaleManager
 from domain.gcode.gcode_command_builder import GCodeCommandBuilder
+from domain.gcode.gcode_border_rectangle_detector import GCodeBorderRectangleDetector
+from domain.gcode.gcode_border_filter import GCodeBorderFilter
 
 class GCodeGenerator:
     " Class to generate G-code from SVG paths. "
@@ -132,6 +134,19 @@ class GCodeGenerator:
         gcode = self.generate_gcode_commands(all_points)
         if self.logger:
             self.logger.info(f"G-code lines generated: {len(gcode)}")
+        # --- Post-procesamiento: eliminar borde si está configurado ---
+        try:
+            from config.config import Config
+            config = Config()
+            remove_border = config.get("REMOVE_BORDER_RECTANGLE", True)
+        except Exception:
+            remove_border = True
+        if remove_border:
+            detector = GCodeBorderRectangleDetector()
+            border_filter = GCodeBorderFilter(detector)
+            gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
+            if isinstance(gcode, str):
+                gcode = gcode.split('\n')
         return gcode
 
     # Renombrar process_points_pipeline a sample_transform_pipeline para mayor claridad

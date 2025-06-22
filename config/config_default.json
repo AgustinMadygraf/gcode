@@ -6,5 +6,6 @@
   "CMD_UP": "M5; sube lapicera",
   "STEP_MM": 0.3,
   "DWELL_MS": 350,
-  "MAX_HEIGHT_MM": 250
+  "MAX_HEIGHT_MM": 250,
+  "REMOVE_BORDER_RECTANGLE": true
 }
