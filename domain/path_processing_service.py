@@ -13,8 +13,10 @@ class PathProcessingService:
     def __init__(self,
                  min_length: float = 1e-3,
                  extra_filters: list[Callable[[Any], bool]] = None,
-                 transform_strategies: list = None):
-        self.path_filter = PathFilter(min_length, extra_filters)
+                 transform_strategies: list = None,
+                 remove_svg_border: bool = True,
+                 border_tolerance: float = 0.05):
+        self.path_filter = PathFilter(min_length, extra_filters, remove_svg_border, border_tolerance)
         self.transform_strategies = transform_strategies or []
 
     def split_path_into_continuous_subpaths(self, path, tol=1e-6) -> List[SvgPath]:
@@ -40,17 +42,16 @@ class PathProcessingService:
             subpaths.append(SvgPath(*current))
         return subpaths
 
-    def process(self, paths: list, _attributes: dict) -> list:
+    def process(self, paths: list, attributes: dict) -> list:
         """
         Procesa los paths: divide en subpaths continuos y filtra los triviales.
-        El argumento 'attributes' se acepta para compatibilidad futura.
         """
         # 1. Dividir paths discontinuos en subpaths continuos
         all_subpaths = []
         for p in paths:
             subpaths = self.split_path_into_continuous_subpaths(p)
             all_subpaths.extend(subpaths)
-        # 2. Filtrar paths triviales
-        filtered = self.path_filter.filter_nontrivial(all_subpaths)
+        # 2. Filtrar paths triviales y bordes SVG
+        filtered = self.path_filter.filter_nontrivial(all_subpaths, attributes)
         # 3. (Transformaciones de puntos se aplican en GCodeGenerator, no aquí)
         return filtered

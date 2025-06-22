@@ -79,9 +79,9 @@ class GCodeGenerator:
             return math.hypot(dx, dy) > TOLERANCIA
 
         builder = GCodeCommandBuilder()
-        # builder.tool_up(self.cmd_up)  # Eliminar para evitar M5 inicial redundante
         builder.move_to(0, 0, rapid=True)
         builder.dwell(self.dwell_ms / 1000.0)
+        last_pos = Point(0, 0)  # Actualizar posición tras movimiento inicial
         for i, points in enumerate(all_points):
             if not points:
                 continue
@@ -91,25 +91,27 @@ class GCodeGenerator:
                 if diferentes(points[j], points[j-1]):
                     dedup_points.append(points[j])
             points = dedup_points
+            # Subir herramienta y mover al primer punto si no es el primero
             if i > 0:
-                builder.dwell(self.dwell_ms / 1000.0)  # Pausa antes de subir herramienta
+                builder.dwell(self.dwell_ms / 1000.0)
                 builder.tool_up(self.cmd_up)
-                builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de subir herramienta
+                builder.dwell(self.dwell_ms / 1000.0)
+            # Mover al primer punto del trazo si es necesario
+            if diferentes(last_pos, points[0]):
                 builder.move_to(points[0].x, points[0].y, rapid=True)
-                builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de posicionar herramienta
+                last_pos = points[0]
+            builder.dwell(self.dwell_ms / 1000.0)
+            # Bajar herramienta justo antes de trazar
             builder.tool_down(self.cmd_down)
             builder.dwell(self.dwell_ms / 1000.0)
-            # Primer punto: G0 (rápido)
-            builder.move_to(points[0].x, points[0].y, rapid=True)
-            builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de G0 antes de G1
             # Siguientes puntos: G1 (trazando)
             for pt in points[1:]:
                 builder.move_to(pt.x, pt.y, feed=self.feed, rapid=False)
-        builder.dwell(self.dwell_ms / 1000.0)  # Pausa antes de subir herramienta final
-        builder.tool_up(self.cmd_up)  # Solo una vez al final
-        builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de subir herramienta final
+                last_pos = pt
+        builder.dwell(self.dwell_ms / 1000.0)
+        builder.tool_up(self.cmd_up)
+        builder.dwell(self.dwell_ms / 1000.0)
         builder.move_to(0, 0, rapid=True)
-        # Comentario de fin
         builder.commands.append(type('EndComment', (), {'to_gcode': lambda self: "(End)"})())
         return builder.to_gcode_lines()
 

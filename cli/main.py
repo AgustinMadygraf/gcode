@@ -8,7 +8,8 @@ from pathlib import Path
 from config.config import (
     SVG_INPUT_DIR, GCODE_OUTPUT_DIR,
     FEED, CMD_DOWN, CMD_UP,
-    STEP_MM, DWELL_MS, MAX_HEIGHT_MM
+    STEP_MM, DWELL_MS, MAX_HEIGHT_MM,
+    REMOVE_SVG_BORDER, BORDER_DETECTION_TOLERANCE
 )
 from infrastructure.logger import logger
 from domain.path_transform_strategy import MirrorVerticalStrategy
@@ -78,7 +79,9 @@ class SvgToGcodeApp:
 
         # --- Procesamiento de paths mediante servicio de dominio ---
         path_processor = PathProcessingService(
-            min_length=1e-3
+            min_length=1e-3,
+            remove_svg_border=REMOVE_SVG_BORDER,
+            border_tolerance=BORDER_DETECTION_TOLERANCE
             # No pasar transform_strategies aquí, solo filtra y divide
         )
         processed_paths = path_processor.process(paths, svg_attr)

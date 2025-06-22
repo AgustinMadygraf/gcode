@@ -14,7 +14,9 @@ _DEFAULTS = {
     "CMD_UP": "M5; sube lapicera",
     "STEP_MM": 0.3,
     "DWELL_MS": 350,
-    "MAX_HEIGHT_MM": 250
+    "MAX_HEIGHT_MM": 250,
+    "REMOVE_SVG_BORDER": True,
+    "BORDER_DETECTION_TOLERANCE": 0.05
 }
 
 class Config:
@@ -76,6 +78,16 @@ class Config:
         " Devuelve la altura máxima (MAX_HEIGHT_MM) en mm. "
         return self._data["MAX_HEIGHT_MM"]
 
+    @property
+    def remove_svg_border(self):
+        " Devuelve si se debe eliminar el borde del SVG. "
+        return self._data.get("REMOVE_SVG_BORDER", True)
+
+    @property
+    def border_detection_tolerance(self):
+        " Devuelve la tolerancia para detección de bordes SVG. "
+        return self._data.get("BORDER_DETECTION_TOLERANCE", 0.05)
+
 # Instancia global (Singleton)
 _config = Config()
 
@@ -88,3 +100,5 @@ CMD_UP = _config.cmd_up
 STEP_MM = _config.step_mm
 DWELL_MS = _config.dwell_ms
 MAX_HEIGHT_MM = _config.max_height_mm
+REMOVE_SVG_BORDER = _config.remove_svg_border
+BORDER_DETECTION_TOLERANCE = _config.border_detection_tolerance
