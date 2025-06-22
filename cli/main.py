@@ -11,13 +11,13 @@ from config.config import (
     STEP_MM, DWELL_MS, MAX_HEIGHT_MM,
     REMOVE_SVG_BORDER, BORDER_DETECTION_TOLERANCE
 )
-from infrastructure.logger import logger
 from domain.path_transform_strategy import MirrorVerticalStrategy
 from domain.path_processing_service import PathProcessingService
 from domain.gcode_generation_service import GCodeGenerationService
 from cli.svg_file_selector import SvgFileSelector
 from cli.gcode_filename_generator import GcodeFilenameGenerator
 from cli.bounding_box_calculator import BoundingBoxCalculator
+from infrastructure.logger import logger
 from infrastructure.adapters.legacy_svg_loader_adapter import LegacySvgLoaderAdapter
 from infrastructure.adapters.legacy_gcode_generator_adapter import LegacyGcodeGeneratorAdapter
 

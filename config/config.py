@@ -3,33 +3,27 @@ Config loader: Loads configuration from config.json, with defaults.
 """
 
 import json
+import shutil
 from pathlib import Path
-
-# Valores por defecto
-_DEFAULTS = {
-    "SVG_INPUT_DIR": "svg_input",
-    "GCODE_OUTPUT_DIR": "gcode_output",
-    "FEED": 4000,
-    "CMD_DOWN": "M3 S255; baja lapicera",
-    "CMD_UP": "M5; sube lapicera",
-    "STEP_MM": 0.3,
-    "DWELL_MS": 350,
-    "MAX_HEIGHT_MM": 250,
-    "REMOVE_SVG_BORDER": True,
-    "BORDER_DETECTION_TOLERANCE": 0.05
-}
 
 class Config:
     " Clase para cargar la configuración desde un archivo JSON. "
     def __init__(self, config_path: Path = Path(__file__).parent / "config.json"):
-        self._data = _DEFAULTS.copy()
+        default_path = Path(__file__).parent / "config_default.json"
+        # Si no existe config.json, crear uno a partir de config_default.json
+        if not config_path.exists() and default_path.exists():
+            try:
+                shutil.copy(default_path, config_path)
+            except (PermissionError, OSError) as e:
+                print(f"[Config] Error copying default config: {e}. Using defaults.")
+        self._data = {}
         if config_path.exists():
             try:
                 with open(config_path, encoding="utf-8") as f:
                     user_data = json.load(f)
                 self._data.update(user_data)
             except (json.JSONDecodeError, IOError) as e:
-                print(f"[Config] Error loading config.json: {e}. Using defaults.")
+                print(f"[Config] Error loading config.json: {e}. Using empty config.")
 
     def __getitem__(self, key):
         return self._data[key]
