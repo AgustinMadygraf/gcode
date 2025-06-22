@@ -7,5 +7,11 @@
   "STEP_MM": 0.3,
   "DWELL_MS": 350,
   "MAX_HEIGHT_MM": 250,
-  "REMOVE_BORDER_RECTANGLE": true
+  "REMOVE_BORDER_RECTANGLE": true,
+  "COMPRESSION": {
+    "ENABLED": true,
+    "ARC_TOLERANCE_MM": 0.1,
+    "USE_RELATIVE_MOVES": true,
+    "MIN_POINTS_FOR_ARC": 3
+  }
 }

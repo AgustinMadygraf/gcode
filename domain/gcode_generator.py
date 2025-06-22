@@ -34,6 +34,8 @@ from domain.geometry.scale_manager import ScaleManager
 from domain.gcode.gcode_command_builder import GCodeCommandBuilder
 from domain.gcode.gcode_border_rectangle_detector import GCodeBorderRectangleDetector
 from domain.gcode.gcode_border_filter import GCodeBorderFilter
+from domain.gcode_optimizer import ArcOptimizer, ColinearOptimizer
+from domain.gcode.commands.arc_command import RelativeMoveCommand
 
 class GCodeGenerator:
     " Class to generate G-code from SVG paths. "
@@ -68,7 +70,7 @@ class GCodeGenerator:
         self.path_sampler = path_sampler  # <- Usar la instancia inyectada
         self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
 
-    def generate_gcode_commands(self, all_points: List[List[Point]]) -> List[str]:
+    def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False) -> List[str]:
         """Genera las líneas de G-code a partir de los puntos procesados usando GCodeCommandBuilder.
         El primer punto de cada trazo se mueve con G0 (rápido), los siguientes con G1 (trazando).
         Deduplica puntos consecutivos idénticos (con tolerancia) para evitar comandos redundantes.
@@ -81,7 +83,10 @@ class GCodeGenerator:
             dy = p1.y - p2.y
             return math.hypot(dx, dy) > TOLERANCIA
 
-        builder = GCodeCommandBuilder()
+        arc_optimizer = ArcOptimizer(tolerance=0.1, min_points=3)
+        colinear_optimizer = ColinearOptimizer()
+        arc_optimizer.set_next(colinear_optimizer)
+        builder = GCodeCommandBuilder(optimizer=arc_optimizer)
         builder.move_to(0, 0, rapid=True)
         builder.dwell(self.dwell_ms / 1000.0)
         last_pos = Point(0, 0)  # Actualizar posición tras movimiento inicial
@@ -101,7 +106,12 @@ class GCodeGenerator:
                 builder.dwell(self.dwell_ms / 1000.0)
             # Mover al primer punto del trazo si es necesario
             if diferentes(last_pos, points[0]):
-                builder.move_to(points[0].x, points[0].y, rapid=True)
+                if use_relative_moves:
+                    dx = points[0].x - last_pos.x
+                    dy = points[0].y - last_pos.y
+                    builder.commands.append(RelativeMoveCommand(dx, dy, rapid=True))
+                else:
+                    builder.move_to(points[0].x, points[0].y, rapid=True)
                 last_pos = points[0]
             builder.dwell(self.dwell_ms / 1000.0)
             # Bajar herramienta justo antes de trazar
@@ -109,7 +119,12 @@ class GCodeGenerator:
             builder.dwell(self.dwell_ms / 1000.0)
             # Siguientes puntos: G1 (trazando)
             for pt in points[1:]:
-                builder.move_to(pt.x, pt.y, feed=self.feed, rapid=False)
+                if use_relative_moves:
+                    dx = pt.x - last_pos.x
+                    dy = pt.y - last_pos.y
+                    builder.commands.append(RelativeMoveCommand(dx, dy, feed=self.feed, rapid=False))
+                else:
+                    builder.move_to(pt.x, pt.y, feed=self.feed, rapid=False)
                 last_pos = pt
         builder.dwell(self.dwell_ms / 1000.0)
         builder.tool_up(self.cmd_up)
@@ -130,17 +145,25 @@ class GCodeGenerator:
                 f"Bounding box: xmin={xmin:.3f}, xmax={xmax:.3f}, "
                 f"ymin={ymin:.3f}, ymax={ymax:.3f}")
             self.logger.info(f"Scale applied: {scale:.3f}")
-        all_points = self.sample_transform_pipeline(paths, scale)
-        gcode = self.generate_gcode_commands(all_points)
-        if self.logger:
-            self.logger.info(f"G-code lines generated: {len(gcode)}")
-        # --- Post-procesamiento: eliminar borde si está configurado ---
         try:
             from config.config import Config
             config = Config()
             remove_border = config.get("REMOVE_BORDER_RECTANGLE", True)
+            use_relative_moves = False
+            if "COMPRESSION" in config._data:
+                use_relative_moves = config._data["COMPRESSION"].get("USE_RELATIVE_MOVES", False)
+            else:
+                use_relative_moves = config.get("USE_RELATIVE_MOVES", False)
         except Exception:
             remove_border = True
+            use_relative_moves = False
+        if self.logger:
+            self.logger.info(f"Relative moves enabled: {use_relative_moves}")
+        all_points = self.sample_transform_pipeline(paths, scale)
+        gcode = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+        if self.logger:
+            self.logger.info(f"G-code lines generated: {len(gcode)}")
+        # --- Post-procesamiento: eliminar borde si está configurado ---
         if remove_border:
             detector = GCodeBorderRectangleDetector()
             border_filter = GCodeBorderFilter(detector)
