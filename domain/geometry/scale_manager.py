@@ -57,3 +57,16 @@ class ScaleManager:
         if scale <= 0 or not scale or scale != scale:
             raise ValueError("Escala final inválida")
         return scale
+
+    @staticmethod
+    def adjust_scale_for_max_width(paths, scale: float, max_width_mm: float) -> float:
+        """Ajusta el factor de escala para que el ancho no supere max_width_mm."""
+        bbox = BoundingBoxCalculator.get_svg_bbox(paths)
+        xmin, xmax, _, _ = bbox
+        width = abs(xmax - xmin) * scale
+        if width > max_width_mm:
+            factor = max_width_mm / (abs(xmax - xmin) * scale)
+            scale = scale * factor
+        if scale <= 0 or not scale or scale != scale:
+            raise ValueError("Escala final inválida")
+        return scale

@@ -13,7 +13,7 @@ _DEFAULTS = {
     "CMD_DOWN": "M3 S255; baja lapicera",
     "CMD_UP": "M5; sube lapicera",
     "STEP_MM": 0.3,
-    "DWELL_MS": 150,
+    "DWELL_MS": 350,
     "MAX_HEIGHT_MM": 250
 }
 

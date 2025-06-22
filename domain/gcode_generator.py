@@ -44,6 +44,7 @@ class GCodeGenerator:
         step_mm: float,
         dwell_ms: int,
         max_height_mm: float,
+        max_width_mm: float = 180.0,  # Nuevo parámetro con valor por defecto
         logger=None,
         transform_strategies: Optional[List[PathTransformStrategy]] = None
     ):
@@ -53,6 +54,7 @@ class GCodeGenerator:
         self.step_mm = step_mm
         self.dwell_ms = dwell_ms
         self.max_height_mm = max_height_mm
+        self.max_width_mm = max_width_mm  # Guardar el nuevo parámetro
         self.logger = logger
         self.transform_strategies = transform_strategies or []
         # Validar que todas las estrategias implementen PathTransformStrategy
@@ -90,17 +92,22 @@ class GCodeGenerator:
                     dedup_points.append(points[j])
             points = dedup_points
             if i > 0:
+                builder.dwell(self.dwell_ms / 1000.0)  # Pausa antes de subir herramienta
                 builder.tool_up(self.cmd_up)
+                builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de subir herramienta
                 builder.move_to(points[0].x, points[0].y, rapid=True)
-                builder.dwell(self.dwell_ms / 1000.0)
+                builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de posicionar herramienta
             builder.tool_down(self.cmd_down)
             builder.dwell(self.dwell_ms / 1000.0)
             # Primer punto: G0 (rápido)
             builder.move_to(points[0].x, points[0].y, rapid=True)
+            builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de G0 antes de G1
             # Siguientes puntos: G1 (trazando)
             for pt in points[1:]:
                 builder.move_to(pt.x, pt.y, feed=self.feed, rapid=False)
+        builder.dwell(self.dwell_ms / 1000.0)  # Pausa antes de subir herramienta final
         builder.tool_up(self.cmd_up)  # Solo una vez al final
+        builder.dwell(self.dwell_ms / 1000.0)  # Pausa después de subir herramienta final
         builder.move_to(0, 0, rapid=True)
         # Comentario de fin
         builder.commands.append(type('EndComment', (), {'to_gcode': lambda self: "(End)"})())
@@ -112,6 +119,7 @@ class GCodeGenerator:
         xmin, xmax, ymin, ymax = bbox
         scale = ScaleManager.viewbox_scale(svg_attr)
         scale = ScaleManager.adjust_scale_for_max_height(paths, scale, self.max_height_mm)
+        scale = ScaleManager.adjust_scale_for_max_width(paths, scale, self.max_width_mm)  # Limitar el ancho
         if self.logger:
             self.logger.info(
                 f"Bounding box: xmin={xmin:.3f}, xmax={xmax:.3f}, "
