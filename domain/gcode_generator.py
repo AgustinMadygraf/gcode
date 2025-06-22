@@ -28,7 +28,7 @@ from typing import List, Optional
 from domain.models import Point
 from domain.path_transform_strategy import PathTransformStrategy, ScaleStrategy
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
-from infrastructure.path_sampler import PathSampler
+from domain.ports.path_sampler_port import IPathSampler
 from infrastructure.transform_manager import TransformManager
 from domain.geometry.scale_manager import ScaleManager
 from domain.gcode.gcode_command_builder import GCodeCommandBuilder
@@ -38,6 +38,7 @@ class GCodeGenerator:
     def __init__(
         self,
         *,
+        path_sampler: IPathSampler,  # <- Inyectar la dependencia
         feed: float,
         cmd_down: str,
         cmd_up: str,
@@ -62,7 +63,7 @@ class GCodeGenerator:
             for s in self.transform_strategies:
                 if not isinstance(s, PathTransformStrategy):
                     raise TypeError("Todas las estrategias deben implementar PathTransformStrategy")
-        self.path_sampler = PathSampler(self.step_mm, logger=self.logger)
+        self.path_sampler = path_sampler  # <- Usar la instancia inyectada
         self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
 
     def generate_gcode_commands(self, all_points: List[List[Point]]) -> List[str]:

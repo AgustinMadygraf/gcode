@@ -18,6 +18,8 @@ from domain.gcode_generation_service import GCodeGenerationService
 from cli.svg_file_selector import SvgFileSelector
 from cli.gcode_filename_generator import GcodeFilenameGenerator
 from cli.bounding_box_calculator import BoundingBoxCalculator
+from infrastructure.adapters.legacy_svg_loader_adapter import LegacySvgLoaderAdapter
+from infrastructure.adapters.legacy_gcode_generator_adapter import LegacyGcodeGeneratorAdapter
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
@@ -44,11 +46,7 @@ class SvgToGcodeApp:
         self.logger.debug("Output G-code file: %s", gcode_file)
 
         # svg = SvgLoader(svg_file)
-        loader_module = __import__(
-            'infrastructure.adapters.legacy_svg_loader_adapter',
-            fromlist=['LegacySvgLoaderAdapter']
-        )
-        svg = loader_module.LegacySvgLoaderAdapter(svg_file)
+        svg = LegacySvgLoaderAdapter(svg_file)
         self.logger.debug('Created object "svg" from class "LegacySvgLoaderAdapter"')
         self.logger.info("Carga de SVG: %s", svg_file)
 
@@ -57,7 +55,6 @@ class SvgToGcodeApp:
         self.logger.info("Paths extraídos: %d", len(paths))
 
         svg_attr = svg.get_attributes()
-        self.logger.debug("SVG attributes: %s", svg_attr)
         self.logger.info("SVG attributes: %s", svg_attr)
 
         # Calcular bbox y centro para las estrategias
@@ -88,13 +85,7 @@ class SvgToGcodeApp:
         self.logger.info("Paths útiles tras procesamiento: %d", len(processed_paths))
 
         # --- Generación de G-code mediante servicio de dominio ---
-        # generator = GCodeGenerator(
-        module_name = 'infrastructure.adapters.legacy_gcode_generator_adapter'
-        GeneratorClass = __import__(
-            module_name,
-            fromlist=['LegacyGcodeGeneratorAdapter']
-        ).LegacyGcodeGeneratorAdapter
-        generator = GeneratorClass(
+        generator = LegacyGcodeGeneratorAdapter(
             feed=self.feed,
             cmd_down=self.cmd_down,
             cmd_up=self.cmd_up,

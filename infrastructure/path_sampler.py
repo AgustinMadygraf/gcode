@@ -13,8 +13,9 @@ Ejemplo de uso:
 import math
 import numpy as np
 from domain.models import Point
+from domain.ports.path_sampler_port import IPathSampler
 
-class PathSampler:
+class PathSampler(IPathSampler):
     """Samples points along SVG paths at specified intervals."""
     def __init__(self, step: float, logger=None):
         if step <= 0:

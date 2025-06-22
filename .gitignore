@@ -3,3 +3,4 @@ svg_input/
 __pycache__/
 todo.md
 config/config.json
+.venv/
