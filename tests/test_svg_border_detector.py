@@ -51,5 +51,38 @@ class TestSvgBorderDetector(unittest.TestCase):
         detector = SvgBorderDetector()
         self.assertFalse(detector.matches_svg_bounds(rect, svg_attr))
 
+    def test_tolerance_edge_case(self):
+        # Rectángulo casi igual al viewBox, pero justo fuera de la tolerancia
+        rect = Path(
+            Line(0+0j, 100+0j),
+            Line(100+0j, 100+100j),
+            Line(100+100j, 0+100j),
+            Line(0+100j, 0+0j)
+        )
+        svg_attr = {"viewBox": "0 0 100 100"}
+        # Tolerancia muy estricta
+        detector = SvgBorderDetector(tolerance=0.00001)
+        self.assertTrue(detector.matches_svg_bounds(rect, svg_attr))
+        # Rectángulo desplazado apenas fuera de tolerancia
+        rect2 = Path(
+            Line(0.1+0j, 100.1+0j),
+            Line(100.1+0j, 100.1+100j),
+            Line(100.1+100j, 0.1+100j),
+            Line(0.1+100j, 0.1+0j)
+        )
+        self.assertFalse(detector.matches_svg_bounds(rect2, svg_attr))
+
+    def test_internal_rectangle_not_removed(self):
+        # Un rectángulo interno, no borde
+        rect = Path(
+            Line(10+10j, 90+10j),
+            Line(90+10j, 90+90j),
+            Line(90+90j, 10+90j),
+            Line(10+90j, 10+10j)
+        )
+        svg_attr = {"viewBox": "0 0 100 100"}
+        detector = SvgBorderDetector()
+        self.assertFalse(detector.matches_svg_bounds(rect, svg_attr))
+
 if __name__ == "__main__":
     unittest.main()

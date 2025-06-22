@@ -39,4 +39,9 @@ pip install svgpathtools numpy
 3. Selecciona el archivo SVG a procesar cuando se te indique.
 4. El archivo G-code generado aparecerá en la carpeta `gcode_output`.
 
+## Parámetros de configuración relevantes
+
+- `REMOVE_SVG_BORDER` (bool): Si es `true`, intenta eliminar el marco/borde exterior del SVG si coincide exactamente con el `viewBox`.
+- `BORDER_DETECTION_TOLERANCE` (float): Tolerancia relativa (por defecto 0.05) usada para comparar los márgenes del path con el `viewBox`. Un valor menor hace la detección más estricta; un valor mayor la hace más laxa. Si tienes rectángulos internos que no deben eliminarse, ajusta este valor para evitar falsos positivos.
+
 ---

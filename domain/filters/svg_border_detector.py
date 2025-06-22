@@ -5,13 +5,17 @@ import math
 from typing import Dict
 
 class SvgBorderDetector:
-    """Detecta si un path representa el marco rectangular de un SVG."""
+    """
+    Detecta si un path representa el marco rectangular de un SVG.
+    La detección compara los márgenes del path con el viewBox usando una tolerancia relativa configurable.
+    Si todos los bordes del path están dentro de la tolerancia respecto al viewBox, se considera borde.
+    """
     
     def __init__(self, tolerance: float = 0.05):
         """
         Inicializa el detector con una tolerancia para comparar dimensiones.
         Args:
-            tolerance: Porcentaje (0-1) de variación permitida al comparar dimensiones
+            tolerance: Proporción (0-1) de variación permitida al comparar dimensiones respecto al tamaño del viewBox.
         """
         self.tolerance = tolerance
         
@@ -41,7 +45,14 @@ class SvgBorderDetector:
         return True
     
     def matches_svg_bounds(self, path, svg_attr: Dict) -> bool:
-        """Determina si el rectángulo coincide con el viewBox del SVG."""
+        """
+        Determina si el path rectangular coincide con el viewBox del SVG dentro de la tolerancia relativa.
+        Args:
+            path: Path de svgpathtools (o similar) que debe ser un rectángulo cerrado.
+            svg_attr: Diccionario con atributos del SVG, debe incluir 'viewBox'.
+        Returns:
+            True si el path coincide con el marco del SVG, False en caso contrario.
+        """
         if not self.is_rectangle(path):
             return False
         points = [seg.start for seg in path] + [path[-1].end]
