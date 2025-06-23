@@ -2,8 +2,8 @@ import sys
 import os
 from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from infrastructure.svg_loader import SvgLoaderAdapter
-from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
+from adapters.input.svg_loader import SvgLoaderAdapter
+from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
 from infrastructure.config.config import Config
 from application.generation.optimizer_factory import make_optimization_chain
@@ -19,7 +19,7 @@ svg_file = Path("../svg_input/test_lines.svg").resolve()
 svg = SvgLoaderAdapter(svg_file)
 paths = svg.get_paths()
 svg_attr = svg.get_attributes()
-generator = GCodeGeneratorImpl(
+generator = GCodeGeneratorAdapter(
     feed=config.feed,
     cmd_down=config.cmd_down,
     cmd_up=config.cmd_up,

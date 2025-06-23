@@ -3,12 +3,12 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
-from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
-from infrastructure.svg_loader import SvgLoaderAdapter
+from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
+from adapters.input.svg_loader import SvgLoaderAdapter
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from domain.entities.point import Point
 from domain.services.optimization.optimization_chain import OptimizationChain
-from infrastructure.path_sampler import PathSampler
+from adapters.input.path_sampler import PathSampler
 from infrastructure.config.config import Config
 
 SVG_SIMPLE_LINE = '''<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M1 1 L9 1"/></svg>'''
@@ -34,7 +34,7 @@ def test_single_line_no_duplicate_g1(tmp_path):
     subpaths = loader.get_subpaths()
     # Simular muestreo de puntos (sin interpolación)
     points = [[Point(seg.start.real, seg.start.imag), Point(seg.end.real, seg.end.imag)] for p in subpaths for seg in p]
-    generator = GCodeGeneratorImpl(
+    generator = GCodeGeneratorAdapter(
         path_sampler=PathSampler(1.0),
         **GEN_KWARGS
     )
@@ -53,7 +53,7 @@ def test_broken_line_creates_two_traces(tmp_path):
     loader = SvgLoaderAdapter(str(svg_path))
     subpaths = loader.get_subpaths()
     points = [[Point(seg.start.real, seg.start.imag), Point(seg.end.real, seg.end.imag)] for p in subpaths for seg in p]
-    gen = GCodeGeneratorImpl(path_sampler=PathSampler(1.0), **GEN_KWARGS)
+    gen = GCodeGeneratorAdapter(path_sampler=PathSampler(1.0), **GEN_KWARGS)
     gcode_service = GCodeGenerationService(gen)
     gcode = gcode_service.generate_gcode_commands(points)
     # Debe haber dos bloques de G1
@@ -65,7 +65,7 @@ def test_broken_line_creates_two_traces(tmp_path):
 def test_no_duplicate_points():
     # Simula puntos duplicados
     points = [[Point(1, 1), Point(1, 1), Point(5, 1), Point(9, 1), Point(9, 1)]]
-    gen = GCodeGeneratorImpl(
+    gen = GCodeGeneratorAdapter(
         path_sampler=PathSampler(1.0),
         **GEN_KWARGS
     )

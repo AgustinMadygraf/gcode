@@ -5,11 +5,11 @@ import unittest
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
+from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
 from domain.services.optimization.optimization_chain import OptimizationChain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
-from infrastructure.path_sampler import PathSampler
+from adapters.input.path_sampler import PathSampler
 
 class DummySegment:
     def __init__(self, length, start=(0,0), end=(1,0)):
@@ -33,7 +33,7 @@ class TestGCodeCMDUP(unittest.TestCase):
         seg2 = DummySegment(5, (10,0), (15,0))
         paths = [[seg1], [seg2]]  # Dos trazos separados
         svg_attr = {"viewBox": "0 0 20 10", "width": "20"}
-        generator = GCodeGeneratorImpl(
+        generator = GCodeGeneratorAdapter(
             path_sampler=PathSampler(5),
             feed=1000,
             cmd_down="M3 S1000",
