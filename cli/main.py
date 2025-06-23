@@ -4,13 +4,8 @@ Main CLI entry point for SVG to G-code conversion (OOP version).
 """
 
 from pathlib import Path
-
-from config.config import (
-    SVG_INPUT_DIR, GCODE_OUTPUT_DIR,
-    FEED, CMD_DOWN, CMD_UP,
-    STEP_MM, DWELL_MS, MAX_HEIGHT_MM,
-    REMOVE_SVG_BORDER, BORDER_DETECTION_TOLERANCE
-)
+from infrastructure.settings import InfraSettings
+from domain.ports.config_provider import ConfigProvider
 from domain.path_transform_strategy import MirrorVerticalStrategy
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
@@ -26,20 +21,20 @@ from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from infrastructure.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
 from application.use_cases.file_output.filename_service import FilenameService
-from config.config import Config
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
     def __init__(self):
-        self.selector = SvgFileSelector(SVG_INPUT_DIR)
-        self.filename_gen = FilenameService(GCODE_OUTPUT_DIR)
+        self.config = InfraSettings(Path("config/config.json"))
+        self.selector = SvgFileSelector(self.config.get_svg_input_dir())
+        self.filename_gen = FilenameService(self.config)
         self.logger = logger
-        self.feed = FEED
-        self.cmd_down = CMD_DOWN
-        self.cmd_up = CMD_UP
-        self.step_mm = STEP_MM
-        self.dwell_ms = DWELL_MS
-        self.max_height_mm = MAX_HEIGHT_MM
+        self.feed = self.config.get_feed()
+        self.cmd_down = self.config.get_cmd_down()
+        self.cmd_up = self.config.get_cmd_up()
+        self.step_mm = self.config.get_step_mm()
+        self.dwell_ms = self.config.get_dwell_ms()
+        self.max_height_mm = self.config.get_max_height_mm()
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
@@ -83,8 +78,8 @@ class SvgToGcodeApp:
         # --- Procesamiento de paths mediante servicio de dominio ---
         path_processor = PathProcessingService(
             min_length=1e-3,
-            remove_svg_border=REMOVE_SVG_BORDER,
-            border_tolerance=BORDER_DETECTION_TOLERANCE
+            remove_svg_border=self.config.get_remove_svg_border(),
+            border_tolerance=self.config.get_border_detection_tolerance()
             # No pasar transform_strategies aquí, solo filtra y divide
         )
         processed_paths = path_processor.process(paths, svg_attr)
@@ -111,7 +106,7 @@ class SvgToGcodeApp:
         # --- Compresión de G-code mediante caso de uso ---
         compressors = [ArcCompressor()]
         compression_service = GcodeCompressionService(compressors, logger=self.logger)
-        config_reader = ConfigImpl(Config())
+        config_reader = ConfigImpl(self.config)
         compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
         compression_result = compress_use_case.execute(gcode_lines)
         compressed_gcode = compression_result['compressed_gcode'] if 'compressed_gcode' in compression_result else gcode_lines
