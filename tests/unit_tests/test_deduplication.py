@@ -9,12 +9,22 @@ from application.use_cases.gcode_generation.gcode_generation_service import GCod
 from domain.entities.point import Point
 from infrastructure.optimizers.optimization_chain import OptimizationChain
 from infrastructure.path_sampler import PathSampler
+from infrastructure.config.config import Config
 
 SVG_SIMPLE_LINE = '''<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M1 1 L9 1"/></svg>'''
 SVG_BROKEN_LINE = '''<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M1 1 L5 1 M5.001 1 L9 1"/></svg>'''
 
+config = Config()
 # Parámetros mínimos para GCodeGenerator
-GEN_KWARGS = dict(feed=1000, cmd_down="M3 S255", cmd_up="M5", step_mm=1.0, dwell_ms=0, max_height_mm=10, optimizer=OptimizationChain())
+GEN_KWARGS = dict(
+    feed=config.feed,
+    cmd_down=config.cmd_down,
+    cmd_up=config.cmd_up,
+    step_mm=config.step_mm,
+    dwell_ms=config.dwell_ms,
+    max_height_mm=config.max_height_mm,
+    optimizer=OptimizationChain()
+)
 
 def test_single_line_no_duplicate_g1(tmp_path):
     # Guardar SVG temporal

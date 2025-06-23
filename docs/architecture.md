@@ -10,7 +10,8 @@ gcode/
 ├── application/
 │   └── use_cases/            # Casos de uso y orquestación
 ├── cli/                      # Interfaz de usuario (CLI)
-├── config/                   # Configuración
+├── infrastructure/
+│   └── config/               # Configuración (migrada desde config/)
 ├── domain/                   # Entidades, modelos, lógica de negocio, puertos
 │   └── services/
 │       └── optimization/     # Optimizadores de G-code (lógica de negocio)
@@ -24,7 +25,7 @@ gcode/
 ## Cambios recientes (06/2025)
 - Adaptadores consolidados en `adapters/`.
 - Optimizadores movidos a `domain/services/optimization/`.
-- Inyección de configuración en adaptadores.
+- Inyección de configuración en adaptadores (usando `infrastructure.config.Config`).
 - Eliminados tests y código legacy.
 - Estructura y nomenclatura alineadas a Clean Architecture.
 
@@ -38,7 +39,7 @@ gcode/
 - Orquesta casos de uso y coordina servicios de dominio.
 - Depende solo de la capa de dominio.
 
-### 3. Infraestructura (`infrastructure/`, `config/`)
+### 3. Infraestructura (`infrastructure/`, `infrastructure/config/`)
 - Implementa adaptadores, servicios externos y detalles técnicos.
 - Depende de dominio y aplicación, nunca al revés.
 

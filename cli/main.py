@@ -25,7 +25,7 @@ from application.use_cases.file_output.filename_service import FilenameService
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
     def __init__(self):
-        self.config = InfraSettings(Path("config/config.json"))
+        self.config = InfraSettings(Path("infrastructure/config/config.json"))
         self.selector = SvgFileSelector(self.config.get_svg_input_dir())
         self.filename_gen = FilenameService(self.config)
         self.logger = logger

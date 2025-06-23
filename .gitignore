@@ -6,3 +6,4 @@ config/config.json
 .venv/
 docs_aux/todo.md
 .vscode/
+infrastructure/config/config.json

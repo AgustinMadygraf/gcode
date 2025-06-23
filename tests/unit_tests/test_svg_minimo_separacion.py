@@ -8,11 +8,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from infrastructure.svg_loader import SvgLoaderAdapter
 from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.path_transform_strategy import PathTransformStrategy
-from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
+from infrastructure.config.config import Config
 from infrastructure.optimizers.optimization_chain import OptimizationChain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.entities.point import Point
+import pytest
+
+@pytest.fixture(scope="module")
+def config():
+    return Config()
 
 class MockStrategy(PathTransformStrategy):
     def transform(self, x, y):
@@ -31,7 +36,7 @@ class MockPathSampler(PathSamplerPort):
         return points
 
 class TestSVGMinimoSeparacion(unittest.TestCase):
-    def test_separacion_trazos_svg_minimo(self):
+    def test_separacion_trazos_svg_minimo(self, config):
         from pathlib import Path
         svg_file = (Path(__file__).parent.parent / "svg_input" / "test_lines.svg").resolve()
         svg = SvgLoaderAdapter(svg_file)
@@ -39,12 +44,12 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
         svg_attr = svg.get_attributes()
         generator = GCodeGeneratorImpl(
             path_sampler=MockPathSampler(),
-            feed=FEED,
-            cmd_down=CMD_DOWN,
-            cmd_up=CMD_UP,
-            step_mm=STEP_MM,
-            dwell_ms=DWELL_MS,
-            max_height_mm=MAX_HEIGHT_MM,
+            feed=config.feed,
+            cmd_down=config.cmd_down,
+            cmd_up=config.cmd_up,
+            step_mm=config.step_mm,
+            dwell_ms=config.dwell_ms,
+            max_height_mm=config.max_height_mm,
             logger=None,
             transform_strategies=[MockStrategy()],
             optimizer=OptimizationChain()  # Inyectar la cadena de optimización
@@ -52,8 +57,8 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
         gcode_service = GCodeGenerationService(generator)
         gcode = gcode_service.generate(paths, svg_attr)
         # Buscar los índices de los comandos CMD_DOWN y CMD_UP
-        down_indices = [i for i, line in enumerate(gcode) if line.strip() == CMD_DOWN]
-        up_indices = [i for i, line in enumerate(gcode) if line.strip() == CMD_UP]
+        down_indices = [i for i, line in enumerate(gcode) if line.strip() == config.cmd_down]
+        up_indices = [i for i, line in enumerate(gcode) if line.strip() == config.cmd_up]
         # Debe haber al menos dos pares CMD_DOWN/CMD_UP (dos trazos)
         self.assertGreaterEqual(len(down_indices), 2)
         self.assertGreaterEqual(len(up_indices), 2)

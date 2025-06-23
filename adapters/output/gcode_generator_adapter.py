@@ -14,6 +14,7 @@ from domain.gcode.gcode_border_filter import GCodeBorderFilter
 from domain.ports.gcode_optimization_chain_port import GcodeOptimizationChainPort
 from domain.gcode.commands.arc_command import RelativeMoveCommand
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
+from infrastructure.config.config import Config
 
 class GCodeGeneratorImpl(GcodeGeneratorPort):
     """Adaptador para generación de G-code desde paths SVG, implementando el puerto de dominio."""
@@ -114,7 +115,6 @@ class GCodeGeneratorImpl(GcodeGeneratorPort):
                 f"ymin={ymin:.3f}, ymax={ymax:.3f}")
             self.logger.info(f"Scale applied: {scale:.3f}")
         try:
-            from config.config import Config
             config = Config()
             remove_border = config.get("REMOVE_BORDER_RECTANGLE", True)
             use_relative_moves = False
