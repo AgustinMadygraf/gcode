@@ -38,7 +38,7 @@ Las dependencias deben fluir **afuera → adentro**
 
 # ALCANCE
 Estructura, dependencias, nombres, código muerto y documentación; ignora lógica de negocio, tests de dominio y CI/CD.  
-Máx. **500 palabras**; responde en español, tono profesional y conciso.
+Responde en español, tono profesional y conciso.
 
 # FORMATO DE SALIDA
 

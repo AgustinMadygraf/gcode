@@ -7,10 +7,10 @@ from domain.gcode.commands.tool_up_command import ToolUpCommand
 from domain.gcode.commands.tool_down_command import ToolDownCommand
 from domain.gcode.commands.move_command import MoveCommand
 from domain.gcode.commands.dwell_command import DwellCommand
-from domain.gcode_optimizer import GCodeOptimizer
+from domain.ports.gcode_optimization_port import GcodeOptimizationPort
 
 class GCodeCommandBuilder:
-    def __init__(self, optimizer: GCodeOptimizer = None):
+    def __init__(self, optimizer: GcodeOptimizationPort = None):
         self.commands: List[BaseCommand] = []
         self.optimizer = optimizer
 
