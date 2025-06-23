@@ -15,7 +15,7 @@ from domain.ports.gcode_optimization_chain_port import GcodeOptimizationChainPor
 from domain.gcode.commands.arc_command import RelativeMoveCommand
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 
-class GCodeGeneratorAdapter(GcodeGeneratorPort):
+class GCodeGeneratorImpl(GcodeGeneratorPort):
     """Adaptador para generación de G-code desde paths SVG, implementando el puerto de dominio."""
     def __init__(
         self,

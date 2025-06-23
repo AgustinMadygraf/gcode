@@ -2,6 +2,8 @@
 Test de integración: flujo completo SVG → G-code usando adaptadores legacy
 """
 
+# TEST OBSOLETO: Este test usaba adaptadores legacy eliminados. Puede eliminarse si ya no se requiere compatibilidad legacy.
+
 def test_svg_to_gcode_legacy_adapters(tmp_path):
     # SVG de prueba mínimo
     svg_content = '''<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M0,0 L10,0 L10,10 Z"/></svg>'''

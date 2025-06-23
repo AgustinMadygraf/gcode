@@ -17,15 +17,16 @@ from application.use_cases.gcode_generation.gcode_generation_service import GCod
 from application.use_cases.gcode_compression.gcode_compression_service import GcodeCompressionService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from infrastructure.compressors.arc_compressor import ArcCompressor
-from adapters.input.config_adapter import ConfigAdapter
+from adapters.input.config_adapter import ConfigImpl
 from cli.svg_file_selector import SvgFileSelector
 from infrastructure.logger import logger
 from infrastructure.svg_loader import SvgLoaderAdapter
-from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
+from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from infrastructure.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
 from application.use_cases.file_output.filename_service import FilenameService
+from config.config import Config
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
@@ -91,7 +92,7 @@ class SvgToGcodeApp:
 
         # --- Generación de G-code mediante servicio de dominio ---
         path_sampler = PathSampler(self.step_mm, logger=self.logger)
-        generator: GcodeGeneratorPort = GCodeGeneratorAdapter(
+        generator: GcodeGeneratorPort = GCodeGeneratorImpl(
             path_sampler=path_sampler,
             feed=self.feed,
             cmd_down=self.cmd_down,
@@ -110,7 +111,7 @@ class SvgToGcodeApp:
         # --- Compresión de G-code mediante caso de uso ---
         compressors = [ArcCompressor()]
         compression_service = GcodeCompressionService(compressors, logger=self.logger)
-        config_reader = ConfigAdapter()
+        config_reader = ConfigImpl(Config())
         compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
         compression_result = compress_use_case.execute(gcode_lines)
         compressed_gcode = compression_result['compressed_gcode'] if 'compressed_gcode' in compression_result else gcode_lines

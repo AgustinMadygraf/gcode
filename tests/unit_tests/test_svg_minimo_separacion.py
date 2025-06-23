@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.svg_loader import SvgLoaderAdapter
-from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
+from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.path_transform_strategy import PathTransformStrategy
 from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
 from infrastructure.optimizers.optimization_chain import OptimizationChain
@@ -37,7 +37,7 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
         svg = SvgLoaderAdapter(svg_file)
         paths = svg.get_paths()
         svg_attr = svg.get_attributes()
-        generator = GCodeGeneratorAdapter(
+        generator = GCodeGeneratorImpl(
             path_sampler=MockPathSampler(),
             feed=FEED,
             cmd_down=CMD_DOWN,

@@ -1,3 +1,4 @@
+# Este archivo fue movido a domain/services/optimization/arc_optimizer.py
 from typing import List, Dict, Any
 from domain.ports.gcode_optimization_port import GcodeOptimizationPort
 from domain.gcode.commands.base_command import BaseCommand

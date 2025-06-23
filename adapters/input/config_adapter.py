@@ -1,12 +1,11 @@
 from domain.ports.config_port import ConfigPort
 from domain.models.compression_config import CompressionConfig
-from config.config import Config
 
-class ConfigAdapter(ConfigPort):
+class ConfigImpl(ConfigPort):
     """Adaptador para leer configuración desde config.json"""
 
-    def __init__(self):
-        self.config = Config()
+    def __init__(self, config):
+        self.config = config
 
     def get_compression_config(self) -> CompressionConfig:
         compression_data = self.config.get("COMPRESSION", {})

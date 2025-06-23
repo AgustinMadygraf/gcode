@@ -6,25 +6,27 @@ Este documento describe la arquitectura del proyecto GCode, basada en los princi
 ## Mapa de Capas
 ```
 gcode/
-├── application/         # Capa de Aplicación (Casos de uso)
-│   ├── generation/      # Ejemplo: generación de nombres de archivo (FilenameService)
-│   └── ...              # Otros casos de uso
-├── cli/                # Capa de Interfaz (UI/CLI)
-├── config/             # Infraestructura (Configuración)
-├── domain/             # Capa de Dominio (Modelos, lógica de negocio, puertos)
-│   ├── services/        # Ejemplo: GeometryService para bounding box
-│   └── path_conversion_service.py # Orquestador de conversión de paths a G-code
-├── infrastructure/     # Infraestructura (implementaciones, adaptadores)
-│   └── svg_loader.py   # Loader de SVG (implementa SvgLoaderPort)
-├── docs/               # Documentación
+├── adapters/                  # Adaptadores de entrada/salida (implementaciones de puertos)
+├── application/
+│   └── use_cases/            # Casos de uso y orquestación
+├── cli/                      # Interfaz de usuario (CLI)
+├── config/                   # Configuración
+├── domain/                   # Entidades, modelos, lógica de negocio, puertos
+│   └── services/
+│       └── optimization/     # Optimizadores de G-code (lógica de negocio)
+├── infrastructure/           # Implementaciones técnicas y utilidades
+├── svg_input/                # Archivos SVG de entrada
+├── gcode_output/             # Archivos G-code generados
+├── tests/                    # Tests unitarios y de integración
+└── docs/                     # Documentación
 ```
 
 ## Cambios recientes (06/2025)
-- La lógica de cálculo de bounding box fue trasladada de la CLI a `domain/services/geometry.py`.
-- La generación de nombres de archivos G-code fue trasladada de la CLI a `application/generation/filename_service.py`.
-- Se crearon tests unitarios dedicados para ambos servicios.
-- Se eliminó la interfaz redundante `ISvgLoader` y se consolidó el uso de `SvgLoaderPort` como interfaz oficial.
-- Se creó `domain/path_conversion_service.py` como interfaz de orquestación de conversión de paths a G-code.
+- Adaptadores consolidados en `adapters/`.
+- Optimizadores movidos a `domain/services/optimization/`.
+- Inyección de configuración en adaptadores.
+- Eliminados tests y código legacy.
+- Estructura y nomenclatura alineadas a Clean Architecture.
 
 ## Descripción de Capas
 
@@ -47,10 +49,10 @@ gcode/
 ## Reglas de Dependencia
 - Las dependencias siempre apuntan hacia el dominio.
 - La infraestructura y la interfaz nunca deben ser importadas por dominio o aplicación.
-- Los puertos (interfaces) se definen en dominio y se implementan en infraestructura.
+- Los puertos (interfaces) se definen en dominio y se implementan en infraestructura/adapters.
 
 ## Principios Clave
-- **Inversión de dependencias:** El dominio define interfaces, la infraestructura las implementa.
+- **Inversión de dependencias:** El dominio define interfaces, la infraestructura/adapters las implementa.
 - **Separación de responsabilidades:** Cada capa tiene un propósito claro.
 - **DRY:** Evitar duplicidad de lógica entre capas.
 
