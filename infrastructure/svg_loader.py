@@ -4,14 +4,14 @@ Path: infrastructure/svg_loader.py
 from pathlib import Path
 from typing import Any, List, Tuple
 from svgpathtools import svg2paths2, Path as SvgPath
-from .isvg_loader import ISvgLoader
+from domain.ports.svg_loader_port import SvgLoaderPort
 
-class SvgLoader(ISvgLoader):
+class SvgLoader(SvgLoaderPort):
     """
     Clase para cargar y extraer paths y atributos de un archivo SVG.
     """
     def __init__(self, svg_file: Path):
-        super().__init__(svg_file)
+        super().__init__()
         self.svg_file = svg_file
         self.paths: List[SvgPath] = []
         self.attributes: dict[str, Any] = {}
@@ -84,3 +84,7 @@ class SvgLoader(ISvgLoader):
             if current_subpath:
                 subpaths.append(type(p)(*current_subpath))
         return subpaths
+
+    def load(self, file_path: str) -> None:
+        """Implementación vacía para cumplir con la interfaz SvgLoaderPort."""
+        pass

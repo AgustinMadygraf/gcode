@@ -5,7 +5,7 @@ from typing import List, Optional, Any, Dict
 from domain.entities.point import Point
 from domain.path_transform_strategy import PathTransformStrategy, ScaleStrategy
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
-from domain.ports.path_sampler_port import IPathSampler
+from domain.ports.path_sampler_port import PathSamplerPort
 from infrastructure.transform_manager import TransformManager
 from domain.geometry.scale_manager import ScaleManager
 from domain.gcode.gcode_command_builder import GCodeCommandBuilder
@@ -20,7 +20,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
     def __init__(
         self,
         *,
-        path_sampler: IPathSampler,
+        path_sampler: PathSamplerPort,
         feed: float,
         cmd_down: str,
         cmd_up: str,

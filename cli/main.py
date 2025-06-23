@@ -22,8 +22,9 @@ from cli.svg_file_selector import SvgFileSelector
 from cli.gcode_filename_generator import GcodeFilenameGenerator
 from cli.bounding_box_calculator import BoundingBoxCalculator
 from infrastructure.logger import logger
-from infrastructure.adapters.legacy_svg_loader_adapter import LegacySvgLoaderAdapter
+from infrastructure.svg_loader import SvgLoader
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
+from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from infrastructure.path_sampler import PathSampler
 
 class SvgToGcodeApp:
@@ -50,9 +51,8 @@ class SvgToGcodeApp:
         gcode_file = self.filename_gen.next_filename(svg_file)
         self.logger.debug("Output G-code file: %s", gcode_file)
 
-        # svg = SvgLoader(svg_file)
-        svg = LegacySvgLoaderAdapter(svg_file)
-        self.logger.debug('Created object "svg" from class "LegacySvgLoaderAdapter"')
+        svg = SvgLoader(svg_file)
+        self.logger.debug('Created object "svg" from class "SvgLoader"')
         self.logger.info("Carga de SVG: %s", svg_file)
 
         paths = svg.get_paths()
@@ -91,7 +91,7 @@ class SvgToGcodeApp:
 
         # --- Generación de G-code mediante servicio de dominio ---
         path_sampler = PathSampler(self.step_mm, logger=self.logger)
-        generator = GCodeGeneratorAdapter(
+        generator: GcodeGeneratorPort = GCodeGeneratorAdapter(
             path_sampler=path_sampler,
             feed=self.feed,
             cmd_down=self.cmd_down,
