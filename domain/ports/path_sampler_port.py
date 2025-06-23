@@ -4,7 +4,7 @@ Path: domain/ports/path_sampler_port.py
 
 from abc import ABC, abstractmethod
 from typing import Iterable
-from domain.models import Point
+from domain.entities.point import Point
 
 class IPathSampler(ABC):
     " Interfaz para muestreo de puntos a lo largo de rutas SVG. "

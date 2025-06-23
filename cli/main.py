@@ -12,8 +12,12 @@ from config.config import (
     REMOVE_SVG_BORDER, BORDER_DETECTION_TOLERANCE
 )
 from domain.path_transform_strategy import MirrorVerticalStrategy
-from domain.path_processing_service import PathProcessingService
-from domain.gcode_generation_service import GCodeGenerationService
+from application.processing.path_processing_service import PathProcessingService
+from application.generation.gcode_generation_service import GCodeGenerationService
+from application.compression.compress_gcode_use_case import CompressGcodeUseCase
+from application.compression.gcode_compression_service import GcodeCompressionService
+from infrastructure.compressors.arc_compressor import ArcCompressor
+from infrastructure.adapters.config_adapter import ConfigAdapter
 from cli.svg_file_selector import SvgFileSelector
 from cli.gcode_filename_generator import GcodeFilenameGenerator
 from cli.bounding_box_calculator import BoundingBoxCalculator
@@ -100,5 +104,18 @@ class SvgToGcodeApp:
         self.logger.debug("Generated G-code with %d lines.", len(gcode_lines))
         self.logger.info("G-code generado con %d líneas", len(gcode_lines))
 
-        self._write_gcode_file(gcode_file, gcode_lines)
+        # --- Compresión de G-code mediante caso de uso ---
+        compressors = [ArcCompressor()]
+        compression_service = GcodeCompressionService(compressors, logger=self.logger)
+        config_reader = ConfigAdapter()
+        compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
+        compression_result = compress_use_case.execute(gcode_lines)
+        compressed_gcode = compression_result['compressed_gcode'] if 'compressed_gcode' in compression_result else gcode_lines
+        # Mostrar métricas
+        self.logger.info("Compresión: original=%d, comprimido=%d, ratio=%.2f%%", 
+            compression_result.get('original_size', 0),
+            compression_result.get('compressed_size', 0),
+            100 * (1 - compression_result.get('compression_ratio', 1)))
+
+        self._write_gcode_file(gcode_file, compressed_gcode)
         self.logger.info("Archivo G-code escrito: %s", gcode_file)

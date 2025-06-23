@@ -25,7 +25,7 @@ Ejemplo de uso:
 """
 
 from typing import List, Optional
-from domain.models import Point
+from domain.entities.point import Point
 from domain.path_transform_strategy import PathTransformStrategy, ScaleStrategy
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
 from domain.ports.path_sampler_port import IPathSampler

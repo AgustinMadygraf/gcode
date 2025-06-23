@@ -12,7 +12,7 @@ Ejemplo de uso:
 """
 import math
 import numpy as np
-from domain.models import Point
+from domain.entities.point import Point
 from domain.ports.path_sampler_port import IPathSampler
 
 class PathSampler(IPathSampler):
