@@ -1,6 +1,6 @@
 from domain.ports.gcode_optimization_chain_port import GcodeOptimizationChainPort
-from infrastructure.optimizers.arc_optimizer import ArcOptimizer
-from infrastructure.optimizers.colinear_optimizer import ColinearOptimizer
+from domain.services.optimization.arc_optimizer import ArcOptimizer
+from domain.services.optimization.colinear_optimizer import ColinearOptimizer
 
 class OptimizationChain(GcodeOptimizationChainPort):
     def __init__(self, optimizers=None):

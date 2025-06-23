@@ -3,9 +3,9 @@ settings.py: Configuraciones técnicas de infraestructura
 """
 from pathlib import Path
 import json
-from domain.ports.config_provider import ConfigProvider
+from domain.ports.config_provider import ConfigProviderPort
 
-class InfraSettings(ConfigProvider):
+class InfraSettings(ConfigProviderPort):
     def __init__(self, config_path: Path):
         with open(config_path, encoding="utf-8") as f:
             self._data = json.load(f)

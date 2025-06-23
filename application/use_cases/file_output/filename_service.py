@@ -2,13 +2,13 @@
 Servicio de generación de nombres de archivos G-code únicos a partir de un archivo SVG.
 """
 from pathlib import Path
-from domain.ports.config_provider import ConfigProvider
+from domain.ports.config_provider import ConfigProviderPort
 
 class FilenameService:
     """
     Servicio de aplicación para generar nombres de archivos G-code únicos.
     """
-    def __init__(self, config_provider: ConfigProvider):
+    def __init__(self, config_provider: ConfigProviderPort):
         self.config_provider = config_provider
 
     def next_filename(self, svg_file: Path) -> Path:

@@ -5,18 +5,18 @@ Main CLI entry point for SVG to G-code conversion (OOP version).
 
 from pathlib import Path
 from infrastructure.settings import InfraSettings
-from domain.ports.config_provider import ConfigProvider
+from domain.ports.config_provider import ConfigProviderPort
 from domain.path_transform_strategy import MirrorVerticalStrategy
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from application.use_cases.gcode_compression.gcode_compression_service import GcodeCompressionService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from infrastructure.compressors.arc_compressor import ArcCompressor
-from adapters.input.config_adapter import ConfigImpl
+from interfaces.input.config_adapter import ConfigImpl
 from cli.svg_file_selector import SvgFileSelector
 from infrastructure.logger import logger
 from infrastructure.svg_loader import SvgLoaderAdapter
-from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
+from interfaces.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from infrastructure.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
@@ -62,11 +62,11 @@ class SvgToGcodeApp:
         try:
             bbox = (svg.get_bbox()
                     if hasattr(svg, 'get_bbox')
-                    else GeometryService.calculate_bbox(paths))
+                    else GeometryService._calculate_bbox(paths))
         except (AttributeError, ValueError):
-            bbox = GeometryService.calculate_bbox(paths)
+            bbox = GeometryService._calculate_bbox(paths)
         _xmin, _xmax, _ymin, _ymax = bbox
-        _cx, cy = GeometryService.center(bbox)
+        _cx, cy = GeometryService._center(bbox)
         self.logger.info(
             "Bounding box: xmin=%.3f, xmax=%.3f, "
             "ymin=%.3f, ymax=%.3f",

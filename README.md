@@ -19,16 +19,16 @@ pip install svgpathtools numpy
 - `adapters/`: Adaptadores de entrada/salida (implementaciones de puertos definidos en dominio).
 - `application/use_cases/`: Casos de uso y orquestación de lógica de negocio.
 - `cli/main.py`: Punto de entrada principal para convertir SVG a G-code (nuevo flujo modularizado).
-- `config/`: Configuración y parámetros del sistema.
+- `infrastructure/config/`: Configuración y parámetros del sistema (migrado desde `config/`).
+- `infrastructure/storage/svg_input/`: Carpeta donde colocar los archivos SVG a procesar.
+- `infrastructure/storage/gcode_output/`: Carpeta donde se guardan los archivos G-code generados.
 - `domain/`: Entidades, modelos, lógica de negocio y puertos (interfaces).
 - `domain/services/optimization/`: Optimizadores de G-code (lógica de negocio).
 - `infrastructure/`: Implementaciones técnicas y utilidades.
-- `svg_input/`: Carpeta donde colocar los archivos SVG a procesar.
-- `gcode_output/`: Carpeta donde se guardan los archivos G-code generados.
 
 ## Uso
 
-1. Coloca tus archivos `.svg` en la carpeta `svg_input`.
+1. Coloca tus archivos `.svg` en la carpeta `infrastructure/storage/svg_input/`.
 2. Desde la raíz del proyecto, ejecuta:
 
    ```powershell
@@ -40,7 +40,7 @@ pip install svgpathtools numpy
    ```
 
 3. Selecciona el archivo SVG a procesar cuando se te indique.
-4. El archivo G-code generado aparecerá en la carpeta `gcode_output`.
+4. El archivo G-code generado aparecerá en la carpeta `infrastructure/storage/gcode_output/`.
 
 ## Ejecución recomendada
 

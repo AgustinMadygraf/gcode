@@ -4,7 +4,7 @@ config_provider.py: Interfaz para acceso a configuración desde capas superiores
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-class ConfigProvider(ABC):
+class ConfigProviderPort(ABC):
     @abstractmethod
     def get_svg_input_dir(self) -> Path:
         pass

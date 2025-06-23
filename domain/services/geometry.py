@@ -8,7 +8,7 @@ class GeometryService:
     Servicio de dominio para operaciones geométricas sobre paths SVG.
     """
     @staticmethod
-    def calculate_bbox(paths: List[Any]) -> Tuple[float, float, float, float]:
+    def _calculate_bbox(paths: List[Any]) -> Tuple[float, float, float, float]:
         """
         Calcula el bounding box de una lista de paths SVG.
         """
@@ -24,7 +24,7 @@ class GeometryService:
         return min(xs), max(xs), min(ys), max(ys)
 
     @staticmethod
-    def center(bbox: Tuple[float, float, float, float]) -> Tuple[float, float]:
+    def _center(bbox: Tuple[float, float, float, float]) -> Tuple[float, float]:
         """
         Calcula el centro del bounding box dado como una tupla (xmin, xmax, ymin, ymax).
         """

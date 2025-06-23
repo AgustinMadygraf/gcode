@@ -5,9 +5,9 @@ Script para imprimir y analizar el flujo de comandos G-code generado para varios
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
+from interfaces.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.path_transform_strategy import PathTransformStrategy
-from infrastructure.optimizers.optimization_chain import OptimizationChain
+from domain.services.optimization.optimization_chain import OptimizationChain
 from application.generation.optimizer_factory import make_optimization_chain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService  # Importar el servicio
 
