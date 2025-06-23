@@ -12,11 +12,11 @@ from application.use_cases.gcode_generation.gcode_generation_service import GCod
 from application.use_cases.gcode_compression.gcode_compression_service import GcodeCompressionService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from infrastructure.compressors.arc_compressor import ArcCompressor
-from interfaces.input.config_adapter import ConfigImpl
+from adapters.input.config_adapter import ConfigImpl
 from cli.svg_file_selector import SvgFileSelector
 from infrastructure.logger import logger
 from infrastructure.svg_loader import SvgLoaderAdapter
-from interfaces.output.gcode_generator_adapter import GCodeGeneratorImpl
+from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from infrastructure.path_sampler import PathSampler
 from domain.services.geometry import GeometryService

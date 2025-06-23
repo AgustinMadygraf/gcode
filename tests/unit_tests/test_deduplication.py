@@ -3,7 +3,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
-from interfaces.output.gcode_generator_adapter import GCodeGeneratorImpl
+from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
 from infrastructure.svg_loader import SvgLoaderAdapter
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from domain.entities.point import Point

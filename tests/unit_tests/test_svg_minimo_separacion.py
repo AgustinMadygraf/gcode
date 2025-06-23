@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.svg_loader import SvgLoaderAdapter
-from interfaces.output.gcode_generator_adapter import GCodeGeneratorImpl
+from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.path_transform_strategy import PathTransformStrategy
 from infrastructure.config.config import Config
 from domain.services.optimization.optimization_chain import OptimizationChain

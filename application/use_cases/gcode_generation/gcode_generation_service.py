@@ -3,7 +3,7 @@ Servicio de aplicación para generación de G-code a partir de paths y atributos
 (Movido desde domain/gcode_generation_service.py)
 """
 from typing import List, Any
-from interfaces.output.gcode_generator_adapter import GCodeGeneratorImpl
+from adapters.output.gcode_generator_adapter import GCodeGeneratorImpl
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 
 class GCodeGenerationService:
