@@ -7,12 +7,24 @@ Este documento describe la arquitectura del proyecto GCode, basada en los princi
 ```
 gcode/
 ├── application/         # Capa de Aplicación (Casos de uso)
+│   ├── generation/      # Ejemplo: generación de nombres de archivo (FilenameService)
+│   └── ...              # Otros casos de uso
 ├── cli/                # Capa de Interfaz (UI/CLI)
 ├── config/             # Infraestructura (Configuración)
 ├── domain/             # Capa de Dominio (Modelos, lógica de negocio, puertos)
+│   ├── services/        # Ejemplo: GeometryService para bounding box
+│   └── path_conversion_service.py # Orquestador de conversión de paths a G-code
 ├── infrastructure/     # Infraestructura (implementaciones, adaptadores)
+│   └── svg_loader.py   # Loader de SVG (implementa SvgLoaderPort)
 ├── docs/               # Documentación
 ```
+
+## Cambios recientes (06/2025)
+- La lógica de cálculo de bounding box fue trasladada de la CLI a `domain/services/geometry.py`.
+- La generación de nombres de archivos G-code fue trasladada de la CLI a `application/generation/filename_service.py`.
+- Se crearon tests unitarios dedicados para ambos servicios.
+- Se eliminó la interfaz redundante `ISvgLoader` y se consolidó el uso de `SvgLoaderPort` como interfaz oficial.
+- Se creó `domain/path_conversion_service.py` como interfaz de orquestación de conversión de paths a G-code.
 
 ## Descripción de Capas
 

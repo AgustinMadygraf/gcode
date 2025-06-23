@@ -9,7 +9,7 @@ from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapte
 from domain.path_transform_strategy import PathTransformStrategy
 from infrastructure.optimizers.optimization_chain import OptimizationChain
 from application.generation.optimizer_factory import make_optimization_chain
-from application.generation.gcode_generation_service import GCodeGenerationService  # Importar el servicio
+from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService  # Importar el servicio
 
 class DummySegment:
     def __init__(self, length, start=(0,0), end=(1,0)):

@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import pytest
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from infrastructure.svg_loader import SvgLoader
-from application.generation.gcode_generation_service import GCodeGenerationService
+from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from domain.entities.point import Point
 from infrastructure.optimizers.optimization_chain import OptimizationChain
 from infrastructure.path_sampler import PathSampler

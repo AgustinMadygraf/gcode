@@ -12,10 +12,10 @@ from config.config import (
     REMOVE_SVG_BORDER, BORDER_DETECTION_TOLERANCE
 )
 from domain.path_transform_strategy import MirrorVerticalStrategy
-from application.processing.path_processing_service import PathProcessingService
-from application.generation.gcode_generation_service import GCodeGenerationService
-from application.compression.compress_gcode_use_case import CompressGcodeUseCase
-from application.compression.gcode_compression_service import GcodeCompressionService
+from application.use_cases.path_processing.path_processing_service import PathProcessingService
+from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
+from application.use_cases.gcode_compression.gcode_compression_service import GcodeCompressionService
+from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from infrastructure.compressors.arc_compressor import ArcCompressor
 from infrastructure.adapters.config_adapter import ConfigAdapter
 from cli.svg_file_selector import SvgFileSelector

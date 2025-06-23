@@ -1,26 +1,19 @@
 """
 BoundingBoxCalculator: Clase utilitaria para calcular el bounding box y centro de paths SVG.
+Ahora delega la lógica al servicio de dominio GeometryService.
 """
-from typing import Tuple
+from typing import Tuple, List, Any
+from domain.services.geometry import GeometryService
 
 class BoundingBoxCalculator:
-    " Clase utilitaria para calcular el bounding box y centro de paths SVG. "
+    """
+    Clase utilitaria para calcular el bounding box y centro de paths SVG.
+    Ahora delega la lógica al servicio de dominio GeometryService.
+    """
     @staticmethod
-    def calculate_bbox(paths) -> Tuple[float, float, float, float]:
-        " Calcula el bounding box de una lista de paths SVG. "
-        xs, ys = [], []
-        for p in paths:
-            for seg in p:
-                for t in range(21):
-                    z = seg.point(t/20)
-                    xs.append(z.real)
-                    ys.append(z.imag)
-        if not xs or not ys:
-            raise ValueError("No points found in paths.")
-        return min(xs), max(xs), min(ys), max(ys)
+    def calculate_bbox(paths: List[Any]) -> Tuple[float, float, float, float]:
+        return GeometryService.calculate_bbox(paths)
 
     @staticmethod
     def center(bbox: Tuple[float, float, float, float]) -> Tuple[float, float]:
-        " Calcula el centro del bounding box dado como una tupla (xmin, xmax, ymin, ymax). "
-        xmin, xmax, ymin, ymax = bbox
-        return (xmin + xmax) / 2, (ymin + ymax) / 2
+        return GeometryService.center(bbox)

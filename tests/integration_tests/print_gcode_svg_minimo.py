@@ -7,7 +7,7 @@ from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapte
 from domain.path_transform_strategy import PathTransformStrategy
 from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
 from application.generation.optimizer_factory import make_optimization_chain
-from application.generation.gcode_generation_service import GCodeGenerationService
+from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from infrastructure.optimizers.optimization_chain import OptimizationChain
 
 class DummyStrategy(PathTransformStrategy):
