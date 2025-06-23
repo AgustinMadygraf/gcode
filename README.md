@@ -39,6 +39,16 @@ pip install svgpathtools numpy
 3. Selecciona el archivo SVG a procesar cuando se te indique.
 4. El archivo G-code generado aparecerá en la carpeta `gcode_output`.
 
+## Ejecución recomendada
+
+Para iniciar el proyecto, ejecuta siempre desde la raíz:
+
+```powershell
+python run.py
+```
+
+> **Nota:** No está habilitado ejecutar `python cli/main.py` ni `python -m cli.main` directamente. El punto de entrada oficial es `run.py`.
+
 ## Parámetros de configuración relevantes
 
 - `REMOVE_SVG_BORDER` (bool): Si es `true`, intenta eliminar el marco/borde exterior del SVG si coincide exactamente con el `viewBox`.

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.svg_loader import SvgLoaderAdapter
-from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
+from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
 from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
 from application.generation.optimizer_factory import make_optimization_chain

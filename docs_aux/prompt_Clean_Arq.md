@@ -29,7 +29,8 @@ Las dependencias deben fluir **afuera → adentro**
    - Sugiere inversión de dependencia (interfaces, DI).
 
 6. **Revisión de Documentación** (`/docs`)  
-   - Indica si existe `architecture.md` (u homónimo).  
+   - Indica si existe `/docs/architecture.md` (u homónimo).  
+   - Indica si existe `/readme.md` (u homónimo).  
    - Marca 🔄 si desactualizado, ❌ si falta; resume qué actualizar o crear.
 
 7. **Recomendaciones de Nomenclatura y Visibilidad**  
