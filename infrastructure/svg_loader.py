@@ -6,7 +6,7 @@ from typing import Any, List, Tuple
 from svgpathtools import svg2paths2, Path as SvgPath
 from domain.ports.svg_loader_port import SvgLoaderPort
 
-class SvgLoader(SvgLoaderPort):
+class SvgLoaderAdapter(SvgLoaderPort):
     """
     Clase para cargar y extraer paths y atributos de un archivo SVG.
     """

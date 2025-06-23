@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import pytest
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
-from infrastructure.svg_loader import SvgLoader
+from infrastructure.svg_loader import SvgLoaderAdapter
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from domain.entities.point import Point
 from infrastructure.optimizers.optimization_chain import OptimizationChain
@@ -20,7 +20,7 @@ def test_single_line_no_duplicate_g1(tmp_path):
     # Guardar SVG temporal
     svg_path = tmp_path / "line.svg"
     svg_path.write_text(SVG_SIMPLE_LINE)
-    loader = SvgLoader(str(svg_path))
+    loader = SvgLoaderAdapter(str(svg_path))
     subpaths = loader.get_subpaths()
     # Simular muestreo de puntos (sin interpolación)
     points = [[Point(seg.start.real, seg.start.imag), Point(seg.end.real, seg.end.imag)] for p in subpaths for seg in p]
@@ -40,7 +40,7 @@ def test_single_line_no_duplicate_g1(tmp_path):
 def test_broken_line_creates_two_traces(tmp_path):
     svg_path = tmp_path / "broken.svg"
     svg_path.write_text(SVG_BROKEN_LINE)
-    loader = SvgLoader(str(svg_path))
+    loader = SvgLoaderAdapter(str(svg_path))
     subpaths = loader.get_subpaths()
     points = [[Point(seg.start.real, seg.start.imag), Point(seg.end.real, seg.end.imag)] for p in subpaths for seg in p]
     gen = GCodeGeneratorAdapter(path_sampler=PathSampler(1.0), **GEN_KWARGS)

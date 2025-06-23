@@ -2,7 +2,7 @@ import sys
 import os
 from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from infrastructure.svg_loader import SvgLoader
+from infrastructure.svg_loader import SvgLoaderAdapter
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
 from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
@@ -10,12 +10,12 @@ from application.generation.optimizer_factory import make_optimization_chain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from infrastructure.optimizers.optimization_chain import OptimizationChain
 
-class DummyStrategy(PathTransformStrategy):
+class MockStrategy(PathTransformStrategy):
     def transform(self, x, y):
         return x, y
 
 svg_file = Path("../svg_input/test_lines.svg").resolve()
-svg = SvgLoader(svg_file)
+svg = SvgLoaderAdapter(svg_file)
 paths = svg.get_paths()
 svg_attr = svg.get_attributes()
 generator = GCodeGeneratorAdapter(
@@ -26,7 +26,7 @@ generator = GCodeGeneratorAdapter(
     dwell_ms=DWELL_MS,
     max_height_mm=MAX_HEIGHT_MM,
     logger=None,
-    transform_strategies=[DummyStrategy()],
+    transform_strategies=[MockStrategy()],
     optimizer=OptimizationChain()  # Inyectar la cadena de optimización
 )
 gcode_service = GCodeGenerationService(generator)

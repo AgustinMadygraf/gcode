@@ -19,19 +19,19 @@ from application.use_cases.gcode_compression.compress_gcode_use_case import Comp
 from infrastructure.compressors.arc_compressor import ArcCompressor
 from infrastructure.adapters.config_adapter import ConfigAdapter
 from cli.svg_file_selector import SvgFileSelector
-from cli.gcode_filename_generator import GcodeFilenameGenerator
-from cli.bounding_box_calculator import BoundingBoxCalculator
 from infrastructure.logger import logger
-from infrastructure.svg_loader import SvgLoader
+from infrastructure.svg_loader import SvgLoaderAdapter
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from infrastructure.path_sampler import PathSampler
+from domain.services.geometry import GeometryService
+from application.use_cases.file_output.filename_service import FilenameService
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
     def __init__(self):
         self.selector = SvgFileSelector(SVG_INPUT_DIR)
-        self.filename_gen = GcodeFilenameGenerator(GCODE_OUTPUT_DIR)
+        self.filename_gen = FilenameService(GCODE_OUTPUT_DIR)
         self.logger = logger
         self.feed = FEED
         self.cmd_down = CMD_DOWN
@@ -51,8 +51,8 @@ class SvgToGcodeApp:
         gcode_file = self.filename_gen.next_filename(svg_file)
         self.logger.debug("Output G-code file: %s", gcode_file)
 
-        svg = SvgLoader(svg_file)
-        self.logger.debug('Created object "svg" from class "SvgLoader"')
+        svg = SvgLoaderAdapter(svg_file)
+        self.logger.debug('Created object "svg" from class "SvgLoaderAdapter"')
         self.logger.info("Carga de SVG: %s", svg_file)
 
         paths = svg.get_paths()
@@ -62,15 +62,15 @@ class SvgToGcodeApp:
         svg_attr = svg.get_attributes()
         self.logger.info("SVG attributes: %s", svg_attr)
 
-        # Calcular bbox y centro para las estrategias
+        # Calcular bbox y centro usando GeometryService
         try:
             bbox = (svg.get_bbox()
                     if hasattr(svg, 'get_bbox')
-                    else BoundingBoxCalculator.calculate_bbox(paths))
+                    else GeometryService.calculate_bbox(paths))
         except (AttributeError, ValueError):
-            bbox = BoundingBoxCalculator.calculate_bbox(paths)
+            bbox = GeometryService.calculate_bbox(paths)
         _xmin, _xmax, _ymin, _ymax = bbox
-        _cx, cy = BoundingBoxCalculator.center(bbox)
+        _cx, cy = GeometryService.center(bbox)
         self.logger.info(
             "Bounding box: xmin=%.3f, xmax=%.3f, "
             "ymin=%.3f, ymax=%.3f",

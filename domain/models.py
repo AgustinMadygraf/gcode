@@ -33,3 +33,9 @@ class DomainPath:
                 raise ValueError(f"Segments {i} and {i+1} are not connected")
         if self.closed and self.segments[-1].end != self.segments[0].start:
             raise ValueError("Closed path must connect last segment to first")
+
+__all__ = [
+    "Point",
+    "DomainSegment",
+    "DomainPath"
+]

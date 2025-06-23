@@ -12,3 +12,7 @@ class PathConversionService(ABC):
         Convierte una lista de paths y atributos SVG en líneas de G-code.
         """
         pass
+
+__all__ = [
+    "PathConversionService"
+]

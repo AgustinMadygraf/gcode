@@ -6,3 +6,5 @@ Este archivo ha sido migrado. La lógica de generación de G-code ahora reside e
 
 Elimina cualquier referencia legacy a GCodeGenerator y usa el adaptador y el nuevo servicio.
 """
+
+__all__ = []

@@ -5,7 +5,7 @@ import unittest
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from infrastructure.svg_loader import SvgLoader
+from infrastructure.svg_loader import SvgLoaderAdapter
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
 from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
@@ -14,11 +14,11 @@ from application.use_cases.gcode_generation.gcode_generation_service import GCod
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.entities.point import Point
 
-class DummyStrategy(PathTransformStrategy):
+class MockStrategy(PathTransformStrategy):
     def transform(self, x, y):
         return x, y
 
-class DummyPathSampler(PathSamplerPort):
+class MockPathSampler(PathSamplerPort):
     def sample(self, path):
         # Convierte los segmentos del path en una lista de Point
         points = []
@@ -34,11 +34,11 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
     def test_separacion_trazos_svg_minimo(self):
         from pathlib import Path
         svg_file = (Path(__file__).parent.parent / "svg_input" / "test_lines.svg").resolve()
-        svg = SvgLoader(svg_file)
+        svg = SvgLoaderAdapter(svg_file)
         paths = svg.get_paths()
         svg_attr = svg.get_attributes()
         generator = GCodeGeneratorAdapter(
-            path_sampler=DummyPathSampler(),
+            path_sampler=MockPathSampler(),
             feed=FEED,
             cmd_down=CMD_DOWN,
             cmd_up=CMD_UP,
@@ -46,7 +46,7 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
             dwell_ms=DWELL_MS,
             max_height_mm=MAX_HEIGHT_MM,
             logger=None,
-            transform_strategies=[DummyStrategy()],
+            transform_strategies=[MockStrategy()],
             optimizer=OptimizationChain()  # Inyectar la cadena de optimización
         )
         gcode_service = GCodeGenerationService(generator)

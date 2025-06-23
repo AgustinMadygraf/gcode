@@ -2,8 +2,6 @@ from domain.ports.gcode_optimization_chain_port import GcodeOptimizationChainPor
 from infrastructure.optimizers.arc_optimizer import ArcOptimizer
 from infrastructure.optimizers.colinear_optimizer import ColinearOptimizer
 
-# Nota: OptimizationChain se ha movido a application/use_cases/gcode_generation/optimization_chain.py
-
 class OptimizationChain(GcodeOptimizationChainPort):
     def __init__(self, optimizers=None):
         self.optimizers = optimizers or [ArcOptimizer(tolerance=0.1), ColinearOptimizer()]

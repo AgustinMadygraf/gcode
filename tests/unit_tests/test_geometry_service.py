@@ -4,14 +4,14 @@ Tests para GeometryService (capa de dominio).
 import unittest
 from domain.services.geometry import GeometryService
 
-class DummySegment:
+class MockSegment:
     def point(self, t):
         # Simula un segmento de línea de (0,0) a (10,10)
         return complex(10 * t, 10 * t)
 
 class TestGeometryService(unittest.TestCase):
     def test_bbox_line(self):
-        paths = [[DummySegment()]]
+        paths = [[MockSegment()]]
         bbox = GeometryService.calculate_bbox(paths)
         self.assertAlmostEqual(bbox[0], 0)
         self.assertAlmostEqual(bbox[1], 10)
