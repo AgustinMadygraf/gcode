@@ -3,11 +3,12 @@ Servicio de aplicación para generación de G-code a partir de paths y atributos
 (Movido desde domain/gcode_generation_service.py)
 """
 from typing import List, Any
-from domain.gcode_generator import GCodeGenerator
+from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
+from domain.ports.gcode_generator_port import GcodeGeneratorPort
 
 class GCodeGenerationService:
     " Servicio de aplicación para generación de G-code a partir de paths y atributos SVG. "
-    def __init__(self, generator: GCodeGenerator):
+    def __init__(self, generator: GcodeGeneratorPort):
         self.generator = generator
 
     def generate(self, paths: List[Any], svg_attr: dict) -> List[str]:

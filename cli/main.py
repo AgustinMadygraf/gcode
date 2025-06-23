@@ -23,7 +23,8 @@ from cli.gcode_filename_generator import GcodeFilenameGenerator
 from cli.bounding_box_calculator import BoundingBoxCalculator
 from infrastructure.logger import logger
 from infrastructure.adapters.legacy_svg_loader_adapter import LegacySvgLoaderAdapter
-from infrastructure.adapters.legacy_gcode_generator_adapter import LegacyGcodeGeneratorAdapter
+from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
+from infrastructure.path_sampler import PathSampler
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
@@ -89,7 +90,9 @@ class SvgToGcodeApp:
         self.logger.info("Paths útiles tras procesamiento: %d", len(processed_paths))
 
         # --- Generación de G-code mediante servicio de dominio ---
-        generator = LegacyGcodeGeneratorAdapter(
+        path_sampler = PathSampler(self.step_mm, logger=self.logger)
+        generator = GCodeGeneratorAdapter(
+            path_sampler=path_sampler,
             feed=self.feed,
             cmd_down=self.cmd_down,
             cmd_up=self.cmd_up,
@@ -97,7 +100,7 @@ class SvgToGcodeApp:
             dwell_ms=self.dwell_ms,
             max_height_mm=self.max_height_mm,
             logger=self.logger,
-            transform_strategies=transform_strategies  # Aquí sí se aplica el mirror
+            transform_strategies=transform_strategies
         )
         gcode_service = GCodeGenerationService(generator)
         gcode_lines = gcode_service.generate(processed_paths, svg_attr)

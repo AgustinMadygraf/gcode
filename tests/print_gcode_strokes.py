@@ -5,8 +5,9 @@ Script para imprimir y analizar el flujo de comandos G-code generado para varios
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from domain.gcode_generator import GCodeGenerator
+from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
+from application.generation.optimizer_factory import make_optimization_chain
 
 class DummySegment:
     def __init__(self, length, start=(0,0), end=(1,0)):
@@ -29,7 +30,7 @@ def print_gcode_for_multiple_strokes():
     seg2 = DummySegment(5, (10,0), (15,0))
     paths = [[seg1], [seg2]]  # Dos trazos separados
     svg_attr = {"viewBox": "0 0 20 10", "width": "20"}
-    generator = GCodeGenerator(
+    generator = GCodeGeneratorAdapter(
         feed=1000,
         cmd_down="M3 S1000",
         cmd_up="M5",
@@ -37,7 +38,8 @@ def print_gcode_for_multiple_strokes():
         dwell_ms=100,
         max_height_mm=10,
         logger=None,
-        transform_strategies=[DummyStrategy()]
+        transform_strategies=[DummyStrategy()],
+        optimizer=make_optimization_chain()  # Inyectar la cadena de optimización
     )
     # Imprimir puntos de inicio y fin de cada trazo
     all_points = generator.get_points_for_paths(paths, 1.0)

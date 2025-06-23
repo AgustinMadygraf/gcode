@@ -5,8 +5,7 @@ Mantiene la API antigua de GcodeGenerator para compatibilidad durante la refacto
 
 from domain.gcode_generator import GCodeGenerator
 from infrastructure.path_sampler import PathSampler
-from infrastructure.optimizers.arc_optimizer import ArcOptimizer
-from infrastructure.optimizers.colinear_optimizer import ColinearOptimizer
+from application.generation.optimizer_factory import make_optimization_chain
 
 class LegacyGcodeGeneratorAdapter:
     def __init__(self, *args, **kwargs):
@@ -15,9 +14,9 @@ class LegacyGcodeGeneratorAdapter:
         logger = kwargs.get('logger', None)
         path_sampler = PathSampler(step_mm, logger=logger)
         kwargs['path_sampler'] = path_sampler
+        # Inyectar la cadena de optimización
+        kwargs['optimizer'] = make_optimization_chain()
         self._gcode_generator = GCodeGenerator(*args, **kwargs)
-        self.arc_optimizer = ArcOptimizer()
-        self.colinear_optimizer = ColinearOptimizer()
 
     def generate(self, *args, **kwargs):
         gcode_lines = self._gcode_generator.generate(*args, **kwargs)
