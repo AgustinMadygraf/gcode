@@ -1,9 +1,3 @@
-gcode_output/
-svg_input/
 __pycache__/
-todo.md
-config/config.json
-.venv/
 docs_aux/todo.md
-.vscode/
 infrastructure/config/config.json

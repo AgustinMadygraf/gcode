@@ -42,7 +42,11 @@ class SvgToGcodeApp:
 
     def run(self):
         " Main method to run the SVG to G-code conversion process. "
-        svg_file = self.selector.select()
+        try:
+            svg_file = self.selector.select()
+        except FileNotFoundError:
+            self.logger.error("La carpeta configurada para SVG está vacía o no contiene archivos SVG.")
+            return
         self.logger.debug("Selected SVG file: %s", svg_file)
         gcode_file = self.filename_gen.next_filename(svg_file)
         self.logger.debug("Output G-code file: %s", gcode_file)

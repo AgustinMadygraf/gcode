@@ -1,6 +1,6 @@
 {
-  "SVG_INPUT_DIR": "svg_input",
-  "GCODE_OUTPUT_DIR": "gcode_output",
+  "SVG_INPUT_DIR": "data/svg_input",
+  "GCODE_OUTPUT_DIR": "data/gcode_output",
   "FEED": 4000,
   "CMD_DOWN": "M3 S255; baja lapicera",
   "CMD_UP": "M5; sube lapicera",
