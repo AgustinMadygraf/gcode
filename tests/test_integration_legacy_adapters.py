@@ -1,9 +1,6 @@
 """
 Test de integración: flujo completo SVG → G-code usando adaptadores legacy
 """
-from pathlib import Path
-from infrastructure.adapters.legacy_svg_loader_adapter import LegacySvgLoaderAdapter
-from infrastructure.adapters.legacy_gcode_generator_adapter import LegacyGcodeGeneratorAdapter
 
 def test_svg_to_gcode_legacy_adapters(tmp_path):
     # SVG de prueba mínimo
@@ -28,7 +25,8 @@ def test_svg_to_gcode_legacy_adapters(tmp_path):
         logger=None,
         transform_strategies=[]
     )
-    gcode = generator.generate(paths, attrs)
+    gcode_service = GCodeGenerationService(generator)
+    gcode = gcode_service.generate(paths, attrs)
     assert isinstance(gcode, list)
     assert any("G1" in line or "G0" in line for line in gcode)
     # Guardar G-code generado

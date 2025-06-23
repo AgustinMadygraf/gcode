@@ -7,7 +7,9 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
-from application.generation.optimizer_factory import make_optimization_chain
+from infrastructure.optimizers.optimization_chain import OptimizationChain
+from application.generation.gcode_generation_service import GCodeGenerationService
+from infrastructure.path_sampler import PathSampler
 
 class DummySegment:
     def __init__(self, length, start=(0,0), end=(1,0)):
@@ -31,6 +33,7 @@ class TestGCodeGeneratorIntegration(unittest.TestCase):
         paths = [[seg]]
         svg_attr = {"viewBox": "0 0 10 10", "width": "10"}
         generator = GCodeGeneratorAdapter(
+            path_sampler=PathSampler(5),
             feed=1000,
             cmd_down="M3 S1000",
             cmd_up="M5",
@@ -39,9 +42,10 @@ class TestGCodeGeneratorIntegration(unittest.TestCase):
             max_height_mm=10,
             logger=None,
             transform_strategies=[DummyStrategy()],
-            optimizer=make_optimization_chain()  # Inyectar la cadena de optimización
+            optimizer=OptimizationChain()  # Inyectar la cadena de optimización
         )
-        gcode = generator.generate(paths, svg_attr)
+        gcode_service = GCodeGenerationService(generator)
+        gcode = gcode_service.generate(paths, svg_attr)
         self.assertIn("G1 X6.000 Y2.000 F1000", gcode)
         self.assertIn("G1 X11.000 Y2.000 F1000", gcode)
 

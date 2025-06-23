@@ -7,7 +7,9 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
-from application.generation.optimizer_factory import make_optimization_chain
+from infrastructure.optimizers.optimization_chain import OptimizationChain
+from application.generation.gcode_generation_service import GCodeGenerationService
+from infrastructure.path_sampler import PathSampler
 
 class DummySegment:
     def __init__(self, length, start=(0,0), end=(1,0)):
@@ -32,6 +34,7 @@ class TestGCodeCMDUP(unittest.TestCase):
         paths = [[seg1], [seg2]]  # Dos trazos separados
         svg_attr = {"viewBox": "0 0 20 10", "width": "20"}
         generator = GCodeGeneratorAdapter(
+            path_sampler=PathSampler(5),
             feed=1000,
             cmd_down="M3 S1000",
             cmd_up="M5",
@@ -40,9 +43,10 @@ class TestGCodeCMDUP(unittest.TestCase):
             max_height_mm=10,
             logger=None,
             transform_strategies=[DummyStrategy()],
-            optimizer=make_optimization_chain()  # Inyectar la cadena de optimización
+            optimizer=OptimizationChain()  # Inyectar la cadena de optimización
         )
-        gcode = generator.generate(paths, svg_attr)
+        gcode_service = GCodeGenerationService(generator)
+        gcode = gcode_service.generate(paths, svg_attr)
         # Debe haber al menos dos ocurrencias de CMD_UP (M5) separando los trazos
         cmd_up_count = sum(1 for line in gcode if line.strip() == "M5")
         self.assertGreaterEqual(cmd_up_count, 2)

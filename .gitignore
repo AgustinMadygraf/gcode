@@ -5,3 +5,4 @@ todo.md
 config/config.json
 .venv/
 docs_aux/todo.md
+.vscode/

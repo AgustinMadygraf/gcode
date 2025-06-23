@@ -7,6 +7,8 @@ from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapte
 from domain.path_transform_strategy import PathTransformStrategy
 from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
 from application.generation.optimizer_factory import make_optimization_chain
+from application.generation.gcode_generation_service import GCodeGenerationService
+from infrastructure.optimizers.optimization_chain import OptimizationChain
 
 class DummyStrategy(PathTransformStrategy):
     def transform(self, x, y):
@@ -25,8 +27,9 @@ generator = GCodeGeneratorAdapter(
     max_height_mm=MAX_HEIGHT_MM,
     logger=None,
     transform_strategies=[DummyStrategy()],
-    optimizer=make_optimization_chain()  # Inyectar la cadena de optimización
+    optimizer=OptimizationChain()  # Inyectar la cadena de optimización
 )
-gcode = generator.generate(paths, svg_attr)
+gcode_service = GCodeGenerationService(generator)
+gcode = gcode_service.generate(paths, svg_attr)
 for i, line in enumerate(gcode):
     print(f"{i:03d}: {line}")

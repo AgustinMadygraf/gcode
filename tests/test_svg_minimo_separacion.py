@@ -9,7 +9,8 @@ from infrastructure.svg_loader import SvgLoader
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
 from config.config import CMD_DOWN, CMD_UP, FEED, STEP_MM, DWELL_MS, MAX_HEIGHT_MM
-from application.generation.optimizer_factory import make_optimization_chain
+from infrastructure.optimizers.optimization_chain import OptimizationChain
+from application.generation.gcode_generation_service import GCodeGenerationService
 
 class DummyStrategy(PathTransformStrategy):
     def transform(self, x, y):
@@ -31,9 +32,10 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
             max_height_mm=MAX_HEIGHT_MM,
             logger=None,
             transform_strategies=[DummyStrategy()],
-            optimizer=make_optimization_chain()  # Inyectar la cadena de optimización
+            optimizer=OptimizationChain()  # Inyectar la cadena de optimización
         )
-        gcode = generator.generate(paths, svg_attr)
+        gcode_service = GCodeGenerationService(generator)
+        gcode = gcode_service.generate(paths, svg_attr)
         # Buscar los índices de los comandos CMD_DOWN y CMD_UP
         down_indices = [i for i, line in enumerate(gcode) if line.strip() == CMD_DOWN]
         up_indices = [i for i, line in enumerate(gcode) if line.strip() == CMD_UP]

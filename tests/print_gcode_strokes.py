@@ -7,7 +7,9 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.adapters.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.path_transform_strategy import PathTransformStrategy
+from infrastructure.optimizers.optimization_chain import OptimizationChain
 from application.generation.optimizer_factory import make_optimization_chain
+from application.generation.gcode_generation_service import GCodeGenerationService  # Importar el servicio
 
 class DummySegment:
     def __init__(self, length, start=(0,0), end=(1,0)):
@@ -39,15 +41,16 @@ def print_gcode_for_multiple_strokes():
         max_height_mm=10,
         logger=None,
         transform_strategies=[DummyStrategy()],
-        optimizer=make_optimization_chain()  # Inyectar la cadena de optimización
+        optimizer=OptimizationChain()  # Inyectar la cadena de optimización
     )
+    gcode_service = GCodeGenerationService(generator)
     # Imprimir puntos de inicio y fin de cada trazo
     all_points = generator.get_points_for_paths(paths, 1.0)
     for i, points in enumerate(all_points):
         if points:
             print(f"Trazo {i+1}: inicio=({points[0].x:.3f}, {points[0].y:.3f}), fin=({points[-1].x:.3f}, {points[-1].y:.3f})")
     print("\n--- G-code generado ---")
-    gcode = generator.generate(paths, svg_attr)
+    gcode = gcode_service.generate(paths, svg_attr)
     for i, line in enumerate(gcode):
         print(f"{i:03d}: {line}")
 

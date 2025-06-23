@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from infrastructure.path_sampler import PathSampler
-from domain.models import Point
+from domain.entities.point import Point
 
 class DummySegment:
     def __init__(self, length, start=(0,0), end=(1,0)):
