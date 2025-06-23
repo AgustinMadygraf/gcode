@@ -1,15 +1,24 @@
 """
 settings.py: Configuraciones técnicas de infraestructura
 """
-from pathlib import Path
 import json
-from domain.ports.config_provider import ConfigProviderPort
+import shutil
+from pathlib import Path
 
-class InfraSettings(ConfigProviderPort):
+class InfraSettings:
     def __init__(self, config_path: Path):
+        # Si no existe config.json, intenta copiar desde config_default.json
+        if not config_path.exists():
+            default_config_path = config_path.parent / "config_default.json"
+            if default_config_path.exists():
+                shutil.copy(default_config_path, config_path)
+            else:
+                raise FileNotFoundError(
+                    f"No se encontró ni {config_path} ni {default_config_path}"
+                )
         with open(config_path, encoding="utf-8") as f:
-            self._data = json.load(f)
-        data = self._data
+            self.config = json.load(f)
+        data = self.config
         self._svg_input_dir = Path(data["SVG_INPUT_DIR"])
         self._gcode_output_dir = Path(data["GCODE_OUTPUT_DIR"])
         self._cmd_down = data["CMD_DOWN"]
@@ -66,4 +75,4 @@ class InfraSettings(ConfigProviderPort):
         }
 
     def get(self, key, default=None):
-        return self._data.get(key, default)
+        return self.config.get(key, default)

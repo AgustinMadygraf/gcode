@@ -4,3 +4,4 @@ infrastructure/config/config.json
 data/svg_input/*
 !data/svg_input/test_lines.svg
 data/gcode_output/*
+!data/gcode_output/sample_compacted.gcode
