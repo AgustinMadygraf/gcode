@@ -38,3 +38,15 @@ class GCodeCommandBuilder:
         if self.optimizer:
             cmds = self.optimizer.optimize(cmds)
         return [cmd.to_gcode() for cmd in cmds]
+
+    def to_gcode_lines_with_metrics(self):
+        cmds = self.commands
+        metrics = {}
+        if self.optimizer:
+            # Si el optimizador devuelve (cmds, metrics)
+            result = self.optimizer(cmds)
+            if isinstance(result, tuple) and len(result) == 2:
+                cmds, metrics = result
+            else:
+                cmds = result
+        return [cmd.to_gcode() for cmd in cmds], metrics

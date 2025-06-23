@@ -34,7 +34,8 @@ from domain.geometry.scale_manager import ScaleManager
 from domain.gcode.gcode_command_builder import GCodeCommandBuilder
 from domain.gcode.gcode_border_rectangle_detector import GCodeBorderRectangleDetector
 from domain.gcode.gcode_border_filter import GCodeBorderFilter
-from domain.gcode_optimizer import ArcOptimizer, ColinearOptimizer
+from infrastructure.optimizers.arc_optimizer import ArcOptimizer
+from infrastructure.optimizers.colinear_optimizer import ColinearOptimizer
 from domain.gcode.commands.arc_command import RelativeMoveCommand
 
 class GCodeGenerator:
@@ -70,7 +71,7 @@ class GCodeGenerator:
         self.path_sampler = path_sampler  # <- Usar la instancia inyectada
         self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
 
-    def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False) -> List[str]:
+    def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
         """Genera las líneas de G-code a partir de los puntos procesados usando GCodeCommandBuilder.
         El primer punto de cada trazo se mueve con G0 (rápido), los siguientes con G1 (trazando).
         Deduplica puntos consecutivos idénticos (con tolerancia) para evitar comandos redundantes.
@@ -85,8 +86,16 @@ class GCodeGenerator:
 
         arc_optimizer = ArcOptimizer(tolerance=0.1, min_points=3)
         colinear_optimizer = ColinearOptimizer()
-        arc_optimizer.set_next(colinear_optimizer)
-        builder = GCodeCommandBuilder(optimizer=arc_optimizer)
+        # Si se requiere compatibilidad con el chain, puedes implementar set_next en los nuevos optimizadores
+        # arc_optimizer.set_next(colinear_optimizer)
+        # builder = GCodeCommandBuilder(optimizer=arc_optimizer)
+        # Ahora, para la nueva interfaz, se puede aplicar en cascada manualmente:
+        def apply_optimizers(cmds):
+            cmds1, metrics1 = arc_optimizer.optimize(cmds)
+            cmds2, metrics2 = colinear_optimizer.optimize(cmds1)
+            metrics = {**metrics1, **metrics2}
+            return cmds2, metrics
+        builder = GCodeCommandBuilder(optimizer=apply_optimizers)
         builder.move_to(0, 0, rapid=True)
         builder.dwell(self.dwell_ms / 1000.0)
         last_pos = Point(0, 0)  # Actualizar posición tras movimiento inicial
@@ -131,7 +140,7 @@ class GCodeGenerator:
         builder.dwell(self.dwell_ms / 1000.0)
         builder.move_to(0, 0, rapid=True)
         builder.commands.append(type('EndComment', (), {'to_gcode': lambda self: "(End)"})())
-        return builder.to_gcode_lines()
+        return builder.to_gcode_lines_with_metrics()
 
     def generate(self, paths, svg_attr) -> List[str]:
         " Generate G-code from SVG paths. "
@@ -160,9 +169,10 @@ class GCodeGenerator:
         if self.logger:
             self.logger.info(f"Relative moves enabled: {use_relative_moves}")
         all_points = self.sample_transform_pipeline(paths, scale)
-        gcode = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+        gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
         if self.logger:
             self.logger.info(f"G-code lines generated: {len(gcode)}")
+            self.logger.info(f"Métricas de optimización: {metrics}")
         # --- Post-procesamiento: eliminar borde si está configurado ---
         if remove_border:
             detector = GCodeBorderRectangleDetector()
