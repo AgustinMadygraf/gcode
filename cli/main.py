@@ -10,7 +10,7 @@ from infrastructure.config.config import Config
 from adapters.input.config_adapter import ConfigAdapter
 from domain.ports.config_port import ConfigPort
 from domain.ports.config_provider import ConfigProviderPort
-from domain.path_transform_strategy import MirrorVerticalStrategy
+from domain.services.path_transform_strategies import MirrorVerticalStrategy
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from application.use_cases.gcode_compression.gcode_compression_service import GcodeCompressionService

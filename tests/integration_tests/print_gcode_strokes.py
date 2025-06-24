@@ -10,22 +10,8 @@ from domain.path_transform_strategy import PathTransformStrategy
 from domain.services.optimization.optimization_chain import OptimizationChain
 from application.generation.optimizer_factory import make_optimization_chain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService  # Importar el servicio
-
-class DummySegment:
-    def __init__(self, length, start=(0,0), end=(1,0)):
-        self._length = length
-        self._start = start
-        self._end = end
-    def length(self):
-        return self._length
-    def point(self, t):
-        x = self._start[0] + (self._end[0] - self._start[0]) * t
-        y = self._start[1] + (self._end[1] - self._start[1]) * t
-        return complex(x, y)
-
-class DummyStrategy(PathTransformStrategy):
-    def transform(self, x, y):
-        return x, y
+from tests.mocks.mock_geometry import DummySegment
+from tests.mocks.mock_strategy import DummyStrategy
 
 def print_gcode_for_multiple_strokes():
     seg1 = DummySegment(5, (0,0), (5,0))

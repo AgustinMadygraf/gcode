@@ -3,7 +3,7 @@ Adaptador para generación de G-code, implementando el puerto de dominio GcodeGe
 """
 from typing import List, Optional, Any, Dict
 from domain.entities.point import Point
-from domain.path_transform_strategy import PathTransformStrategy, ScaleStrategy
+from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.ports.transform_manager_port import TransformManagerPort
@@ -33,7 +33,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         max_width_mm: float = 180.0,
         config: ConfigPort,  # Inyectar puerto de configuración
         logger: LoggerPort = None,
-        transform_strategies: Optional[List[PathTransformStrategy]] = None,
+        transform_strategies: Optional[List[PathTransformStrategyPort]] = None,
         optimizer: Optional[GcodeOptimizationChainPort] = None,
         transform_manager: Optional[TransformManagerPort] = None
     ):
@@ -48,7 +48,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self.transform_strategies = transform_strategies or []
         if self.transform_strategies:
             for s in self.transform_strategies:
-                if not isinstance(s, PathTransformStrategy):
+                if not isinstance(s, PathTransformStrategyPort):
                     raise TypeError("Todas las estrategias deben implementar PathTransformStrategy")
         self.path_sampler = path_sampler
         self.transform_manager = transform_manager if transform_manager is not None else NullTransformManager()
@@ -150,8 +150,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             points = []
             for pt in self.path_sampler.sample(p):
                 x, y = self.transform_manager.apply(pt.x, pt.y)
-                if not any(isinstance(s, ScaleStrategy) for s in self.transform_strategies):
-                    x, y = x * scale, y * scale
+                # Escalado directo aplicado si no hay estrategia de escalado polimórfica
+                x, y = x * scale, y * scale
                 points.append(Point(x, y))
             result.append(points)
         return result

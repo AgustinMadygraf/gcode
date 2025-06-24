@@ -3,16 +3,11 @@ Tests para GeometryService (capa de dominio).
 """
 import unittest
 from domain.services.geometry import GeometryService
-from tests.mocks.mock_geometry import MockSegment
+from tests.mocks.mock_geometry import MockSegment, CustomMockSegment
 
 class TestGeometryService(unittest.TestCase):
     def test_bbox_line(self):
-        # Creamos un segmento específico para este test
-        class CustomMockSegment(MockSegment):
-            def point(self, t):
-                # Simula un segmento de línea de (0,0) a (10,10)
-                return complex(10 * t, 10 * t)
-                
+        # Usar el mock centralizado
         paths = [[CustomMockSegment()]]
         bbox = GeometryService._calculate_bbox(paths)
         self.assertAlmostEqual(bbox[0], 0)

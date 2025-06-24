@@ -5,7 +5,7 @@ filtrado y transformaciones.
 """
 from typing import List, Any, Callable
 from svgpathtools import Path as SvgPath
-from domain.path_filter import PathFilter
+from domain.services.path_filter_service import PathFilter
 
 class PathProcessingService:
     """ Servicio de aplicación para procesar paths SVG: 

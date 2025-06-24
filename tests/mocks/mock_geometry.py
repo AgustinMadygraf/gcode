@@ -65,3 +65,12 @@ class DummySegment:
         x0, y0 = self.start
         x1, y1 = self.end
         return ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+
+
+class CustomMockSegment(MockSegment):
+    """
+    Mock especializado para tests que simula un segmento de línea de (0,0) a (10,10).
+    """
+    def point(self, t):
+        # Simula un segmento de línea de (0,0) a (10,10)
+        return complex(10 * t, 10 * t)

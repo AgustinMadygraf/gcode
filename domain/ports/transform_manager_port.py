@@ -4,7 +4,7 @@ Define la interfaz TransformManagerPort para aplicar estrategias de transformaci
 """
 from abc import ABC, abstractmethod
 from typing import List, Tuple
-from domain.path_transform_strategy import PathTransformStrategy
+from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
 
 class TransformManagerPort(ABC):
     @abstractmethod
@@ -13,7 +13,7 @@ class TransformManagerPort(ABC):
         pass
 
     @abstractmethod
-    def add_strategy(self, strategy: PathTransformStrategy):
+    def add_strategy(self, strategy: PathTransformStrategyPort):
         """Agrega una nueva estrategia de transformación."""
         pass
 

@@ -1,6 +1,6 @@
 import unittest
 from svgpathtools import Path, Line
-from domain.path_filter import PathFilter
+from domain.services.path_filter_service import PathFilter
 
 class TestPathFilter(unittest.TestCase):
     def test_removes_border_but_keeps_internal_rectangle(self):
