@@ -19,9 +19,10 @@ Ejemplo de uso:
 """
 from domain.path_transform_strategy import PathTransformStrategy
 from domain.ports.logger_port import LoggerPort
+from domain.ports.transform_manager_port import TransformManagerPort
 from infrastructure.exceptions import TransformStrategyError
 
-class TransformManager:
+class TransformManager(TransformManagerPort):
     """Gestiona y aplica una lista de estrategias de transformación a puntos (x, y).
     Todas las estrategias deben implementar PathTransformStrategy.
     """

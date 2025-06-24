@@ -6,7 +6,7 @@ from domain.entities.point import Point
 from domain.path_transform_strategy import PathTransformStrategy, ScaleStrategy
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
 from domain.ports.path_sampler_port import PathSamplerPort
-from infrastructure.transform_manager import TransformManager
+from domain.ports.transform_manager_port import TransformManagerPort
 from domain.geometry.scale_manager import ScaleManager
 from domain.gcode.gcode_command_builder import GCodeCommandBuilder
 from domain.gcode.gcode_border_rectangle_detector import GCodeBorderRectangleDetector
@@ -16,6 +16,7 @@ from domain.gcode.commands.arc_command import RelativeMoveCommand
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
+from domain.ports.transform_manager_port import NullTransformManager
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """Adaptador para generación de G-code desde paths SVG, implementando el puerto de dominio."""
@@ -33,7 +34,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         config: ConfigPort,  # Inyectar puerto de configuración
         logger: LoggerPort = None,
         transform_strategies: Optional[List[PathTransformStrategy]] = None,
-        optimizer: Optional[GcodeOptimizationChainPort] = None
+        optimizer: Optional[GcodeOptimizationChainPort] = None,
+        transform_manager: Optional[TransformManagerPort] = None
     ):
         self.feed = feed
         self.cmd_down = cmd_down
@@ -49,7 +51,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 if not isinstance(s, PathTransformStrategy):
                     raise TypeError("Todas las estrategias deben implementar PathTransformStrategy")
         self.path_sampler = path_sampler
-        self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
+        self.transform_manager = transform_manager if transform_manager is not None else NullTransformManager()
         self.optimizer = optimizer
         self.config = config
 

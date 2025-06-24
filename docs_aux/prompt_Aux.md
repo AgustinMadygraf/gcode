@@ -23,7 +23,7 @@ Sí, realiza la tarea que mencionas
 ---
 
 ```
- Desestima las tareas de impacto medio y bajo impacto. Dime que tareas haz realizado y cuales me quedan pendiente.:
+ Desestima las tareas de impacto medio y bajo impacto. Dime que tareas haz realizado y cuales me quedan pendiente. Luego avancemos con la tarea de mayor impacto pendiente.
 
 
 ```

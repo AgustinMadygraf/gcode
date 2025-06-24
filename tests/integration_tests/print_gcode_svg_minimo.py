@@ -4,15 +4,11 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from adapters.input.svg_loader_adapter import SvgLoaderAdapter
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
-from domain.path_transform_strategy import PathTransformStrategy
 from infrastructure.config.config import Config
 from application.generation.optimizer_factory import make_optimization_chain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from domain.services.optimization.optimization_chain import OptimizationChain
-
-class MockStrategy(PathTransformStrategy):
-    def transform(self, x, y):
-        return x, y
+from tests.mocks.mock_strategy import MockStrategy
 
 config = Config()
 svg_file = Path("../svg_input/test_lines.svg").resolve()

@@ -8,18 +8,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from adapters.input.path_sampler import PathSampler
 from domain.entities.point import Point
-
-class MockSegment:
-    def __init__(self, length, start=(0,0), end=(1,0)):
-        self._length = length
-        self._start = start
-        self._end = end
-    def length(self):
-        return self._length
-    def point(self, t):
-        x = self._start[0] + (self._end[0] - self._start[0]) * t
-        y = self._start[1] + (self._end[1] - self._start[1]) * t
-        return complex(x, y)
+from tests.mocks.mock_geometry import MockSegment
 
 class TestPathSampler(unittest.TestCase):
     def test_single_segment(self):

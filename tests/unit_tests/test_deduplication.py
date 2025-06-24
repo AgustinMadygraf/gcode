@@ -10,6 +10,7 @@ from domain.entities.point import Point
 from domain.services.optimization.optimization_chain import OptimizationChain
 from adapters.input.path_sampler import PathSampler
 from infrastructure.config.config import Config
+from tests.mocks.mock_geometry import DummySegment
 
 SVG_SIMPLE_LINE = '''<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M1 1 L9 1"/></svg>'''
 SVG_BROKEN_LINE = '''<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M1 1 L5 1 M5.001 1 L9 1"/></svg>'''
@@ -25,19 +26,6 @@ GEN_KWARGS = dict(
     max_height_mm=config.max_height_mm,
     optimizer=OptimizationChain()
 )
-
-class DummySegment:
-    def __init__(self, start, end):
-        self._start = start
-        self._end = end
-    def point(self, t):
-        x = self._start[0] + (self._end[0] - self._start[0]) * t
-        y = self._start[1] + (self._end[1] - self._start[1]) * t
-        return complex(x, y)
-    def length(self):
-        x0, y0 = self._start
-        x1, y1 = self._end
-        return ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
 
 def test_single_line_no_duplicate_g1(tmp_path):
     # Guardar SVG temporal

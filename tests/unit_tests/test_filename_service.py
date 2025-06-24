@@ -6,12 +6,7 @@ from pathlib import Path
 from domain.services.filename_service import FilenameService
 import tempfile
 import os
-
-class DummyConfigProvider:
-    def __init__(self, output_dir):
-        self._output_dir = output_dir
-    def get_gcode_output_dir(self):
-        return self._output_dir
+from tests.mocks.mock_config import DummyConfigProvider
 
 class TestFilenameService(unittest.TestCase):
     def test_next_filename(self):
