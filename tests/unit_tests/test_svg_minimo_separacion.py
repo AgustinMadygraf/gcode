@@ -35,8 +35,8 @@ class MockPathSampler(PathSamplerPort):
             points.append(Point(z1.real, z1.imag))
         return points
 
-class TestSVGMinimoSeparacion(unittest.TestCase):
-    def test_separacion_trazos_svg_minimo(self, config):
+class TestMinimumSeparationSVG(unittest.TestCase):
+    def test_minimum_stroke_separation(self, config):
         from pathlib import Path
         svg_file = (Path(__file__).parent.parent / "svg_input" / "test_lines.svg").resolve()
         svg = SvgLoaderAdapter(svg_file)
@@ -52,7 +52,7 @@ class TestSVGMinimoSeparacion(unittest.TestCase):
             max_height_mm=config.max_height_mm,
             logger=None,
             transform_strategies=[MockStrategy()],
-            optimizer=OptimizationChain()  # Inyectar la cadena de optimización
+            optimizer=OptimizationChain()
         )
         gcode_service = GCodeGenerationService(generator)
         gcode = gcode_service.generate(paths, svg_attr)

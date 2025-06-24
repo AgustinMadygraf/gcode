@@ -14,7 +14,8 @@ from domain.gcode.gcode_border_filter import GCodeBorderFilter
 from domain.ports.gcode_optimization_chain_port import GcodeOptimizationChainPort
 from domain.gcode.commands.arc_command import RelativeMoveCommand
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
-from infrastructure.config.config import Config
+from domain.ports.config_port import ConfigPort
+from domain.ports.logger_port import LoggerPort
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """Adaptador para generación de G-code desde paths SVG, implementando el puerto de dominio."""
@@ -29,7 +30,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         dwell_ms: int,
         max_height_mm: float,
         max_width_mm: float = 180.0,
-        logger=None,
+        config: ConfigPort,  # Inyectar puerto de configuración
+        logger: LoggerPort = None,
         transform_strategies: Optional[List[PathTransformStrategy]] = None,
         optimizer: Optional[GcodeOptimizationChainPort] = None
     ):
@@ -40,7 +42,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self.dwell_ms = dwell_ms
         self.max_height_mm = max_height_mm
         self.max_width_mm = max_width_mm
-        self.logger = logger
+        self.logger: LoggerPort = logger
         self.transform_strategies = transform_strategies or []
         if self.transform_strategies:
             for s in self.transform_strategies:
@@ -49,6 +51,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self.path_sampler = path_sampler
         self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
         self.optimizer = optimizer
+        self.config = config
 
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
         import math
@@ -115,13 +118,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 f"ymin={ymin:.3f}, ymax={ymax:.3f}")
             self.logger.info(f"Scale applied: {scale:.3f}")
         try:
-            config = Config()
-            remove_border = config.get("REMOVE_BORDER_RECTANGLE", True)
+            remove_border = self.config.get("REMOVE_BORDER_RECTANGLE", True)
             use_relative_moves = False
-            if "COMPRESSION" in config._data:
-                use_relative_moves = config._data["COMPRESSION"].get("USE_RELATIVE_MOVES", False)
+            if hasattr(self.config, '_data') and "COMPRESSION" in self.config._data:
+                use_relative_moves = self.config._data["COMPRESSION"].get("USE_RELATIVE_MOVES", False)
             else:
-                use_relative_moves = config.get("USE_RELATIVE_MOVES", False)
+                use_relative_moves = self.config.get("USE_RELATIVE_MOVES", False)
         except Exception:
             remove_border = True
             use_relative_moves = False

@@ -9,15 +9,16 @@ gcode/
 ├── adapters/                  # Adaptadores de entrada/salida (implementaciones de puertos)
 ├── application/
 │   └── use_cases/            # Casos de uso y orquestación
+│       └── path_processing/  # Orquestación de conversión de paths a G-code
 ├── cli/                      # Interfaz de usuario (CLI)
 ├── infrastructure/
 │   └── config/               # Configuración (migrada desde config/)
 ├── domain/                   # Entidades, modelos, lógica de negocio, puertos
+│   └── ports/                # Puertos (interfaces) de dominio
 │   └── services/
 │       └── optimization/     # Optimizadores de G-code (lógica de negocio)
-├── infrastructure/           # Implementaciones técnicas y utilidades
-├── svg_input/                # Archivos SVG de entrada
-├── gcode_output/             # Archivos G-code generados
+├── data/svg_input/           # Archivos SVG de entrada
+├── data/gcode_output/        # Archivos G-code generados
 ├── tests/                    # Tests unitarios y de integración
 └── docs/                     # Documentación
 ```
@@ -27,6 +28,9 @@ gcode/
 - Optimizadores movidos a `domain/services/optimization/`.
 - Inyección de configuración en adaptadores (usando `infrastructure.config.Config`).
 - Eliminados tests y código legacy.
+- Orquestación de conversión de paths a G-code migrada a `application/use_cases/path_processing/path_conversion_service.py`.
+- Puerto de conversión definido en `domain/ports/path_conversion_port.py`.
+- Archivo `domain/path_conversion_service.py` deprecado y marcado para eliminación.
 - Estructura y nomenclatura alineadas a Clean Architecture.
 
 ## Descripción de Capas
@@ -38,6 +42,7 @@ gcode/
 ### 2. Aplicación (`application/`)
 - Orquesta casos de uso y coordina servicios de dominio.
 - Depende solo de la capa de dominio.
+- La orquestación de conversión de paths a G-code reside aquí.
 
 ### 3. Infraestructura (`infrastructure/`, `infrastructure/config/`)
 - Implementa adaptadores, servicios externos y detalles técnicos.

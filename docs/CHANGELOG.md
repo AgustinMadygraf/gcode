@@ -12,4 +12,4 @@
 - Lógica de generación de nombres migrada de la CLI a `application/generation/filename_service.py`.
 - Se crearon tests unitarios para ambos servicios.
 - Eliminada la interfaz `ISvgLoader` (usar `SvgLoaderPort`).
-- Se creó `domain/path_conversion_service.py` como interfaz de orquestación de conversión de paths a G-code.
+- Se migró la orquestación de conversión de paths a G-code a `application/use_cases/path_processing/path_conversion_service.py` y el puerto a `domain/ports/path_conversion_port.py`. El archivo `domain/path_conversion_service.py` está deprecado y será eliminado.

@@ -18,18 +18,19 @@ Ejemplo de uso:
     x2, y2 = tm.apply(1, 2)  # (-1, 2)
 """
 from domain.path_transform_strategy import PathTransformStrategy
+from domain.ports.logger_port import LoggerPort
 
 class TransformManager:
     """Gestiona y aplica una lista de estrategias de transformación a puntos (x, y).
     Todas las estrategias deben implementar PathTransformStrategy.
     """
-    def __init__(self, strategies: list[PathTransformStrategy] = None, logger=None):
+    def __init__(self, strategies: list[PathTransformStrategy] = None, logger: LoggerPort = None):
         if strategies is not None:
             for s in strategies:
                 if not isinstance(s, PathTransformStrategy):
                     raise TypeError("Todas las estrategias deben implementar PathTransformStrategy")
         self.strategies = strategies or []
-        self.logger = logger
+        self.logger: LoggerPort = logger
 
     def add_strategy(self, strategy: PathTransformStrategy):
         """Agrega una nueva estrategia de transformación al manager."""

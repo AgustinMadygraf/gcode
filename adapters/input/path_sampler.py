@@ -14,12 +14,13 @@ import math
 import numpy as np
 from domain.entities.point import Point
 from domain.ports.path_sampler_port import PathSamplerPort
+from domain.ports.logger_port import LoggerPort
 
 
 class PathSampler(PathSamplerPort):
     """Samples points along SVG paths at specified intervals."""
 
-    def __init__(self, step: float, logger=None):
+    def __init__(self, step: float, logger: LoggerPort = None):
         if step <= 0:
             raise ValueError("step must be positive")
         self.step = step

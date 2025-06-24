@@ -1,8 +1,9 @@
 """
 Test de integración: flujo completo SVG → G-code
 """
-from gcode.svg_loader import SvgLoader
-from gcode.gcode_generator import GcodeGenerator, GCodeGenerationService
+from adapters.input.svg_loader_adapter import SvgLoaderAdapter
+from domain.gcode_generator import GcodeGenerator, GCodeGenerationService
+
 
 def test_svg_to_gcode(tmp_path):
     # SVG de prueba mínimo
@@ -11,8 +12,7 @@ def test_svg_to_gcode(tmp_path):
     svg_file.write_text(svg_content, encoding="utf-8")
 
     # Loader
-    loader = SvgLoader(svg_file)
-    loader.load()
+    loader = SvgLoaderAdapter(svg_file)
     paths = loader.get_paths()
     attrs = loader.get_attributes()
 

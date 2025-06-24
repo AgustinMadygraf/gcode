@@ -5,6 +5,8 @@ Main CLI entry point for SVG to G-code conversion (OOP version).
 
 from pathlib import Path
 from infrastructure.config.config import Config
+from adapters.input.config_adapter import ConfigAdapter
+from domain.ports.config_port import ConfigPort
 from domain.ports.config_provider import ConfigProviderPort
 from domain.path_transform_strategy import MirrorVerticalStrategy
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
@@ -12,29 +14,32 @@ from application.use_cases.gcode_generation.gcode_generation_service import GCod
 from application.use_cases.gcode_compression.gcode_compression_service import GcodeCompressionService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from infrastructure.compressors.arc_compressor import ArcCompressor
-from adapters.input.config_adapter import ConfigAdapter
 from cli.svg_file_selector import SvgFileSelector
-from infrastructure.logger import logger
 from adapters.input.svg_loader_adapter import SvgLoaderAdapter
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from adapters.input.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
 from application.use_cases.file_output.filename_service import FilenameService
+from infrastructure.factories.container import Container
+from domain.ports.logger_port import LoggerPort
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
     def __init__(self):
-        self.config = Config(Path("infrastructure/config/config.json"))
-        self.selector = SvgFileSelector(self.config.svg_input_dir)
-        self.filename_gen = FilenameService(self.config)
-        self.logger = logger
-        self.feed = self.config.feed
-        self.cmd_down = self.config.cmd_down
-        self.cmd_up = self.config.cmd_up
-        self.step_mm = self.config.step_mm
-        self.dwell_ms = self.config.dwell_ms
-        self.max_height_mm = self.config.max_height_mm
+        self.container = Container()
+        self.config = self.container.config
+        self.config_port = self.container.config_port
+        self.selector = self.container.selector
+        self.filename_gen = self.container.filename_gen
+        self.logger: LoggerPort = self.container.logger
+        self.feed = self.container.feed
+        self.cmd_down = self.container.cmd_down
+        self.cmd_up = self.container.cmd_up
+        self.step_mm = self.container.step_mm
+        self.dwell_ms = self.container.dwell_ms
+        self.max_height_mm = self.container.max_height_mm
+        self.max_width_mm = self.container.max_width_mm
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
@@ -84,24 +89,12 @@ class SvgToGcodeApp:
             min_length=1e-3,
             remove_svg_border=self.config.get_remove_svg_border(),
             border_tolerance=self.config.get_border_detection_tolerance()
-            # No pasar transform_strategies aquí, solo filtra y divide
         )
         processed_paths = path_processor.process(paths, svg_attr)
         self.logger.info("Paths útiles tras procesamiento: %d", len(processed_paths))
 
         # --- Generación de G-code mediante servicio de dominio ---
-        path_sampler = PathSampler(self.step_mm, logger=self.logger)
-        generator: GcodeGeneratorPort = GCodeGeneratorAdapter(
-            path_sampler=path_sampler,
-            feed=self.feed,
-            cmd_down=self.cmd_down,
-            cmd_up=self.cmd_up,
-            step_mm=self.step_mm,
-            dwell_ms=self.dwell_ms,
-            max_height_mm=self.max_height_mm,
-            logger=self.logger,
-            transform_strategies=transform_strategies
-        )
+        generator: GcodeGeneratorPort = self.container.get_gcode_generator(transform_strategies=transform_strategies)
         gcode_service = GCodeGenerationService(generator)
         gcode_lines = gcode_service.generate(processed_paths, svg_attr)
         self.logger.debug("Generated G-code with %d lines.", len(gcode_lines))
