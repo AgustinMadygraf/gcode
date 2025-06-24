@@ -19,6 +19,7 @@ Ejemplo de uso:
 """
 from domain.path_transform_strategy import PathTransformStrategy
 from domain.ports.logger_port import LoggerPort
+from infrastructure.exceptions import TransformStrategyError
 
 class TransformManager:
     """Gestiona y aplica una lista de estrategias de transformación a puntos (x, y).
@@ -28,14 +29,14 @@ class TransformManager:
         if strategies is not None:
             for s in strategies:
                 if not isinstance(s, PathTransformStrategy):
-                    raise TypeError("Todas las estrategias deben implementar PathTransformStrategy")
+                    raise TransformStrategyError("Todas las estrategias deben implementar PathTransformStrategy")
         self.strategies = strategies or []
         self.logger: LoggerPort = logger
 
     def add_strategy(self, strategy: PathTransformStrategy):
         """Agrega una nueva estrategia de transformación al manager."""
         if not isinstance(strategy, PathTransformStrategy):
-            raise TypeError("La estrategia debe implementar PathTransformStrategy")
+            raise TransformStrategyError("La estrategia debe implementar PathTransformStrategy")
         self.strategies.append(strategy)
 
     def apply(self, x: float, y: float) -> tuple[float, float]:

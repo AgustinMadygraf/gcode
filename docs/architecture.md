@@ -32,9 +32,9 @@ gcode/
 - Optimizadores movidos a `domain/services/optimization/`.
 - Inyección de configuración en adaptadores (usando `infrastructure.config.Config`).
 - Eliminados tests y código legacy.
-- Orquestación de conversión de paths a G-code migrada a `application/use_cases/path_processing/path_conversion_service.py`.
-- Puerto de conversión definido en `domain/ports/path_conversion_port.py`.
+- Orquestación de conversión de paths a G-code integrada en `application/use_cases/path_processing/path_processing_service.py`.
 - Archivo `domain/path_conversion_service.py` eliminado definitivamente (junio 2025).
+- Archivo `domain/ports/path_conversion_port.py` eliminado por ser código muerto (junio 2025).
 - Estructura y nomenclatura alineadas a Clean Architecture.
 
 ## Descripción de Capas

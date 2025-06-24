@@ -2,53 +2,17 @@
 Test automatizado para validar la separación de trazos en el G-code generado a partir de un SVG mínimo.
 """
 import unittest
-from domain.ports.path_sampler_port import PathSamplerPort
-from domain.ports.gcode_generator_port import GcodeGeneratorPort
-from domain.ports.svg_loader_port import SvgLoaderPort  # Suponiendo que existe el puerto
-from domain.path_transform_strategy import PathTransformStrategy
-from infrastructure.config.config import Config
-from domain.services.optimization.optimization_chain import OptimizationChain
-from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
-from domain.entities.point import Point
 import pytest
+from infrastructure.config.config import Config
+from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
+from tests.mocks.mock_strategy import MockStrategy
+from tests.mocks.mock_path_sampler import MockPathSampler
+from tests.mocks.mock_svg_loader import MockSvgLoader
+from tests.mocks.mock_gcode_generator import MockGCodeGenerator
 
 @pytest.fixture(scope="module")
 def config():
     return Config()
-
-class MockStrategy(PathTransformStrategy):
-    def transform(self, x, y):
-        return x, y
-
-class MockPathSampler(PathSamplerPort):
-    def sample(self, path):
-        # Convierte los segmentos del path en una lista de Point
-        points = []
-        for seg in path:
-            # samplea 2 puntos por segmento (inicio y fin)
-            z0 = seg.point(0)
-            z1 = seg.point(1)
-            points.append(Point(z0.real, z0.imag))
-            points.append(Point(z1.real, z1.imag))
-        return points
-
-class MockSvgLoader(SvgLoaderPort):
-    def __init__(self, svg_file):
-        self.svg_file = svg_file
-    def get_paths(self):
-        # Retorna paths mockeados para el test
-        return []  # Implementar según necesidad del test
-    def get_attributes(self):
-        return {}
-    def load(self):
-        pass  # Implementación vacía para cumplir con la interfaz
-
-class MockGCodeGenerator(GcodeGeneratorPort):
-    def __init__(self, **kwargs):
-        pass
-    def generate(self, paths, svg_attr):
-        # Simula G-code con comandos CMD_DOWN y CMD_UP
-        return ["G1 X0 Y0", "M3 S255", "G1 X1 Y1", "M5"]
 
 class TestMinimumSeparationSVG(unittest.TestCase):
     def test_minimum_stroke_separation(self):

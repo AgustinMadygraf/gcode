@@ -9,7 +9,9 @@ from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
 from domain.ports.file_selector_port import FileSelectorPort
 from domain.ports.event_bus_port import EventBusPort
+from domain.ports.error_handler_port import ErrorHandlerPort
 from infrastructure.events.simple_event_bus import SimpleEventBus
+from infrastructure.error_handling.error_handler import ErrorHandler
 
 class Container:
     def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None):
@@ -19,6 +21,7 @@ class Container:
         self._selector = file_selector  # Inyectado desde el exterior
         self._event_bus = event_bus or SimpleEventBus()
         self._filename_gen = None
+        self._error_handler = None
         self.feed = self.config.feed
         self.cmd_down = self.config.cmd_down
         self.cmd_up = self.config.cmd_up
@@ -48,6 +51,12 @@ class Container:
     @property
     def event_bus(self) -> EventBusPort:
         return self._event_bus
+
+    @property
+    def error_handler(self) -> ErrorHandlerPort:
+        if self._error_handler is None:
+            self._error_handler = ErrorHandler(self.logger)
+        return self._error_handler
 
     def get_gcode_generator(self, transform_strategies=None):
         path_sampler = AdapterFactory.create_path_sampler(self.step_mm, logger=self.logger)

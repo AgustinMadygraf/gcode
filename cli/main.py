@@ -27,11 +27,13 @@ from infrastructure.factories.adapter_factory import AdapterFactory
 from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.infra_factory import InfraFactory
 from application.exceptions import AppError, DomainError, InfrastructureError
+from infrastructure.error_handling import ExceptionHandler
 from domain.ports.file_selector_port import FileSelectorPort
 from adapters.input.svg_file_selector_adapter import SvgFileSelectorAdapter
 
 class SvgToGcodeApp:
-    " Main application class for converting SVG files to G-code. "
+    """ Main application class for converting SVG files to G-code. """
+    
     def __init__(self):
         file_selector: FileSelectorPort = SvgFileSelectorAdapter()
         self.container = Container(file_selector=file_selector)
@@ -50,75 +52,84 @@ class SvgToGcodeApp:
         self.event_bus = self.container.event_bus
         # Suscribimos un handler de ejemplo al evento 'gcode_generated'
         self.event_bus.subscribe('gcode_generated', self._on_gcode_generated)
-
+        
     def _on_gcode_generated(self, payload):
         self.logger.info(f"[EVENTO] G-code generado para: {payload['svg_file']} → {payload['gcode_file']}")
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
             f.write("\n".join(gcode_lines))
+            
+    def _get_context_info(self):
+        """Obtener información de contexto para el manejo de excepciones"""
+        return {
+            "app_version": "1.3.0",
+            "config_loaded": bool(self.config),
+            "max_dimensions": f"{self.max_width_mm}x{self.max_height_mm}mm"
+        }
+    
+    def _execute_workflow(self):
+        """Lógica principal del proceso de conversión"""
+        svg_file = self.selector.select_svg_file()
+        if not svg_file:
+            self.logger.error("No se seleccionó un archivo SVG válido. Operación cancelada.")
+            print("[ERROR] No se seleccionó un archivo SVG válido. El proceso ha sido cancelado.")
+            return False
+            
+        svg_file = Path(svg_file)  # Asegura que sea un Path
+        self.logger.debug("Selected SVG file: %s", svg_file)
+        gcode_file = self.filename_gen.next_filename(svg_file)
+        self.logger.debug("Output G-code file: %s", gcode_file)
 
+        # Calcular bbox y centro usando GeometryService
+        svg_loader_factory = self.container.get_svg_loader
+        paths = svg_loader_factory(svg_file).get_paths()
+        try:
+            bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)
+        except (AttributeError, ValueError):
+            bbox = (0, 0, 0, 0)
+        _xmin, _xmax, _ymin, _ymax = bbox
+        _cx, cy = DomainFactory.create_geometry_service()._center(bbox)
+        transform_strategies = [MirrorVerticalStrategy(cy)]
+
+        # Instanciar servicios/casos de uso usando factories
+        path_processor = PathProcessingService(
+            min_length=1e-3,
+            remove_svg_border=self.config.get_remove_svg_border(),
+            border_tolerance=self.config.get_border_detection_tolerance()
+        )
+        generator = self.container.get_gcode_generator(transform_strategies=transform_strategies)
+        gcode_service = GCodeGenerationService(generator)
+        compressors = [ArcCompressor()]
+        compression_service = GcodeCompressionService(compressors, logger=self.logger)
+        config_reader = AdapterFactory.create_config_adapter(self.config)
+        compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
+        svg_to_gcode_use_case = SvgToGcodeUseCase(
+            svg_loader_factory=svg_loader_factory,
+            path_processing_service=path_processor,
+            gcode_generation_service=gcode_service,
+            gcode_compression_use_case=compress_use_case,
+            logger=self.logger,
+            filename_service=self.filename_gen
+        )
+        # Ejecutar caso de uso
+        result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
+        self._write_gcode_file(gcode_file, result['compressed_gcode'])
+        self.logger.info("Archivo G-code escrito: %s", gcode_file)
+        # Publicar evento tras generar el archivo
+        self.event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
+        return True
+        
     def run(self):
         " Main method to run the SVG to G-code conversion process. "
-        try:
-            svg_file = self.selector.select_svg_file()
-            if not svg_file:
-                self.logger.error("No se seleccionó un archivo SVG válido. Operación cancelada.")
-                print("[ERROR] No se seleccionó un archivo SVG válido. El proceso ha sido cancelado.")
-                return
-            svg_file = Path(svg_file)  # Asegura que sea un Path
-            self.logger.debug("Selected SVG file: %s", svg_file)
-            gcode_file = self.filename_gen.next_filename(svg_file)
-            self.logger.debug("Output G-code file: %s", gcode_file)
-
-            # Calcular bbox y centro usando GeometryService
-            svg_loader_factory = self.container.get_svg_loader
-            paths = svg_loader_factory(svg_file).get_paths()
-            try:
-                bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)
-            except (AttributeError, ValueError):
-                bbox = (0, 0, 0, 0)
-            _xmin, _xmax, _ymin, _ymax = bbox
-            _cx, cy = DomainFactory.create_geometry_service()._center(bbox)
-            transform_strategies = [MirrorVerticalStrategy(cy)]
-
-            # Instanciar servicios/casos de uso usando factories
-            path_processor = PathProcessingService(
-                min_length=1e-3,
-                remove_svg_border=self.config.get_remove_svg_border(),
-                border_tolerance=self.config.get_border_detection_tolerance()
-            )
-            generator = self.container.get_gcode_generator(transform_strategies=transform_strategies)
-            gcode_service = GCodeGenerationService(generator)
-            compressors = [ArcCompressor()]
-            compression_service = GcodeCompressionService(compressors, logger=self.logger)
-            config_reader = AdapterFactory.create_config_adapter(self.config)
-            compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
-            svg_to_gcode_use_case = SvgToGcodeUseCase(
-                svg_loader_factory=svg_loader_factory,
-                path_processing_service=path_processor,
-                gcode_generation_service=gcode_service,
-                gcode_compression_use_case=compress_use_case,
-                logger=self.logger,
-                filename_service=self.filename_gen
-            )
-            # Ejecutar caso de uso
-            result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
-            self._write_gcode_file(gcode_file, result['compressed_gcode'])
-            self.logger.info("Archivo G-code escrito: %s", gcode_file)
-            # Publicar evento tras generar el archivo
-            self.event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
-        except FileNotFoundError:
-            self.logger.error("La carpeta configurada para SVG está vacía o no contiene archivos SVG.")
-        except DomainError as de:
-            self.logger.error(f"Error de dominio: {de}")
-            print(f"[ERROR DOMINIO] {de}")
-        except InfrastructureError as ie:
-            self.logger.error(f"Error de infraestructura: {ie}")
-            print(f"[ERROR INFRAESTRUCTURA] {ie}")
-        except AppError as ae:
-            self.logger.error(f"Error de aplicación: {ae}")
-            print(f"[ERROR APLICACIÓN] {ae}")
-        except Exception as ex:
-            self.logger.error(f"Error inesperado: {ex}", exc_info=True)
-            print(f"[ERROR INESPERADO] {ex}")
+        # Usando el nuevo manejador de excepciones
+        error_handler = self.container.error_handler
+        result = error_handler.wrap_execution(
+            self._execute_workflow,
+            self._get_context_info()
+        )
+        
+        if not result.get('success', False):
+            error_info = result.get('message', 'Error desconocido')
+            error_type = result.get('error', 'Error')
+            print(f"[{error_type.upper()}] {error_info}")

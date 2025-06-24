@@ -1,32 +1,14 @@
 import pytest
 from pathlib import Path
 from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
-
-class DummyLoader:
-    def __init__(self, svg_file):
-        self.svg_file = svg_file
-    def get_paths(self):
-        return [1, 2, 3]  # Simula paths
-    def get_attributes(self):
-        return {'width': 100, 'height': 100}
-
-class DummyPathProcessor:
-    def process(self, paths, attrs):
-        return paths[:2]  # Simula filtrado
-
-class DummyGcodeGen:
-    def generate(self, paths, attrs):
-        return [f'G1 X{p}' for p in paths]
-
-class DummyCompressUseCase:
-    def execute(self, gcode_lines):
-        return {'compressed_gcode': gcode_lines[::-1], 'original_size': len(gcode_lines), 'compressed_size': len(gcode_lines), 'compression_ratio': 1.0}
-
-class DummyLogger:
-    def info(self, *a, **k): pass
-
-class DummyFilenameService:
-    pass
+from tests.mocks.mock_use_case import (
+    DummyLoader, 
+    DummyPathProcessor, 
+    DummyGcodeGen, 
+    DummyCompressUseCase,
+    DummyLogger,
+    DummyFilenameService
+)
 
 def test_svg_to_gcode_use_case_basic():
     use_case = SvgToGcodeUseCase(
