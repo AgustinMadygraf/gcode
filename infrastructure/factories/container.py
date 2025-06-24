@@ -14,7 +14,7 @@ from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from adapters.input.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
 from application.use_cases.file_output.filename_service import FilenameService
-from infrastructure.logger_adapter import LoggerAdapter
+from adapters.output.logger_adapter import LoggerAdapter
 from domain.ports.logger_port import LoggerPort
 
 class Container:
