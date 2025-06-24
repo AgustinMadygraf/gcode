@@ -85,6 +85,33 @@ Este patrón asegura la independencia y testabilidad del dominio, y previene aco
 [ Domain ] <--- [ Infrastructure ]
 ```
 
+## Flujo de inicio
+
+1. El usuario ejecuta `python run.py` desde la raíz del proyecto.
+2. `run.py` importa y crea una instancia de `SvgToGcodeApp` desde `cli/main.py`.
+3. Toda la lógica de orquestación y ciclo de vida de la app reside en `cli/main.py`.
+4. Si se requiere otro entrypoint (API, GUI), debe crearse un archivo similar a `run.py`.
+
+> **Nota:** Solo `run.py` debe usarse como punto de entrada. No ejecutar directamente `cli/main.py`.
+
+## Patrón de eventos (Event Bus)
+
+- El dominio define el puerto `EventBusPort` para publicar y suscribirse a eventos.
+- La infraestructura implementa el bus de eventos (ejemplo: `SimpleEventBus`).
+- El contenedor inyecta el bus de eventos y lo expone como dependencia transversal.
+- Los casos de uso y la CLI pueden publicar eventos (por ejemplo, `gcode_generated`) y suscribirse a ellos para acciones secundarias (notificaciones, logs, auditoría, etc.).
+- Este patrón permite desacoplar la lógica principal de acciones reactivas y facilita la extensión futura.
+
+### Ejemplo de uso
+
+```python
+# Publicar evento tras generar G-code
+event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
+
+# Suscribirse a evento
+event_bus.subscribe('gcode_generated', handler_func)
+```
+
 ## Notas y Recomendaciones
 - Mantener la documentación de modelos e invariantes en `docs/domain_models.md`.
 - Documentar cambios relevantes en `docs/CHANGELOG.md`.

@@ -18,7 +18,8 @@ pip install svgpathtools numpy
 
 - `adapters/`: Adaptadores de entrada/salida (implementaciones de puertos definidos en dominio).
 - `application/use_cases/`: Casos de uso y orquestación de lógica de negocio.
-- `cli/main.py`: Punto de entrada principal para convertir SVG a G-code (nuevo flujo modularizado).
+- `cli/main.py`: Contiene la lógica principal de la CLI, pero **no debe ejecutarse directamente**.
+- `run.py`: **Único punto de entrada oficial**. Importa y ejecuta la aplicación desde `cli/main.py`.
 - `infrastructure/config/`: Configuración y parámetros del sistema.
 - `data/svg_input/`: Carpeta donde colocar los archivos SVG a procesar. (opcional, puedes usar cualquier ruta desde el CLI)
 - `data/gcode_output/`: Carpeta donde se guardan los archivos G-code generados. (opcional, configurable)
@@ -43,6 +44,7 @@ pip install svgpathtools numpy
 4. El archivo G-code generado aparecerá en la carpeta configurada (por defecto `data/gcode_output/`).
 
 > **Nota:** El punto de entrada oficial es `run.py`. No ejecutar directamente `cli/main.py`.
+> Toda la lógica de orquestación reside en `cli/main.py`, pero solo debe ser invocada desde `run.py`.
 
 ## Ejecución recomendada
 
@@ -53,6 +55,7 @@ python run.py
 ```
 
 > **Nota:** No está habilitado ejecutar `python cli/main.py` ni `python -m cli.main` directamente. El punto de entrada oficial es `run.py`.
+> Si necesitas extender la aplicación (por ejemplo, con una API), crea un nuevo entrypoint siguiendo este patrón.
 
 ## Parámetros de configuración relevantes
 

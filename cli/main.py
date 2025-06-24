@@ -1,6 +1,8 @@
 """
 Path: cli/main.py
 Main CLI entry point for SVG to G-code conversion (OOP version).
+
+Nota: Este módulo NO debe ejecutarse directamente. El único punto de entrada soportado es run.py
 """
 
 from pathlib import Path
@@ -14,7 +16,6 @@ from application.use_cases.gcode_generation.gcode_generation_service import GCod
 from application.use_cases.gcode_compression.gcode_compression_service import GcodeCompressionService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from infrastructure.compressors.arc_compressor import ArcCompressor
-from cli.svg_file_selector import SvgFileSelector
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from adapters.input.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
@@ -26,11 +27,14 @@ from infrastructure.factories.adapter_factory import AdapterFactory
 from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.infra_factory import InfraFactory
 from application.exceptions import AppError, DomainError, InfrastructureError
+from domain.ports.file_selector_port import FileSelectorPort
+from cli.svg_file_selector_adapter import SvgFileSelectorAdapter
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
     def __init__(self):
-        self.container = Container()
+        file_selector: FileSelectorPort = SvgFileSelectorAdapter()
+        self.container = Container(file_selector=file_selector)
         self.config = self.container.config
         self.config_port = self.container.config_port
         self.selector = self.container.selector
@@ -43,6 +47,12 @@ class SvgToGcodeApp:
         self.dwell_ms = self.container.dwell_ms
         self.max_height_mm = self.container.max_height_mm
         self.max_width_mm = self.container.max_width_mm
+        self.event_bus = self.container.event_bus
+        # Suscribimos un handler de ejemplo al evento 'gcode_generated'
+        self.event_bus.subscribe('gcode_generated', self._on_gcode_generated)
+
+    def _on_gcode_generated(self, payload):
+        self.logger.info(f"[EVENTO] G-code generado para: {payload['svg_file']} → {payload['gcode_file']}")
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
@@ -51,7 +61,12 @@ class SvgToGcodeApp:
     def run(self):
         " Main method to run the SVG to G-code conversion process. "
         try:
-            svg_file = self.selector.select()
+            svg_file = self.selector.select_svg_file()
+            if not svg_file:
+                self.logger.error("No se seleccionó un archivo SVG válido. Operación cancelada.")
+                print("[ERROR] No se seleccionó un archivo SVG válido. El proceso ha sido cancelado.")
+                return
+            svg_file = Path(svg_file)  # Asegura que sea un Path
             self.logger.debug("Selected SVG file: %s", svg_file)
             gcode_file = self.filename_gen.next_filename(svg_file)
             self.logger.debug("Output G-code file: %s", gcode_file)
@@ -91,6 +106,8 @@ class SvgToGcodeApp:
             result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
             self._write_gcode_file(gcode_file, result['compressed_gcode'])
             self.logger.info("Archivo G-code escrito: %s", gcode_file)
+            # Publicar evento tras generar el archivo
+            self.event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
         except FileNotFoundError:
             self.logger.error("La carpeta configurada para SVG está vacía o no contiene archivos SVG.")
         except DomainError as de:

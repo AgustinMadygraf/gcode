@@ -7,14 +7,17 @@ from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.infra_factory import InfraFactory
 from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
-from cli.svg_file_selector import SvgFileSelector
+from domain.ports.file_selector_port import FileSelectorPort
+from domain.ports.event_bus_port import EventBusPort
+from infrastructure.events.simple_event_bus import SimpleEventBus
 
 class Container:
-    def __init__(self):
+    def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None):
         self.config = InfraFactory.create_config()
         self.config_port: ConfigPort = AdapterFactory.create_config_adapter(self.config)
         self._logger = None
-        self._selector = None
+        self._selector = file_selector  # Inyectado desde el exterior
+        self._event_bus = event_bus or SimpleEventBus()
         self._filename_gen = None
         self.feed = self.config.feed
         self.cmd_down = self.config.cmd_down
@@ -31,9 +34,9 @@ class Container:
         return self._logger
 
     @property
-    def selector(self):
+    def selector(self) -> FileSelectorPort:
         if self._selector is None:
-            self._selector = SvgFileSelector(self.config.svg_input_dir)
+            raise ValueError("FileSelectorPort no ha sido inyectado en el contenedor.")
         return self._selector
 
     @property
@@ -41,6 +44,10 @@ class Container:
         if self._filename_gen is None:
             self._filename_gen = DomainFactory.create_filename_service(self.config)
         return self._filename_gen
+
+    @property
+    def event_bus(self) -> EventBusPort:
+        return self._event_bus
 
     def get_gcode_generator(self, transform_strategies=None):
         path_sampler = AdapterFactory.create_path_sampler(self.step_mm, logger=self.logger)
