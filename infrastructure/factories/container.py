@@ -1,26 +1,18 @@
 """
 Contenedor simple de dependencias para Clean Architecture.
-Permite centralizar wiring y facilitar testing/mocks.
+Refactorizado: delega la creación de dependencias a factories por capa.
 """
-from pathlib import Path
-from infrastructure.config.config import Config
-from adapters.input.config_adapter import ConfigAdapter
+from infrastructure.factories.adapter_factory import AdapterFactory
+from infrastructure.factories.domain_factory import DomainFactory
+from infrastructure.factories.infra_factory import InfraFactory
 from domain.ports.config_port import ConfigPort
-from cli.svg_file_selector import SvgFileSelector
-from infrastructure.logger import logger
-from adapters.input.svg_loader_adapter import SvgLoaderAdapter
-from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
-from domain.ports.gcode_generator_port import GcodeGeneratorPort
-from adapters.input.path_sampler import PathSampler
-from domain.services.geometry import GeometryService
-from domain.services.filename_service import FilenameService
-from adapters.output.logger_adapter import LoggerAdapter
 from domain.ports.logger_port import LoggerPort
+from cli.svg_file_selector import SvgFileSelector
 
 class Container:
     def __init__(self):
-        self.config = Config(Path("infrastructure/config/config.json"))
-        self.config_port: ConfigPort = ConfigAdapter(self.config)
+        self.config = InfraFactory.create_config()
+        self.config_port: ConfigPort = AdapterFactory.create_config_adapter(self.config)
         self._logger = None
         self._selector = None
         self._filename_gen = None
@@ -35,7 +27,7 @@ class Container:
     @property
     def logger(self) -> LoggerPort:
         if self._logger is None:
-            self._logger = LoggerAdapter()
+            self._logger = AdapterFactory.create_logger_adapter()
         return self._logger
 
     @property
@@ -47,12 +39,12 @@ class Container:
     @property
     def filename_gen(self):
         if self._filename_gen is None:
-            self._filename_gen = FilenameService(self.config)
+            self._filename_gen = DomainFactory.create_filename_service(self.config)
         return self._filename_gen
 
     def get_gcode_generator(self, transform_strategies=None):
-        path_sampler = PathSampler(self.step_mm, logger=self.logger)
-        return GCodeGeneratorAdapter(
+        path_sampler = AdapterFactory.create_path_sampler(self.step_mm, logger=self.logger)
+        return AdapterFactory.create_gcode_generator(
             path_sampler=path_sampler,
             feed=self.feed,
             cmd_down=self.cmd_down,
@@ -68,6 +60,6 @@ class Container:
 
     def get_svg_loader(self, svg_file):
         """Devuelve una instancia de SvgLoaderPort para el archivo dado."""
-        return SvgLoaderAdapter(svg_file)
+        return AdapterFactory.create_svg_loader(svg_file)
 
     # Agregar más factories según sea necesario

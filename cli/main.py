@@ -22,6 +22,10 @@ from domain.services.filename_service import FilenameService
 from infrastructure.factories.container import Container
 from domain.ports.logger_port import LoggerPort
 from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
+from infrastructure.factories.adapter_factory import AdapterFactory
+from infrastructure.factories.domain_factory import DomainFactory
+from infrastructure.factories.infra_factory import InfraFactory
+from application.exceptions import AppError, DomainError, InfrastructureError
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
@@ -48,45 +52,56 @@ class SvgToGcodeApp:
         " Main method to run the SVG to G-code conversion process. "
         try:
             svg_file = self.selector.select()
+            self.logger.debug("Selected SVG file: %s", svg_file)
+            gcode_file = self.filename_gen.next_filename(svg_file)
+            self.logger.debug("Output G-code file: %s", gcode_file)
+
+            # Calcular bbox y centro usando GeometryService
+            svg_loader_factory = self.container.get_svg_loader
+            paths = svg_loader_factory(svg_file).get_paths()
+            try:
+                bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)
+            except (AttributeError, ValueError):
+                bbox = (0, 0, 0, 0)
+            _xmin, _xmax, _ymin, _ymax = bbox
+            _cx, cy = DomainFactory.create_geometry_service()._center(bbox)
+            transform_strategies = [MirrorVerticalStrategy(cy)]
+
+            # Instanciar servicios/casos de uso usando factories
+            path_processor = PathProcessingService(
+                min_length=1e-3,
+                remove_svg_border=self.config.get_remove_svg_border(),
+                border_tolerance=self.config.get_border_detection_tolerance()
+            )
+            generator = self.container.get_gcode_generator(transform_strategies=transform_strategies)
+            gcode_service = GCodeGenerationService(generator)
+            compressors = [ArcCompressor()]
+            compression_service = GcodeCompressionService(compressors, logger=self.logger)
+            config_reader = AdapterFactory.create_config_adapter(self.config)
+            compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
+            svg_to_gcode_use_case = SvgToGcodeUseCase(
+                svg_loader_factory=svg_loader_factory,
+                path_processing_service=path_processor,
+                gcode_generation_service=gcode_service,
+                gcode_compression_use_case=compress_use_case,
+                logger=self.logger,
+                filename_service=self.filename_gen
+            )
+            # Ejecutar caso de uso
+            result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
+            self._write_gcode_file(gcode_file, result['compressed_gcode'])
+            self.logger.info("Archivo G-code escrito: %s", gcode_file)
         except FileNotFoundError:
             self.logger.error("La carpeta configurada para SVG está vacía o no contiene archivos SVG.")
-            return
-        self.logger.debug("Selected SVG file: %s", svg_file)
-        gcode_file = self.filename_gen.next_filename(svg_file)
-        self.logger.debug("Output G-code file: %s", gcode_file)
-
-        # Calcular bbox y centro usando GeometryService
-        svg_loader_factory = self.container.get_svg_loader
-        paths = svg_loader_factory(svg_file).get_paths()
-        try:
-            bbox = GeometryService._calculate_bbox(paths)
-        except (AttributeError, ValueError):
-            bbox = (0, 0, 0, 0)
-        _xmin, _xmax, _ymin, _ymax = bbox
-        _cx, cy = GeometryService._center(bbox)
-        transform_strategies = [MirrorVerticalStrategy(cy)]
-
-        # Instanciar servicios/casos de uso
-        path_processor = PathProcessingService(
-            min_length=1e-3,
-            remove_svg_border=self.config.get_remove_svg_border(),
-            border_tolerance=self.config.get_border_detection_tolerance()
-        )
-        generator = self.container.get_gcode_generator(transform_strategies=transform_strategies)
-        gcode_service = GCodeGenerationService(generator)
-        compressors = [ArcCompressor()]
-        compression_service = GcodeCompressionService(compressors, logger=self.logger)
-        config_reader = ConfigAdapter(self.config)
-        compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
-        svg_to_gcode_use_case = SvgToGcodeUseCase(
-            svg_loader_factory=svg_loader_factory,
-            path_processing_service=path_processor,
-            gcode_generation_service=gcode_service,
-            gcode_compression_use_case=compress_use_case,
-            logger=self.logger,
-            filename_service=self.filename_gen
-        )
-        # Ejecutar caso de uso
-        result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
-        self._write_gcode_file(gcode_file, result['compressed_gcode'])
-        self.logger.info("Archivo G-code escrito: %s", gcode_file)
+        except DomainError as de:
+            self.logger.error(f"Error de dominio: {de}")
+            print(f"[ERROR DOMINIO] {de}")
+        except InfrastructureError as ie:
+            self.logger.error(f"Error de infraestructura: {ie}")
+            print(f"[ERROR INFRAESTRUCTURA] {ie}")
+        except AppError as ae:
+            self.logger.error(f"Error de aplicación: {ae}")
+            print(f"[ERROR APLICACIÓN] {ae}")
+        except Exception as ex:
+            self.logger.error(f"Error inesperado: {ex}", exc_info=True)
+            print(f"[ERROR INESPERADO] {ex}")
