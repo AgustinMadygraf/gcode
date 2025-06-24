@@ -48,4 +48,8 @@ class Container:
             transform_strategies=transform_strategies or []
         )
 
+    def get_svg_loader(self, svg_file):
+        """Devuelve una instancia de SvgLoaderPort para el archivo dado."""
+        return SvgLoaderAdapter(svg_file)
+
     # Agregar más factories según sea necesario

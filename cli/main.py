@@ -15,8 +15,6 @@ from application.use_cases.gcode_compression.gcode_compression_service import Gc
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from infrastructure.compressors.arc_compressor import ArcCompressor
 from cli.svg_file_selector import SvgFileSelector
-from adapters.input.svg_loader_adapter import SvgLoaderAdapter
-from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from adapters.input.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
@@ -56,24 +54,22 @@ class SvgToGcodeApp:
         gcode_file = self.filename_gen.next_filename(svg_file)
         self.logger.debug("Output G-code file: %s", gcode_file)
 
-        svg = SvgLoaderAdapter(svg_file)
-        self.logger.debug('Created object "svg" from class "SvgLoaderAdapter"')
+        svg_loader = self.container.get_svg_loader(svg_file)
+        self.logger.debug('Created object "svg_loader" from SvgLoaderPort')
         self.logger.info("Carga de SVG: %s", svg_file)
 
-        paths = svg.get_paths()
+        paths = svg_loader.get_paths()
         self.logger.debug("Extracted %d paths from SVG.", len(paths))
         self.logger.info("Paths extraídos: %d", len(paths))
 
-        svg_attr = svg.get_attributes()
+        svg_attr = svg_loader.get_attributes()
         self.logger.info("SVG attributes: %s", svg_attr)
 
         # Calcular bbox y centro usando GeometryService
         try:
-            bbox = (svg.get_bbox()
-                    if hasattr(svg, 'get_bbox')
-                    else GeometryService._calculate_bbox(paths))
-        except (AttributeError, ValueError):
             bbox = GeometryService._calculate_bbox(paths)
+        except (AttributeError, ValueError):
+            bbox = (0, 0, 0, 0)
         _xmin, _xmax, _ymin, _ymax = bbox
         _cx, cy = GeometryService._center(bbox)
         self.logger.info(
