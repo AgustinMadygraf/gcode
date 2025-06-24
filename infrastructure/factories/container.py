@@ -13,7 +13,7 @@ from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from adapters.input.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
-from application.use_cases.file_output.filename_service import FilenameService
+from domain.services.filename_service import FilenameService
 from adapters.output.logger_adapter import LoggerAdapter
 from domain.ports.logger_port import LoggerPort
 
@@ -21,9 +21,9 @@ class Container:
     def __init__(self):
         self.config = Config(Path("infrastructure/config/config.json"))
         self.config_port: ConfigPort = ConfigAdapter(self.config)
-        self.logger: LoggerPort = LoggerAdapter()
-        self.selector = SvgFileSelector(self.config.svg_input_dir)
-        self.filename_gen = FilenameService(self.config)
+        self._logger = None
+        self._selector = None
+        self._filename_gen = None
         self.feed = self.config.feed
         self.cmd_down = self.config.cmd_down
         self.cmd_up = self.config.cmd_up
@@ -31,6 +31,24 @@ class Container:
         self.dwell_ms = self.config.dwell_ms
         self.max_height_mm = self.config.max_height_mm
         self.max_width_mm = getattr(self.config, 'max_width_mm', 180.0)
+
+    @property
+    def logger(self) -> LoggerPort:
+        if self._logger is None:
+            self._logger = LoggerAdapter()
+        return self._logger
+
+    @property
+    def selector(self):
+        if self._selector is None:
+            self._selector = SvgFileSelector(self.config.svg_input_dir)
+        return self._selector
+
+    @property
+    def filename_gen(self):
+        if self._filename_gen is None:
+            self._filename_gen = FilenameService(self.config)
+        return self._filename_gen
 
     def get_gcode_generator(self, transform_strategies=None):
         path_sampler = PathSampler(self.step_mm, logger=self.logger)

@@ -12,12 +12,12 @@ class MockSegment:
 class TestGeometryService(unittest.TestCase):
     def test_bbox_line(self):
         paths = [[MockSegment()]]
-        bbox = GeometryService.calculate_bbox(paths)
+        bbox = GeometryService._calculate_bbox(paths)
         self.assertAlmostEqual(bbox[0], 0)
         self.assertAlmostEqual(bbox[1], 10)
         self.assertAlmostEqual(bbox[2], 0)
         self.assertAlmostEqual(bbox[3], 10)
-        center = GeometryService.center(bbox)
+        center = GeometryService._center(bbox)
         self.assertAlmostEqual(center[0], 5)
         self.assertAlmostEqual(center[1], 5)
 

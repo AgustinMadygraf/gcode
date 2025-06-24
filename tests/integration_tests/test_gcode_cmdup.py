@@ -27,6 +27,12 @@ class DummyStrategy(PathTransformStrategy):
     def transform(self, x, y):
         return x, y
 
+class DummyConfig:
+    def __getattr__(self, name):
+        return None
+    def get(self, name, default=None):
+        return default
+
 class TestGCodeCMDUP(unittest.TestCase):
     def test_cmd_up_separates_strokes(self):
         seg1 = DummySegment(5, (0,0), (5,0))
@@ -43,7 +49,8 @@ class TestGCodeCMDUP(unittest.TestCase):
             max_height_mm=10,
             logger=None,
             transform_strategies=[DummyStrategy()],
-            optimizer=OptimizationChain()  # Inyectar la cadena de optimización
+            optimizer=OptimizationChain(),  # Inyectar la cadena de optimización
+            config=DummyConfig()  # Mock config
         )
         gcode_service = GCodeGenerationService(generator)
         gcode = gcode_service.generate(paths, svg_attr)

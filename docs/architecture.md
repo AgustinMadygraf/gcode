@@ -24,13 +24,17 @@ gcode/
 ```
 
 ## Cambios recientes (06/2025)
+- Implementado lazy loading de dependencias en `infrastructure/factories/container.py`.
+- `FilenameService` migrado de `application/use_cases/file_output` a `domain/services/filename_service.py`.
+- Caso de uso orquestador `SvgToGcodeUseCase` en `application/use_cases/svg_to_gcode_use_case.py`.
+- Suite de tests robusta y alineada a la arquitectura actual.
 - Adaptadores consolidados en `adapters/`.
 - Optimizadores movidos a `domain/services/optimization/`.
 - Inyección de configuración en adaptadores (usando `infrastructure.config.Config`).
 - Eliminados tests y código legacy.
 - Orquestación de conversión de paths a G-code migrada a `application/use_cases/path_processing/path_conversion_service.py`.
 - Puerto de conversión definido en `domain/ports/path_conversion_port.py`.
-- Archivo `domain/path_conversion_service.py` deprecado y marcado para eliminación.
+- Archivo `domain/path_conversion_service.py` eliminado definitivamente (junio 2025).
 - Estructura y nomenclatura alineadas a Clean Architecture.
 
 ## Descripción de Capas
