@@ -28,7 +28,7 @@ from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.infra_factory import InfraFactory
 from application.exceptions import AppError, DomainError, InfrastructureError
 from domain.ports.file_selector_port import FileSelectorPort
-from cli.svg_file_selector_adapter import SvgFileSelectorAdapter
+from adapters.input.svg_file_selector_adapter import SvgFileSelectorAdapter
 
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
