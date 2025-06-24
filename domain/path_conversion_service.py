@@ -5,14 +5,6 @@ Define la interfaz y la responsabilidad de orquestar la conversión, sin impleme
 from abc import ABC, abstractmethod
 from typing import Any, List, Dict
 
-class PathConversionService(ABC):
-    @abstractmethod
-    def convert_paths_to_gcode(self, paths: List[Any], svg_attr: Dict[str, Any]) -> List[str]:
-        """
-        Convierte una lista de paths y atributos SVG en líneas de G-code.
-        """
-        pass
-
 __all__ = [
     "PathConversionService"
 ]

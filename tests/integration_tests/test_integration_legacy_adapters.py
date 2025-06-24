@@ -1,23 +1,23 @@
 """
-Test de integración: flujo completo SVG → G-code usando adaptadores legacy
+Test de integración: flujo completo SVG → G-code
 """
+from gcode.svg_loader import SvgLoader
+from gcode.gcode_generator import GcodeGenerator, GCodeGenerationService
 
-# TEST OBSOLETO: Este test usaba adaptadores legacy eliminados. Puede eliminarse si ya no se requiere compatibilidad legacy.
-
-def test_svg_to_gcode_legacy_adapters(tmp_path):
+def test_svg_to_gcode(tmp_path):
     # SVG de prueba mínimo
     svg_content = '''<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M0,0 L10,0 L10,10 Z"/></svg>'''
     svg_file = tmp_path / "test.svg"
     svg_file.write_text(svg_content, encoding="utf-8")
 
-    # Loader legacy
-    loader = LegacySvgLoaderAdapter(svg_file)
+    # Loader
+    loader = SvgLoader(svg_file)
     loader.load()
     paths = loader.get_paths()
     attrs = loader.get_attributes()
 
-    # Generador legacy
-    generator = LegacyGcodeGeneratorAdapter(
+    # Generador
+    generator = GcodeGenerator(
         feed=1000,
         cmd_down="M3 S1000",
         cmd_up="M5",

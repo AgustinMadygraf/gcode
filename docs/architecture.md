@@ -52,6 +52,15 @@ gcode/
 - La infraestructura y la interfaz nunca deben ser importadas por dominio o aplicación.
 - Los puertos (interfaces) se definen en dominio y se implementan en infraestructura/adapters.
 
+## Patrón de Dependencias Correcto
+
+- Los puertos (interfaces) del dominio (`domain/ports/`) nunca importan adaptadores, infraestructura ni aplicación.
+- Los adaptadores (`adapters/`) implementan los puertos y dependen de ellos, nunca al revés.
+- No existen ciclos de importación entre capas.
+- Si se detecta una dependencia cruzada, aplicar inversión de dependencias (crear interfaz en dominio y mover implementación a adaptadores/infrastructure).
+
+Este patrón asegura la independencia y testabilidad del dominio, y previene acoplamientos indebidos.
+
 ## Principios Clave
 - **Inversión de dependencias:** El dominio define interfaces, la infraestructura/adapters las implementa.
 - **Separación de responsabilidades:** Cada capa tiene un propósito claro.

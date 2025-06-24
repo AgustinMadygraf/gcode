@@ -56,3 +56,44 @@ class Config:
     def cmd_up(self):
         " Devuelve el comando para subir el cabezal. "
         return self._data["CMD_UP"]
+
+    @property
+    def step_mm(self):
+        "Devuelve el paso en mm (STEP_MM)."
+        return self._data["STEP_MM"]
+
+    @property
+    def dwell_ms(self):
+        "Devuelve el tiempo de espera en ms (DWELL_MS)."
+        return self._data["DWELL_MS"]
+
+    @property
+    def max_height_mm(self):
+        "Devuelve la altura máxima en mm (MAX_HEIGHT_MM)."
+        return self._data["MAX_HEIGHT_MM"]
+
+    @property
+    def remove_svg_border(self):
+        "Devuelve si se debe eliminar el borde SVG (REMOVE_BORDER_RECTANGLE)."
+        return self._data.get("REMOVE_BORDER_RECTANGLE", True)
+
+    @property
+    def border_detection_tolerance(self):
+        "Devuelve la tolerancia para detección de borde (BORDER_DETECTION_TOLERANCE)."
+        return self._data.get("BORDER_DETECTION_TOLERANCE", 0.05)
+
+    def get_gcode_output_dir(self):
+        "Compatibilidad: Devuelve el directorio de salida de GCODE."
+        return self.gcode_output_dir
+
+    def get_svg_input_dir(self):
+        "Compatibilidad: Devuelve el directorio de entrada de SVG."
+        return self.svg_input_dir
+
+    def get_remove_svg_border(self):
+        "Compatibilidad: Devuelve si se debe eliminar el borde SVG."
+        return self.remove_svg_border
+
+    def get_border_detection_tolerance(self):
+        "Compatibilidad: Devuelve la tolerancia para detección de borde."
+        return self.border_detection_tolerance

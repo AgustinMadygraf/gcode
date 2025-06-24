@@ -1,5 +1,5 @@
 """
-Path: domain/ports/path_sampler_port.py
+Puerto PathSamplerPort: interfaz para muestreo de puntos en rutas SVG en el dominio.
 """
 
 from abc import ABC, abstractmethod
@@ -7,7 +7,9 @@ from typing import Iterable
 from domain.entities.point import Point
 
 class PathSamplerPort(ABC):
-    " Interfaz para muestreo de puntos a lo largo de rutas SVG. "
+    """
+    Interfaz para muestrear puntos a lo largo de un path SVG.
+    """
     @abstractmethod
     def sample(self, path) -> Iterable[Point]:
         """Genera puntos a lo largo de un path."""

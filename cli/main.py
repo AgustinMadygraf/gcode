@@ -4,7 +4,7 @@ Main CLI entry point for SVG to G-code conversion (OOP version).
 """
 
 from pathlib import Path
-from infrastructure.settings import InfraSettings
+from infrastructure.config.config import Config
 from domain.ports.config_provider import ConfigProviderPort
 from domain.path_transform_strategy import MirrorVerticalStrategy
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
@@ -15,7 +15,7 @@ from infrastructure.compressors.arc_compressor import ArcCompressor
 from adapters.input.config_adapter import ConfigAdapter
 from cli.svg_file_selector import SvgFileSelector
 from infrastructure.logger import logger
-from adapters.input.svg_loader import SvgLoaderAdapter
+from adapters.input.svg_loader_adapter import SvgLoaderAdapter
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from adapters.input.path_sampler import PathSampler
@@ -25,16 +25,16 @@ from application.use_cases.file_output.filename_service import FilenameService
 class SvgToGcodeApp:
     " Main application class for converting SVG files to G-code. "
     def __init__(self):
-        self.config = InfraSettings(Path("infrastructure/config/config.json"))
-        self.selector = SvgFileSelector(self.config.get_svg_input_dir())
+        self.config = Config(Path("infrastructure/config/config.json"))
+        self.selector = SvgFileSelector(self.config.svg_input_dir)
         self.filename_gen = FilenameService(self.config)
         self.logger = logger
-        self.feed = self.config.get_feed()
-        self.cmd_down = self.config.get_cmd_down()
-        self.cmd_up = self.config.get_cmd_up()
-        self.step_mm = self.config.get_step_mm()
-        self.dwell_ms = self.config.get_dwell_ms()
-        self.max_height_mm = self.config.get_max_height_mm()
+        self.feed = self.config.feed
+        self.cmd_down = self.config.cmd_down
+        self.cmd_up = self.config.cmd_up
+        self.step_mm = self.config.step_mm
+        self.dwell_ms = self.config.dwell_ms
+        self.max_height_mm = self.config.max_height_mm
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
