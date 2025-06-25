@@ -60,6 +60,29 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self.optimizer = optimizer
         self.config = config
 
+    def calculate_curvature_factor(self, p1, p2, p3, base_feed_rate):
+        """
+        Calcula el feed rate ajustado según el ángulo entre tres puntos consecutivos.
+        """
+        import math
+        if p1 is None or p2 is None or p3 is None:
+            return base_feed_rate
+        v1 = (p2.x - p1.x, p2.y - p1.y)
+        v2 = (p3.x - p2.x, p3.y - p2.y)
+        mag1 = math.hypot(*v1)
+        mag2 = math.hypot(*v2)
+        if mag1 < 1e-6 or mag2 < 1e-6:
+            return base_feed_rate
+        dot = (v1[0]*v2[0] + v1[1]*v2[1]) / (mag1 * mag2)
+        dot = max(-1.0, min(1.0, dot))
+        angle = math.acos(dot)
+        angle_deg = math.degrees(angle)
+        k = getattr(self.config, 'curvature_adjustment_factor', 0.25)
+        min_factor = getattr(self.config, 'minimum_feed_factor', 0.5)
+        adjustment = 1 - (k * (angle_deg / 180))
+        adjustment = max(min_factor, adjustment)
+        return int(base_feed_rate * adjustment)
+
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
         import math
         TOLERANCIA = 1e-4
@@ -98,14 +121,24 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             builder.dwell(self.dwell_ms / 1000.0)
             builder.tool_down(self.cmd_down)
             builder.dwell(self.dwell_ms / 1000.0)
-            for pt in points[1:]:
+            base_feed = self.feed
+            n = len(points)
+            for j in range(1, n):
+                prev_pt = points[j-2] if j > 1 else None
+                curr_pt = points[j-1]
+                next_pt = points[j]
+                future_pt = points[j+1] if j+1 < n else None
+                feed = self.calculate_curvature_factor(prev_pt, curr_pt, next_pt, base_feed)
+                if future_pt is not None:
+                    future_feed = self.calculate_curvature_factor(curr_pt, next_pt, future_pt, base_feed)
+                    feed = min(feed, future_feed)
                 if use_relative_moves:
-                    dx = pt.x - last_pos.x
-                    dy = pt.y - last_pos.y
-                    builder.commands.append(RelativeMoveCommand(dx, dy, feed=self.feed, rapid=False))
+                    dx = next_pt.x - curr_pt.x
+                    dy = next_pt.y - curr_pt.y
+                    builder.commands.append(RelativeMoveCommand(dx, dy, feed=feed, rapid=False))
                 else:
-                    builder.move_to(pt.x, pt.y, feed=self.feed, rapid=False)
-                last_pos = pt
+                    builder.move_to(next_pt.x, next_pt.y, feed=feed, rapid=False)
+                last_pos = next_pt
         builder.dwell(self.dwell_ms / 1000.0)
         builder.tool_up(self.cmd_up)
         builder.dwell(self.dwell_ms / 1000.0)

@@ -62,6 +62,28 @@ python run.py
 - `REMOVE_SVG_BORDER` (bool): Si es `true`, intenta eliminar el marco/borde exterior del SVG si coincide exactamente con el `viewBox`.
 - `BORDER_DETECTION_TOLERANCE` (float): Tolerancia relativa (por defecto 0.05) usada para comparar los márgenes del path con el `viewBox`. Un valor menor hace la detección más estricta; un valor mayor la hace más laxa. Si tienes rectángulos internos que no deben eliminarse, ajusta este valor para evitar falsos positivos.
 
+## Avanzado: Velocidad variable en curvas
+
+Desde la versión 2025, el sistema ajusta automáticamente la velocidad (feed rate) en curvas para mejorar la calidad de línea y reducir el desgaste de la lapicera:
+
+- `CURVATURE_ADJUSTMENT_FACTOR` (float): Controla cuánto se reduce la velocidad en curvas. Rango recomendado: 0.1 (sutil) a 0.4 (agresivo). Por defecto: 0.25
+- `MINIMUM_FEED_FACTOR` (float): Límite inferior de velocidad como porcentaje del feed base. Rango típico: 0.3–0.7. Por defecto: 0.5
+
+**Ejemplo de configuración en `infrastructure/config/config_curvature_sample.json`:**
+
+```json
+{
+  "CURVATURE_ADJUSTMENT_FACTOR": 0.3,
+  "MINIMUM_FEED_FACTOR": 0.5
+}
+```
+
+**Recomendaciones para papel kraft:**
+- Usa `CURVATURE_ADJUSTMENT_FACTOR=0.3` para lapiceras de tinta
+- Usa `CURVATURE_ADJUSTMENT_FACTOR=0.2` para lápiz
+
+El ajuste es automático y no requiere modificar el SVG ni el G-code manualmente.
+
 ---
 
 ### Notas de arquitectura (2025)

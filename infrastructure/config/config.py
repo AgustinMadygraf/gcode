@@ -87,6 +87,16 @@ class Config:
         "Devuelve si se debe aplicar la inversión vertical (MIRROR_VERTICAL)."
         return self._data.get("MIRROR_VERTICAL", True)
 
+    @property
+    def curvature_adjustment_factor(self):
+        """Factor de ajuste de velocidad en curvas (0.1-0.4, por defecto 0.25)"""
+        return self._data.get("CURVATURE_ADJUSTMENT_FACTOR", 0.25)
+
+    @property
+    def minimum_feed_factor(self):
+        """Factor mínimo de velocidad (0.0-1.0, por defecto 0.5)"""
+        return self._data.get("MINIMUM_FEED_FACTOR", 0.5)
+
     def get_gcode_output_dir(self):
         "Compatibilidad: Devuelve el directorio de salida de GCODE."
         return self.gcode_output_dir
