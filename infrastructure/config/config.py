@@ -82,6 +82,11 @@ class Config:
         "Devuelve la tolerancia para detección de borde (BORDER_DETECTION_TOLERANCE)."
         return self._data.get("BORDER_DETECTION_TOLERANCE", 0.05)
 
+    @property
+    def mirror_vertical(self):
+        "Devuelve si se debe aplicar la inversión vertical (MIRROR_VERTICAL)."
+        return self._data.get("MIRROR_VERTICAL", True)
+
     def get_gcode_output_dir(self):
         "Compatibilidad: Devuelve el directorio de salida de GCODE."
         return self.gcode_output_dir
@@ -97,3 +102,7 @@ class Config:
     def get_border_detection_tolerance(self):
         "Compatibilidad: Devuelve la tolerancia para detección de borde."
         return self.border_detection_tolerance
+
+    def get_mirror_vertical(self):
+        "Compatibilidad: Devuelve si se debe aplicar la inversión vertical."
+        return self.mirror_vertical

@@ -13,5 +13,6 @@
     "ARC_TOLERANCE_MM": 0.1,
     "USE_RELATIVE_MOVES": true,
     "MIN_POINTS_FOR_ARC": 3
-  }
+  },
+  "MIRROR_VERTICAL": true
 }

@@ -91,7 +91,10 @@ class SvgToGcodeApp:
             bbox = (0, 0, 0, 0)
         _xmin, _xmax, _ymin, _ymax = bbox
         _cx, cy = DomainFactory.create_geometry_service()._center(bbox)
-        transform_strategies = [MirrorVerticalStrategy(cy)]
+        transform_strategies = []
+        # Aplicar transformación vertical solo si está habilitada en la configuración
+        if self.config.get_mirror_vertical():
+            transform_strategies.append(MirrorVerticalStrategy(cy))
 
         # Instanciar servicios/casos de uso usando factories
         path_processor = PathProcessingService(

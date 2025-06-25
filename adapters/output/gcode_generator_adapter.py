@@ -17,6 +17,7 @@ from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
 from domain.ports.transform_manager_port import NullTransformManager
+from infrastructure.transform_manager import TransformManager
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """Adaptador para generación de G-code desde paths SVG, implementando el puerto de dominio."""
@@ -51,7 +52,11 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 if not isinstance(s, PathTransformStrategyPort):
                     raise TypeError("Todas las estrategias deben implementar PathTransformStrategy")
         self.path_sampler = path_sampler
-        self.transform_manager = transform_manager if transform_manager is not None else NullTransformManager()
+        # Usar TransformManager real si hay estrategias, si no NullTransformManager
+        if self.transform_strategies:
+            self.transform_manager = TransformManager(self.transform_strategies, logger=self.logger)
+        else:
+            self.transform_manager = NullTransformManager()
         self.optimizer = optimizer
         self.config = config
 

@@ -17,27 +17,27 @@ Ejemplo de uso:
     tm = TransformManager([mirror_x])
     x2, y2 = tm.apply(1, 2)  # (-1, 2)
 """
-from domain.path_transform_strategy import PathTransformStrategy
+from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
 from domain.ports.logger_port import LoggerPort
 from domain.ports.transform_manager_port import TransformManagerPort
 from infrastructure.exceptions import TransformStrategyError
 
 class TransformManager(TransformManagerPort):
     """Gestiona y aplica una lista de estrategias de transformación a puntos (x, y).
-    Todas las estrategias deben implementar PathTransformStrategy.
+    Todas las estrategias deben implementar PathTransformStrategyPort.
     """
-    def __init__(self, strategies: list[PathTransformStrategy] = None, logger: LoggerPort = None):
+    def __init__(self, strategies: list[PathTransformStrategyPort] = None, logger: LoggerPort = None):
         if strategies is not None:
             for s in strategies:
-                if not isinstance(s, PathTransformStrategy):
-                    raise TransformStrategyError("Todas las estrategias deben implementar PathTransformStrategy")
+                if not isinstance(s, PathTransformStrategyPort):
+                    raise TransformStrategyError("Todas las estrategias deben implementar PathTransformStrategyPort")
         self.strategies = strategies or []
         self.logger: LoggerPort = logger
 
-    def add_strategy(self, strategy: PathTransformStrategy):
+    def add_strategy(self, strategy: PathTransformStrategyPort):
         """Agrega una nueva estrategia de transformación al manager."""
-        if not isinstance(strategy, PathTransformStrategy):
-            raise TransformStrategyError("La estrategia debe implementar PathTransformStrategy")
+        if not isinstance(strategy, PathTransformStrategyPort):
+            raise TransformStrategyError("La estrategia debe implementar PathTransformStrategyPort")
         self.strategies.append(strategy)
 
     def apply(self, x: float, y: float) -> tuple[float, float]:
