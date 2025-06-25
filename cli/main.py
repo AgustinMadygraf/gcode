@@ -30,6 +30,7 @@ from application.exceptions import AppError, DomainError, InfrastructureError
 from infrastructure.error_handling import ExceptionHandler
 from domain.ports.file_selector_port import FileSelectorPort
 from adapters.input.svg_file_selector_adapter import SvgFileSelectorAdapter
+from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
@@ -100,8 +101,8 @@ class SvgToGcodeApp:
         )
         generator = self.container.get_gcode_generator(transform_strategies=transform_strategies)
         gcode_service = GCodeGenerationService(generator)
-        compressors = [ArcCompressor()]
-        compression_service = GcodeCompressionService(compressors, logger=self.logger)
+        # Usar la nueva factory para compresión
+        compression_service = create_gcode_compression_service(logger=self.logger)
         config_reader = AdapterFactory.create_config_adapter(self.config)
         compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
         svg_to_gcode_use_case = SvgToGcodeUseCase(
