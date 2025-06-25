@@ -62,7 +62,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
 
     def calculate_curvature_factor(self, p1, p2, p3, base_feed_rate):
         """
-        Calcula el feed rate ajustado según el ángulo entre tres puntos consecutivos.
+        Calcula el feed rate ajustado según el ángulo entre tres puntos consecutivos y la longitud de segmento.
+        Optimizado para papel kraft: reduce más la velocidad en curvas y en segmentos cortos.
         """
         import math
         if p1 is None or p2 is None or p3 is None:
@@ -77,9 +78,13 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         dot = max(-1.0, min(1.0, dot))
         angle = math.acos(dot)
         angle_deg = math.degrees(angle)
-        k = getattr(self.config, 'curvature_adjustment_factor', 0.25)
-        min_factor = getattr(self.config, 'minimum_feed_factor', 0.5)
-        adjustment = 1 - (k * (angle_deg / 180))
+        # Parámetros de configuración, con valores recomendados para kraft
+        k = getattr(self.config, 'curvature_adjustment_factor', 0.35)
+        min_factor = getattr(self.config, 'minimum_feed_factor', 0.4)
+        # Factor de longitud de segmento: penaliza segmentos cortos
+        segment_factor = min(1.0, math.sqrt(min(mag1, mag2)) / 5.0)
+        # Ajuste combinado: más agresivo en detalles pequeños y curvas cerradas
+        adjustment = 1 - (k * (angle_deg / 180)) * (1.2 - segment_factor)
         adjustment = max(min_factor, adjustment)
         return int(base_feed_rate * adjustment)
 
