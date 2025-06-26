@@ -30,6 +30,8 @@ from application.exceptions import AppError, DomainError, InfrastructureError
 from infrastructure.error_handling import ExceptionHandler
 from domain.ports.file_selector_port import FileSelectorPort
 from adapters.input.svg_file_selector_adapter import SvgFileSelectorAdapter
+from adapters.input.gcode_file_selector_adapter import GcodeFileSelectorAdapter
+from application.use_cases.gcode_to_gcode_use_case import GcodeToGcodeUseCase
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 
 class SvgToGcodeApp:
@@ -53,9 +55,14 @@ class SvgToGcodeApp:
         self.event_bus = self.container.event_bus
         # Suscribimos un handler de ejemplo al evento 'gcode_generated'
         self.event_bus.subscribe('gcode_generated', self._on_gcode_generated)
-        
+        # Suscribimos handler para evento de reescalado
+        self.event_bus.subscribe('gcode_rescaled', self._on_gcode_rescaled)
+
     def _on_gcode_generated(self, payload):
         self.logger.info(f"[EVENTO] G-code generado para: {payload['svg_file']} → {payload['gcode_file']}")
+
+    def _on_gcode_rescaled(self, payload):
+        self.logger.info(f"[EVENTO] G-code reescalado: {payload['input_file']} → {payload['output_file']} (escala: {payload['scale_factor']:.3f})")
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
@@ -123,16 +130,112 @@ class SvgToGcodeApp:
         # Publicar evento tras generar el archivo
         self.event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
         return True
-        
+
+    def select_operation_mode(self):
+        print("\n=== Seleccione modo de operación ===")
+        print("  [1] SVG a GCODE (conversión estándar)")
+        print("  [2] GCODE a GCODE (optimización de archivos existentes)")
+        while True:
+            try:
+                choice = int(input("Seleccione una opción [1-2]: "))
+                if choice in [1, 2]:
+                    return choice
+                print("Opción inválida. Intente nuevamente.")
+            except ValueError:
+                print("Por favor, ingrese un número válido.")
+
+    def _execute_gcode_to_gcode_workflow(self):
+        gcode_selector = GcodeFileSelectorAdapter(self.config)
+        gcode_file = gcode_selector.select_gcode_file()
+        if not gcode_file:
+            self.logger.error("No se seleccionó un archivo GCODE válido. Operación cancelada.")
+            print("[ERROR] No se seleccionó un archivo GCODE válido. El proceso ha sido cancelado.")
+            return False
+        from pathlib import Path
+        gcode_file = Path(gcode_file)
+        self.logger.debug(f"Archivo GCODE seleccionado: {gcode_file}")
+
+        # Menú de operaciones GCODE→GCODE
+        print("\n=== Seleccione la operación a realizar ===")
+        print("  [1] Optimizar movimientos (G1 → G0)")
+        print("  [2] Reescalar dimensiones")
+        print("  [0] Cancelar")
+        operation_choice = -1
+        while operation_choice not in [0, 1, 2]:
+            try:
+                operation_choice = int(input("\nSeleccione una opción [0-2]: "))
+            except ValueError:
+                print("Por favor, ingrese un número válido.")
+        if operation_choice == 0:
+            print("Operación cancelada por el usuario.")
+            return False
+        if operation_choice == 1:
+            refactor_use_case = GcodeToGcodeUseCase(
+                filename_service=self.filename_gen,
+                logger=self.logger
+            )
+            result = refactor_use_case.execute(gcode_file)
+            self.event_bus.publish('gcode_refactored', {
+                'input_file': gcode_file,
+                'output_file': result['output_file'],
+                'changes': result['changes_made']
+            })
+            print(f"\n[ÉXITO] Archivo refactorizado guardado en: {result['output_file']}")
+            print(f"Se optimizaron {result['changes_made']} movimientos de G1 a G0")
+        elif operation_choice == 2:
+            from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
+            # Obtener altura objetivo (usar configuración o solicitar al usuario)
+            target_height = None
+            use_config = input("\n¿Usar altura máxima de configuración (250mm)? [S/n]: ").strip().lower()
+            if use_config != 'n':
+                target_height = self.config.max_height_mm
+                print(f"Usando altura máxima: {target_height}mm")
+            else:
+                while True:
+                    try:
+                        target_height = float(input("Ingrese altura deseada en mm: "))
+                        if target_height <= 0:
+                            print("La altura debe ser mayor que cero.")
+                        else:
+                            break
+                    except ValueError:
+                        print("Por favor, ingrese un número válido.")
+            rescale_use_case = GcodeRescaleUseCase(
+                filename_service=self.filename_gen,
+                logger=self.logger,
+                config_provider=self.config
+            )
+            result = rescale_use_case.execute(gcode_file, target_height)
+            self.event_bus.publish('gcode_rescaled', {
+                'input_file': gcode_file,
+                'output_file': result['output_file'],
+                'scale_factor': result['scale_factor'],
+                'original_dimensions': result['original_dimensions'],
+                'new_dimensions': result['new_dimensions']
+            })
+            original_dim = result['original_dimensions']
+            new_dim = result['new_dimensions']
+            print(f"\n[ÉXITO] Archivo reescalado guardado en: {result['output_file']}")
+            print(f"Dimensiones originales: {original_dim['width']:.1f}x{original_dim['height']:.1f}mm")
+            print(f"Dimensiones nuevas: {new_dim['width']:.1f}x{new_dim['height']:.1f}mm")
+            print(f"Factor de escala: {result['scale_factor']:.3f}")
+            print(f"Se reescalaron {result['commands_rescaled']['g0g1']} movimientos lineales y {result['commands_rescaled']['g2g3']} arcos")
+        return True
+
     def run(self):
         " Main method to run the SVG to G-code conversion process. "
-        # Usando el nuevo manejador de excepciones
         error_handler = self.container.error_handler
-        result = error_handler.wrap_execution(
-            self._execute_workflow,
-            self._get_context_info()
-        )
-        
+        operation_mode = self.select_operation_mode()
+        if operation_mode == 1:
+            result = error_handler.wrap_execution(
+                self._execute_workflow,
+                self._get_context_info()
+            )
+        else:
+            result = error_handler.wrap_execution(
+                self._execute_gcode_to_gcode_workflow,
+                self._get_context_info()
+            )
         if not result.get('success', False):
             error_info = result.get('message', 'Error desconocido')
             error_type = result.get('error', 'Error')
