@@ -1,11 +1,11 @@
 """
 PathSampler: Utility to sample points along SVG paths at fixed intervals.
 
-- step: distancia entre puntos muestreados (en unidades SVG)
-- sample(path): recibe una lista de segmentos SVG y produce tuplas (x, y) a intervalos regulares.
-- Lanza ValueError si step <= 0.
+- step: distance between sampled points (SVG units)
+- sample(path): receives a list of SVG segments and produces (x, y) tuples at regular intervals.
+- Raises ValueError if step <= 0.
 
-Ejemplo de uso:
+Usage example:
     sampler = PathSampler(step=2.0)
     for x, y in sampler.sample(path):
         print(x, y)
@@ -29,9 +29,9 @@ class PathSampler(PathSamplerPort):
     def sample(self, path):
         """Yield Point objects sampled along the path at the given step interval.
         Args:
-            path: Iterable de segmentos, cada uno con .length() y .point(t).
+            path: Iterable of segments, each with .length() and .point(t).
         Yields:
-            Point: Coordenadas (x, y) muestreadas.
+            Point: Sampled (x, y) coordinates.
         """
         for seg in path:
             seg_len = seg.length()

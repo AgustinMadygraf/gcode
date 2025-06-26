@@ -1,5 +1,5 @@
 """
-Adaptador para generación de G-code, implementando el puerto de dominio GcodeGeneratorPort.
+Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 """
 from typing import List, Optional, Any, Dict
 from domain.entities.point import Point
@@ -20,7 +20,7 @@ from domain.ports.transform_manager_port import NullTransformManager
 from infrastructure.transform_manager import TransformManager
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
-    """Adaptador para generación de G-code desde paths SVG, implementando el puerto de dominio."""
+    """Adapter for G-code generation from SVG paths, implementing the domain port."""
     def __init__(
         self,
         *,
@@ -32,7 +32,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         dwell_ms: int,
         max_height_mm: float,
         max_width_mm: float = 180.0,
-        config: ConfigPort,  # Inyectar puerto de configuración
+        config: ConfigPort,  # Inject config port
         logger: LoggerPort = None,
         transform_strategies: Optional[List[PathTransformStrategyPort]] = None,
         optimizer: Optional[GcodeOptimizationChainPort] = None,

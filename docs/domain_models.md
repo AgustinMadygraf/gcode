@@ -1,49 +1,49 @@
-# Modelos de Dominio y Reglas de Invariantes
+# Domain Models and Invariant Rules
 
-Este documento describe los modelos de dominio principales del proyecto GCode, sus invariantes y reglas de negocio asociadas. Sirve como referencia para desarrolladores y para la evolución del diseño.
+This document describes the main domain models of the GCode project, their invariants, and associated business rules. It serves as a reference for developers and for the evolution of the design.
 
 ---
 
 ## DomainSegment
 
-**Descripción:**
-Objeto de valor inmutable que representa un segmento entre dos puntos en 2D.
+**Description:**
+Immutable value object representing a segment between two points in 2D.
 
-**Atributos:**
-- `start: Point` (punto inicial)
-- `end: Point` (punto final)
+**Attributes:**
+- `start: Point` (start point)
+- `end: Point` (end point)
 
-**Invariantes:**
-- `start` y `end` deben ser instancias válidas de `Point`.
-- Un segmento no puede tener longitud cero (`start != end`).
+**Invariants:**
+- `start` and `end` must be valid instances of `Point`.
+- A segment cannot have zero length (`start != end`).
 
-**Reglas de negocio:**
-- Los segmentos son inmutables: no se pueden modificar tras su creación.
-- Dos segmentos con los mismos puntos (sin importar el orden) pueden considerarse iguales según el contexto.
+**Business rules:**
+- Segments are immutable: they cannot be modified after creation.
+- Two segments with the same points (regardless of order) may be considered equal depending on context.
 
 ---
 
 ## DomainPath
 
-**Descripción:**
-Entidad que representa un camino formado por una secuencia ordenada de segmentos.
+**Description:**
+Entity representing a path formed by an ordered sequence of segments.
 
-**Atributos:**
+**Attributes:**
 - `segments: List[DomainSegment]`
-- (Opcional) `closed: bool` (indica si el camino es cerrado)
+- (Optional) `closed: bool` (indicates if the path is closed)
 
-**Invariantes:**
-- La lista de segmentos no puede estar vacía.
-- Los segmentos deben estar conectados: el `end` de un segmento debe coincidir con el `start` del siguiente.
-- Si `closed` es `True`, el `end` del último segmento debe coincidir con el `start` del primero.
+**Invariants:**
+- The segment list cannot be empty.
+- Segments must be connected: the `end` of one segment must match the `start` of the next.
+- If `closed` is `True`, the `end` of the last segment must match the `start` of the first.
 
-**Reglas de negocio:**
-- Un `DomainPath` es responsable de validar su propia consistencia al crearse.
-- Métodos de transformación (traslación, rotación, escalado) deben devolver nuevas instancias.
+**Business rules:**
+- A `DomainPath` is responsible for validating its own consistency upon creation.
+- Transformation methods (translation, rotation, scaling) must return new instances.
 
 ---
 
-## Ejemplo de Test de Invariantes
+## Invariant Test Example
 
 ```python
 # test_domain_segment.py
@@ -62,7 +62,7 @@ def test_path_segments_connected():
 
 ---
 
-## Notas
-- Estos modelos deben usarse en puertos y servicios del dominio, evitando exponer tipos de librerías externas.
-- Las invariantes deben validarse en los constructores o métodos de factoría.
-- Se recomienda documentar reglas adicionales en los docstrings del código fuente.
+## Notes
+- These models should be used in domain ports and services, avoiding exposure of external library types.
+- Invariants must be validated in constructors or factory methods.
+- It is recommended to document additional rules in the code's docstrings.

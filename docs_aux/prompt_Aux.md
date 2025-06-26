@@ -7,10 +7,10 @@
    - Beneficio de negocio (velocidad, calidad, coste)  
 3. **Descarta** los hallazgos 🟡 Medio y 🟢 Bajo.  
 4. Por cada hallazgo 🔴 Alto genera una **tarea** con esta ficha:
-   - **Nombre** (≤ 6 palabras)
+   - **Nombre**
    - **Ubicación** (carpeta/archivo + capa)
-   - **Motivo crítico** (≤ 20 palabras)
-   - **Ganancia esperada** (≤ 15 palabras)
+   - **Motivo crítico**
+   - **Ganancia esperada**
 
 5. Formula un plan de refactorización completo
 6. En caso que tengas dudas sobre el plan de refactorización, deberás hacer preguntas. Si no tenés dudas, deberás informar que tenés certezas de que debemos proceder.

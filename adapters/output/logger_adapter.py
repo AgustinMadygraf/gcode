@@ -1,6 +1,6 @@
 """
-Adaptador de logger para Clean Architecture.
-Implementa LoggerPort usando logging estándar de Python.
+Logger adapter for Clean Architecture.
+Implements LoggerPort using Python's standard logging.
 """
 import logging
 from domain.ports.logger_port import LoggerPort
