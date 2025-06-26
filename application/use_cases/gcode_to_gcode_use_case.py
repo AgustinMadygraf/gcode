@@ -1,11 +1,11 @@
 from pathlib import Path
 from typing import List, Dict, Any
 from domain.ports.logger_port import LoggerPort
-from application.use_cases.file_output.filename_service import FilenameService
+from domain.ports.filename_service_port import FilenameServicePort
 
 class GcodeToGcodeUseCase:
     """Caso de uso para refactorizar archivos GCODE existentes."""
-    def __init__(self, filename_service: FilenameService, logger: LoggerPort = None):
+    def __init__(self, filename_service: FilenameServicePort, logger: LoggerPort = None):
         self.filename_service = filename_service
         self.logger = logger
 

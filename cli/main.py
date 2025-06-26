@@ -19,7 +19,6 @@ from infrastructure.compressors.arc_compressor import ArcCompressor
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from adapters.input.path_sampler import PathSampler
 from domain.services.geometry import GeometryService
-from domain.services.filename_service import FilenameService
 from infrastructure.factories.container import Container
 from domain.ports.logger_port import LoggerPort
 from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
@@ -33,6 +32,7 @@ from adapters.input.svg_file_selector_adapter import SvgFileSelectorAdapter
 from adapters.input.gcode_file_selector_adapter import GcodeFileSelectorAdapter
 from application.use_cases.gcode_to_gcode_use_case import GcodeToGcodeUseCase
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
+from domain.ports.filename_service_port import FilenameServicePort
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
@@ -40,10 +40,10 @@ class SvgToGcodeApp:
     def __init__(self):
         file_selector: FileSelectorPort = SvgFileSelectorAdapter()
         self.container = Container(file_selector=file_selector)
+        self.filename_service: FilenameServicePort = self.container.filename_gen
         self.config = self.container.config
         self.config_port = self.container.config_port
         self.selector = self.container.selector
-        self.filename_gen = self.container.filename_gen
         self.logger: LoggerPort = self.container.logger
         self.feed = self.container.feed
         self.cmd_down = self.container.cmd_down
@@ -86,7 +86,7 @@ class SvgToGcodeApp:
             
         svg_file = Path(svg_file)  # Asegura que sea un Path
         self.logger.debug("Selected SVG file: %s", svg_file)
-        gcode_file = self.filename_gen.next_filename(svg_file)
+        gcode_file = self.filename_service.next_filename(svg_file)
         self.logger.debug("Output G-code file: %s", gcode_file)
 
         # Calcular bbox y centro usando GeometryService
@@ -121,7 +121,7 @@ class SvgToGcodeApp:
             gcode_generation_service=gcode_service,
             gcode_compression_use_case=compress_use_case,
             logger=self.logger,
-            filename_service=self.filename_gen
+            filename_service=self.filename_service
         )
         # Ejecutar caso de uso
         result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
@@ -171,7 +171,7 @@ class SvgToGcodeApp:
             return False
         if operation_choice == 1:
             refactor_use_case = GcodeToGcodeUseCase(
-                filename_service=self.filename_gen,
+                filename_service=self.filename_service,
                 logger=self.logger
             )
             result = refactor_use_case.execute(gcode_file)
@@ -201,7 +201,7 @@ class SvgToGcodeApp:
                     except ValueError:
                         print("Por favor, ingrese un número válido.")
             rescale_use_case = GcodeRescaleUseCase(
-                filename_service=self.filename_gen,
+                filename_service=self.filename_service,
                 logger=self.logger,
                 config_provider=self.config
             )

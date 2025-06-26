@@ -1,19 +1,18 @@
 """
-Tests para FilenameService (capa de aplicación).
+Tests para FilenameServiceAdapter (capa de adaptadores).
 """
 import unittest
 from pathlib import Path
-from domain.services.filename_service import FilenameService
+from adapters.output.filename_service_adapter import FilenameServiceAdapter
 import tempfile
-import os
 from tests.mocks.mock_config import DummyConfigProvider
 
-class TestFilenameService(unittest.TestCase):
+class TestFilenameServiceAdapter(unittest.TestCase):
     def test_next_filename(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
             config_provider = DummyConfigProvider(output_dir)
-            service = FilenameService(config_provider)
+            service = FilenameServiceAdapter(output_dir)
             svg_file = output_dir / "test.svg"
             svg_file.touch()  # Simula existencia del SVG
             # No hay archivos G-code aún

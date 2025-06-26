@@ -12,6 +12,8 @@ from domain.ports.event_bus_port import EventBusPort
 from domain.ports.error_handler_port import ErrorHandlerPort
 from infrastructure.events.simple_event_bus import SimpleEventBus
 from infrastructure.error_handling.error_handler import ErrorHandler
+from adapters.output.filename_service_adapter import FilenameServiceAdapter
+from domain.ports.filename_service_port import FilenameServicePort
 
 class Container:
     def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None):
@@ -43,9 +45,11 @@ class Container:
         return self._selector
 
     @property
-    def filename_gen(self):
+    def filename_gen(self) -> FilenameServicePort:
         if self._filename_gen is None:
-            self._filename_gen = DomainFactory.create_filename_service(self.config)
+            # Suponemos que config.get_gcode_output_dir() devuelve un Path
+            output_dir = self.config.get_gcode_output_dir()
+            self._filename_gen = FilenameServiceAdapter(output_dir)
         return self._filename_gen
 
     @property
