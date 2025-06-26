@@ -1,4 +1,5 @@
 {
+    "_PATH":  "infrastructure/config/config.json",
   "SVG_INPUT_DIR": "data/svg_input",
   "GCODE_OUTPUT_DIR": "data/gcode_output",
   "FEED": 4000,
