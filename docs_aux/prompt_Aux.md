@@ -15,13 +15,6 @@
 5. Formula un plan de refactorización completo
 6. En caso que tengas dudas sobre el plan de refactorización, deberás hacer preguntas. Si no tenés dudas, deberás informar que tenés certezas de que debemos proceder.
 
-6. Devuelve la salida con el formato:
-
-## Tareas de Alto Impacto
-1. 🔴 **<Nombre breve>**  
-   - Ubicación: <carpeta/archivo – capa>  
-   - Motivo: <texto>  
-   - Ganancia: <texto>  
 ```
 
 ---

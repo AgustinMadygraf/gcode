@@ -22,13 +22,13 @@ class SvgToGcodeWorkflow:
         self.presenter.print(f"Archivo G-code de salida: {gcode_file}", color='blue')
         svg_loader_factory = self.container.get_svg_loader
         self.presenter.print(self.presenter.i18n.get("processing_start"), color='blue')
+        self.presenter.print(self.presenter.i18n.get("processing_complete"), color='green')
         paths = svg_loader_factory(svg_file).get_paths()
         def dummy_process(_):
             import time
             time.sleep(0.01)
         if paths and len(paths) > 1:
             self.presenter.print_progress(len(paths), len(paths), prefix=self.presenter.i18n.get("processing_paths"))
-        self.presenter.print(self.presenter.i18n.get("processing_complete"), color='green')
         try:
             from infrastructure.factories.domain_factory import DomainFactory
             bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)

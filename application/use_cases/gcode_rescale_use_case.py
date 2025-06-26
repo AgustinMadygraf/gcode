@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 import re
 import math
+from domain.services.validation.gcode_validator import GCodeValidator
 
 class GcodeRescaleUseCase:
     def __init__(self, filename_service, logger=None, config_provider=None):
@@ -17,6 +18,12 @@ class GcodeRescaleUseCase:
             self.logger.info(f"Reescalando archivo GCODE: {gcode_file}")
         with open(gcode_file, 'r') as f:
             lines = f.readlines()
+        # Validar integridad G-code antes de procesar
+        valido, error = GCodeValidator.validate([l.strip() for l in lines])
+        if not valido:
+            if self.logger:
+                self.logger.error(f"Validación G-code fallida: {error}")
+            raise ValueError(f"Archivo G-code inválido: {error}")
         dimensions = self._analyze_dimensions(lines)
         current_width = dimensions['width']
         current_height = dimensions['height']

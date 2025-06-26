@@ -137,7 +137,32 @@ python run.py --no-interactive --input archivo.gcode --rescale 1.5
 python run.py --help
 ```
 
+### Ejemplos con redirección y pipes
+
+**Convertir SVG desde stdin y escribir G-code a stdout:**
+```bash
+cat dibujo.svg | python run.py --no-interactive --input - --output - > resultado.gcode
+```
+
+**Optimizar un G-code usando redirección:**
+```bash
+python run.py --no-interactive --input archivo.gcode --optimize --output - > optimizado.gcode
+```
+
+**Usar en un pipeline (SVG → G-code → optimización):**
+```bash
+cat dibujo.svg | python run.py --no-interactive --input - --output - | \
+  python run.py --no-interactive --input - --optimize --output resultado.gcode
+```
+
 > Todos los mensajes y errores respetan el idioma y colores configurados.
+
+## Idioma automático
+
+Por defecto, la aplicación detecta el idioma del sistema operativo:
+- Si tu sistema está en inglés, la interfaz será en inglés.
+- En cualquier otro caso, la interfaz será en español.
+- Puedes forzar el idioma con el flag `--lang es` o `--lang en`.
 
 ### Notas de arquitectura (2025)
 - Adaptadores consolidados en `adapters/`.
@@ -173,3 +198,18 @@ python run.py --help
 
 ### ¿Cómo reporto un bug?
 - Abre un issue en el repositorio o contacta al mantenedor con el mensaje de error y los pasos para reproducirlo.
+
+## Códigos de salida
+
+La aplicación retorna diferentes códigos de salida según el resultado de la ejecución. Úsalos para automatizar flujos o detectar errores en scripts:
+
+| Código | Significado                        |
+|--------|------------------------------------|
+| 0      | Ejecución exitosa                  |
+| 1      | Error general de aplicación        |
+| 2      | Error de validación de entrada     |
+| 3      | Error durante el procesamiento     |
+| 4      | Error en la generación de salida   |
+| 99     | Error inesperado/desconocido       |
+
+> Los mensajes de error se muestran en el idioma configurado y con prefijos `[ERROR]`.

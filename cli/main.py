@@ -7,6 +7,9 @@ Nota: Este módulo NO debe ejecutarse directamente. El único punto de entrada s
 
 from pathlib import Path
 import time
+import locale
+import os
+import sys
 from infrastructure.config.config import Config
 from adapters.input.config_adapter import ConfigAdapter
 from domain.ports.config_port import ConfigPort
@@ -71,8 +74,25 @@ class SvgToGcodeApp:
         self.max_width_mm = self.container.max_width_mm
         self.args = args
         self.interactive_mode = True if args is None else not getattr(args, 'no_interactive', False)
-        self.use_colors = False if args is None else not getattr(args, 'no_color', False)
-        self.language = getattr(args, 'lang', 'es') if args else 'es'
+        # Detección automática de soporte de colores
+        def _supports_color():
+            if args and getattr(args, 'no_color', False):
+                return False
+            if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
+                return False
+            if os.name == "nt":
+                return "ANSICON" in os.environ or "WT_SESSION" in os.environ or os.environ.get("TERM_PROGRAM") == "vscode"
+            return True
+        self.use_colors = _supports_color()
+        # Detectar idioma del sistema si no se especifica --lang
+        if args and hasattr(args, 'lang') and args.lang:
+            self.language = args.lang
+        else:
+            sys_locale = locale.getdefaultlocale()[0] if hasattr(locale, 'getdefaultlocale') else None
+            if sys_locale and sys_locale.lower().startswith('en'):
+                self.language = 'en'
+            else:
+                self.language = 'es'
         self.i18n = I18nService(MESSAGES, default_lang=self.language)
         self.colors = TerminalColors(self.use_colors)
         self.presenter = CliPresenter(i18n=self.i18n, color_service=self.colors)

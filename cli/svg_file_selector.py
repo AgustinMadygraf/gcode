@@ -3,6 +3,10 @@ SvgFileSelector: Clase para selección de archivos SVG desde un directorio.
 """
 from pathlib import Path
 from typing import Optional, List
+from cli.i18n import MESSAGES
+from infrastructure.i18n.i18n_service import I18nService
+
+i18n = I18nService(MESSAGES)
 
 class SvgFileSelector:
     " Clase para selección de archivos SVG desde un directorio. "
@@ -18,7 +22,7 @@ class SvgFileSelector:
         svg_files = self.list_svg_files()
         if not svg_files:
             raise FileNotFoundError("No SVG files found in svg_input.")
-        print("Available SVG files:")
+        print(i18n.get("available_svg_files"))
         for idx, f in enumerate(svg_files, 1):
             print(f"  {idx}. {f.name}")
         while True:
@@ -28,4 +32,4 @@ class SvgFileSelector:
                     return svg_files[sel-1]
             except (ValueError, TypeError):
                 pass
-            print("Invalid selection. Try again.")
+            print(i18n.get("invalid_selection"))

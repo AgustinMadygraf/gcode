@@ -4,6 +4,7 @@ from typing import List, Tuple
 from domain.ports.gcode_compression_port import GcodeCompressionPort
 from domain.models.compression_metrics import CompressionMetrics
 from domain.models.compression_config import CompressionConfig
+from domain.services.validation.gcode_validator import GCodeValidator
 
 class GcodeCompressionService:
     """Servicio de aplicación para comprimir G-code con múltiples estrategias"""
@@ -14,6 +15,13 @@ class GcodeCompressionService:
 
     def compress(self, gcode_lines: List[str], config: CompressionConfig) -> Tuple[List[str], CompressionMetrics]:
         """Aplica compresión según la configuración proporcionada"""
+        # Validar integridad G-code antes de procesar
+        valido, error = GCodeValidator.validate(gcode_lines)
+        if not valido:
+            if self.logger:
+                self.logger.error(f"Validación G-code fallida: {error}")
+            raise ValueError(f"Archivo G-code inválido: {error}")
+
         if not config.enabled or not self.compressors:
             return gcode_lines, CompressionMetrics(
                 original_lines=len(gcode_lines),

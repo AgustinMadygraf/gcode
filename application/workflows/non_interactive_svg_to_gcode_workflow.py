@@ -3,6 +3,7 @@ Workflow para el modo no interactivo de generación de G-code desde SVG.
 """
 
 from pathlib import Path
+import sys
 from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
 from application.use_cases.gcode_to_gcode_use_case import GcodeToGcodeUseCase
 from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
@@ -34,6 +35,83 @@ class NonInteractiveSvgToGcodeWorkflow:
         output_path = args.output
         optimize = getattr(args, 'optimize', False)
         rescale = getattr(args, 'rescale', None)
+        # Leer entrada desde stdin si input es '-'
+        if input_path == '-':
+            input_data = sys.stdin.read()
+            # Detectar tipo de entrada por flag o contenido
+            if optimize or rescale or (args.input and str(args.input).lower().endswith('.gcode')):
+                # Procesar como G-code
+                gcode_lines = input_data.splitlines()
+                if optimize:
+                    refactor_use_case = GcodeToGcodeUseCase(
+                        filename_service=self.filename_service,
+                        logger=self.logger
+                    )
+                    # Guardar temporalmente para reutilizar el flujo existente
+                    from tempfile import NamedTemporaryFile
+                    with NamedTemporaryFile(delete=False, mode='w', encoding='utf-8', suffix='.gcode') as tmp:
+                        tmp.write(input_data)
+                        tmp_path = tmp.name
+                    result = refactor_use_case.execute(Path(tmp_path))
+                    gcode_out = open(result['output_file'], encoding='utf-8').read().splitlines()
+                    if output_path == '-' or output_path is None:
+                        sys.stdout.write("\n".join(gcode_out) + "\n")
+                        return 0
+                    else:
+                        self._write_gcode_file(Path(output_path), gcode_out)
+                        return 0
+                elif rescale:
+                    rescale_use_case = GcodeRescaleUseCase(
+                        filename_service=self.filename_service,
+                        logger=self.logger,
+                        config_provider=self.config
+                    )
+                    from tempfile import NamedTemporaryFile
+                    with NamedTemporaryFile(delete=False, mode='w', encoding='utf-8', suffix='.gcode') as tmp:
+                        tmp.write(input_data)
+                        tmp_path = tmp.name
+                    result = rescale_use_case.execute(Path(tmp_path), rescale)
+                    gcode_out = open(result['output_file'], encoding='utf-8').read().splitlines()
+                    if output_path == '-' or output_path is None:
+                        sys.stdout.write("\n".join(gcode_out) + "\n")
+                        return 0
+                    else:
+                        self._write_gcode_file(Path(output_path), gcode_out)
+                        return 0
+                else:
+                    self.presenter.print("error_occurred", color='red')
+                    return 3
+            else:
+                # Procesar como SVG
+                from tempfile import NamedTemporaryFile
+                with NamedTemporaryFile(delete=False, mode='w', encoding='utf-8', suffix='.svg') as tmp:
+                    tmp.write(input_data)
+                    tmp_path = tmp.name
+                svg_loader_factory = self.container.get_svg_loader
+                self.presenter.print("processing_start", color='blue')
+                result = SvgToGcodeUseCase(
+                    svg_loader_factory=svg_loader_factory,
+                    path_processing_service=PathProcessingService(
+                        min_length=1e-3,
+                        remove_svg_border=self.config.get_remove_svg_border(),
+                        border_tolerance=self.config.get_border_detection_tolerance()
+                    ),
+                    gcode_generation_service=GCodeGenerationService(self.container.get_gcode_generator()),
+                    gcode_compression_use_case=CompressGcodeUseCase(
+                        create_gcode_compression_service(logger=self.logger),
+                        AdapterFactory.create_config_adapter(self.config)
+                    ),
+                    logger=self.logger,
+                    filename_service=self.filename_service
+                ).execute(Path(tmp_path))
+                gcode_lines = result['compressed_gcode'] if optimize else result['gcode_lines']
+                if output_path == '-' or output_path is None:
+                    sys.stdout.write("\n".join(gcode_lines) + "\n")
+                    return 0
+                else:
+                    self._write_gcode_file(Path(output_path), gcode_lines)
+                    return 0
+        # Si input_path no es '-', seguir flujo normal
         # SVG a GCODE
         if str(input_path).lower().endswith('.svg'):
             svg_loader_factory = self.container.get_svg_loader
@@ -66,11 +144,15 @@ class NonInteractiveSvgToGcodeWorkflow:
             )
             result = svg_to_gcode_use_case.execute(input_path, transform_strategies=transform_strategies)
             gcode_lines = result['compressed_gcode'] if optimize else result['gcode']
-            out_file = output_path or self.filename_service.next_filename(input_path)
-            self._write_gcode_file(out_file, gcode_lines)
-            self.presenter.print("processing_complete", color='green')
-            self.presenter.print("success_refactor", color='green', output_file=out_file)
-            return 0
+            if output_path == '-' or output_path is None:
+                sys.stdout.write("\n".join(gcode_lines) + "\n")
+                return 0
+            else:
+                self._write_gcode_file(Path(output_path), gcode_lines)
+                out_file = output_path
+                self.presenter.print("processing_complete", color='green')
+                self.presenter.print("success_refactor", color='green', output_file=out_file)
+                return 0
         # GCODE a GCODE
         elif str(input_path).lower().endswith('.gcode'):
             if optimize:
@@ -79,10 +161,16 @@ class NonInteractiveSvgToGcodeWorkflow:
                     logger=self.logger
                 )
                 result = refactor_use_case.execute(input_path)
-                out_file = output_path or result['output_file']
-                self.presenter.print("success_refactor", color='green', output_file=out_file)
-                self.presenter.print("success_optimize", color='green', changes=result['changes_made'])
-                return 0
+                gcode_out = open(result['output_file'], encoding='utf-8').read().splitlines()
+                if output_path == '-' or output_path is None:
+                    sys.stdout.write("\n".join(gcode_out) + "\n")
+                    return 0
+                else:
+                    self._write_gcode_file(Path(output_path), gcode_out)
+                    out_file = output_path
+                    self.presenter.print("success_refactor", color='green', output_file=out_file)
+                    self.presenter.print("success_optimize", color='green', changes=result['changes_made'])
+                    return 0
             elif rescale:
                 rescale_use_case = GcodeRescaleUseCase(
                     filename_service=self.filename_service,
@@ -90,18 +178,21 @@ class NonInteractiveSvgToGcodeWorkflow:
                     config_provider=self.config
                 )
                 result = rescale_use_case.execute(input_path, rescale)
-                out_file = output_path or result['output_file']
-                original_dim = result['original_dimensions']
-                new_dim = result['new_dimensions']
-                self.presenter.print("success_rescale", color='green', output_file=out_file)
-                self.presenter.print("rescale_original", width=original_dim['width'], height=original_dim['height'])
-                self.presenter.print("rescale_new", width=new_dim['width'], height=new_dim['height'])
-                self.presenter.print("rescale_factor", factor=result['scale_factor'])
-                self.presenter.print("rescale_cmds", g0g1=result['commands_rescaled']['g0g1'], g2g3=result['commands_rescaled']['g2g3'])
-                return 0
-            else:
-                self.presenter.print("error_occurred", color='red')
-                return 3
+                gcode_out = open(result['output_file'], encoding='utf-8').read().splitlines()
+                if output_path == '-' or output_path is None:
+                    sys.stdout.write("\n".join(gcode_out) + "\n")
+                    return 0
+                else:
+                    self._write_gcode_file(Path(output_path), gcode_out)
+                    out_file = output_path
+                    original_dim = result.get('original_dimensions', {})
+                    new_dim = result.get('new_dimensions', {})
+                    self.presenter.print("success_rescale", color='green', output_file=out_file)
+                    self.presenter.print("rescale_original", width=original_dim.get('width', 0), height=original_dim.get('height', 0))
+                    self.presenter.print("rescale_new", width=new_dim.get('width', 0), height=new_dim.get('height', 0))
+                    self.presenter.print("rescale_factor", factor=result.get('scale_factor', 1.0))
+                    self.presenter.print("rescale_cmds", g0g1=result['commands_rescaled']['g0g1'], g2g3=result['commands_rescaled']['g2g3'])
+                    return 0
         else:
             self.presenter.print("error_occurred", color='red')
             return 3
