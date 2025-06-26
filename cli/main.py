@@ -6,6 +6,7 @@ Nota: Este módulo NO debe ejecutarse directamente. El único punto de entrada s
 """
 
 from pathlib import Path
+import time
 from infrastructure.config.config import Config
 from adapters.input.config_adapter import ConfigAdapter
 from domain.ports.config_port import ConfigPort
@@ -33,11 +34,14 @@ from adapters.input.gcode_file_selector_adapter import GcodeFileSelectorAdapter
 from application.use_cases.gcode_to_gcode_use_case import GcodeToGcodeUseCase
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 from domain.ports.filename_service_port import FilenameServicePort
+from cli.i18n import I18n
+from cli.terminal_colors import TerminalColors
+from cli.user_config import UserConfig
+from cli.progress_bar import print_progress_bar
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
-    
-    def __init__(self):
+    def __init__(self, args=None):
         file_selector: FileSelectorPort = SvgFileSelectorAdapter()
         self.container = Container(file_selector=file_selector)
         self.filename_service: FilenameServicePort = self.container.filename_gen
@@ -53,6 +57,29 @@ class SvgToGcodeApp:
         self.max_height_mm = self.container.max_height_mm
         self.max_width_mm = self.container.max_width_mm
         self.event_bus = self.container.event_bus
+        self.args = args
+        self.interactive_mode = True if args is None else not getattr(args, 'no_interactive', False)
+        self.use_colors = False if args is None else not getattr(args, 'no_color', False)
+        self.language = getattr(args, 'lang', 'es') if args else 'es'
+        self.i18n = I18n(self.language)
+        self.colors = TerminalColors(self.use_colors)
+        self.user_config = UserConfig()
+        # Cargar preferencias desde archivo personalizado si se indica
+        if args and getattr(args, 'config', None):
+            import json
+            try:
+                with open(args.config, 'r', encoding='utf-8') as f:
+                    self.user_config.data.update(json.load(f))
+            except Exception:
+                pass
+        # Sobrescribir args con preferencias guardadas si existen
+        if args:
+            for key in ["lang", "no_color", "input", "output"]:
+                if getattr(args, key, None) is None and self.user_config.get(key) is not None:
+                    setattr(args, key, self.user_config.get(key))
+        # Guardar preferencias si se solicita
+        if args and getattr(args, 'save_config', False):
+            self.user_config.update_from_args(args)
         # Suscribimos un handler de ejemplo al evento 'gcode_generated'
         self.event_bus.subscribe('gcode_generated', self._on_gcode_generated)
         # Suscribimos handler para evento de reescalado
@@ -76,12 +103,27 @@ class SvgToGcodeApp:
             "max_dimensions": f"{self.max_width_mm}x{self.max_height_mm}mm"
         }
     
+    def _print(self, key, color=None, **kwargs):
+        msg = self.i18n.get(key, **kwargs)
+        if color == 'red':
+            print(self.colors.red(msg))
+        elif color == 'green':
+            print(self.colors.green(msg))
+        elif color == 'yellow':
+            print(self.colors.yellow(msg))
+        elif color == 'blue':
+            print(self.colors.blue(msg))
+        elif color == 'bold':
+            print(self.colors.bold(msg))
+        else:
+            print(msg)
+
     def _execute_workflow(self):
         """Lógica principal del proceso de conversión"""
         svg_file = self.selector.select_svg_file()
         if not svg_file:
-            self.logger.error("No se seleccionó un archivo SVG válido. Operación cancelada.")
-            print("[ERROR] No se seleccionó un archivo SVG válido. El proceso ha sido cancelado.")
+            self.logger.error(self.i18n.get("error_no_svg"))
+            self._print("error_no_svg", color='red')
             return False
             
         svg_file = Path(svg_file)  # Asegura que sea un Path
@@ -91,7 +133,14 @@ class SvgToGcodeApp:
 
         # Calcular bbox y centro usando GeometryService
         svg_loader_factory = self.container.get_svg_loader
+        self._print("processing_start", color='blue')
         paths = svg_loader_factory(svg_file).get_paths()
+        # Barra de progreso para paths
+        def dummy_process(_):
+            time.sleep(0.01)  # Simula procesamiento
+        if paths and len(paths) > 1:
+            self._process_with_progress(paths, dummy_process, prefix=self.i18n.get("processing_paths"))
+        self._print("processing_complete", color='green')
         try:
             bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)
         except (AttributeError, ValueError):
@@ -125,49 +174,55 @@ class SvgToGcodeApp:
         )
         # Ejecutar caso de uso
         result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
-        self._write_gcode_file(gcode_file, result['compressed_gcode'])
+        # Barra de progreso para generación de G-code
+        gcode_lines = result['compressed_gcode']
+        total_lines = len(gcode_lines)
+        for i, _ in enumerate(gcode_lines, 1):
+            if i % max(1, total_lines // 100) == 0 or i == total_lines:
+                print_progress_bar(i, total_lines, prefix=self.i18n.get("generating_gcode"))
+        self._write_gcode_file(gcode_file, gcode_lines)
         self.logger.info("Archivo G-code escrito: %s", gcode_file)
         # Publicar evento tras generar el archivo
         self.event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
         return True
 
     def select_operation_mode(self):
-        print("\n=== Seleccione modo de operación ===")
-        print("  [1] SVG a GCODE (conversión estándar)")
-        print("  [2] GCODE a GCODE (optimización de archivos existentes)")
+        self._print("menu_title", color='bold')
+        self._print("option_svg_to_gcode")
+        self._print("option_optimize")
         while True:
             try:
-                choice = int(input("Seleccione una opción [1-2]: "))
+                choice = int(input(self.i18n.get("enter_number") + ": "))
                 if choice in [1, 2]:
                     return choice
-                print("Opción inválida. Intente nuevamente.")
+                self._print("invalid_selection", color='yellow')
             except ValueError:
-                print("Por favor, ingrese un número válido.")
+                self._print("invalid_number", color='yellow')
 
     def _execute_gcode_to_gcode_workflow(self):
         gcode_selector = GcodeFileSelectorAdapter(self.config)
         gcode_file = gcode_selector.select_gcode_file()
         if not gcode_file:
-            self.logger.error("No se seleccionó un archivo GCODE válido. Operación cancelada.")
-            print("[ERROR] No se seleccionó un archivo GCODE válido. El proceso ha sido cancelado.")
+            self.logger.error(self.i18n.get("error_no_gcode"))
+            self._print("error_no_gcode", color='red')
             return False
         from pathlib import Path
         gcode_file = Path(gcode_file)
         self.logger.debug(f"Archivo GCODE seleccionado: {gcode_file}")
 
         # Menú de operaciones GCODE→GCODE
-        print("\n=== Seleccione la operación a realizar ===")
-        print("  [1] Optimizar movimientos (G1 → G0)")
-        print("  [2] Reescalar dimensiones")
-        print("  [0] Cancelar")
+        self._print("operation_menu_title", color='bold')
+        self._print("operation_optimize")
+        self._print("operation_rescale")
+        self._print("exit", color='yellow')
         operation_choice = -1
         while operation_choice not in [0, 1, 2]:
             try:
-                operation_choice = int(input("\nSeleccione una opción [0-2]: "))
+                operation_choice = int(input(self.i18n.get("enter_number") + ": "))
             except ValueError:
-                print("Por favor, ingrese un número válido.")
+                self._print("invalid_number", color='yellow')
         if operation_choice == 0:
-            print("Operación cancelada por el usuario.")
+            self._print("operation_cancelled", color='yellow')
             return False
         if operation_choice == 1:
             refactor_use_case = GcodeToGcodeUseCase(
@@ -180,8 +235,8 @@ class SvgToGcodeApp:
                 'output_file': result['output_file'],
                 'changes': result['changes_made']
             })
-            print(f"\n[ÉXITO] Archivo refactorizado guardado en: {result['output_file']}")
-            print(f"Se optimizaron {result['changes_made']} movimientos de G1 a G0")
+            self._print("success_refactor", color='green', output_file=result['output_file'])
+            self._print("success_optimize", color='green', changes=result['changes_made'])
         elif operation_choice == 2:
             from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
             # Obtener altura objetivo (usar configuración o solicitar al usuario)
@@ -189,17 +244,17 @@ class SvgToGcodeApp:
             use_config = input("\n¿Usar altura máxima de configuración (250mm)? [S/n]: ").strip().lower()
             if use_config != 'n':
                 target_height = self.config.max_height_mm
-                print(f"Usando altura máxima: {target_height}mm")
+                self._print("rescale_using_max", color='blue', height=target_height)
             else:
                 while True:
                     try:
-                        target_height = float(input("Ingrese altura deseada en mm: "))
+                        target_height = float(input(self.i18n.get("enter_number") + " (mm): "))
                         if target_height <= 0:
-                            print("La altura debe ser mayor que cero.")
+                            self._print("height_gt_zero", color='yellow')
                         else:
                             break
                     except ValueError:
-                        print("Por favor, ingrese un número válido.")
+                        self._print("invalid_number", color='yellow')
             rescale_use_case = GcodeRescaleUseCase(
                 filename_service=self.filename_service,
                 logger=self.logger,
@@ -215,28 +270,121 @@ class SvgToGcodeApp:
             })
             original_dim = result['original_dimensions']
             new_dim = result['new_dimensions']
-            print(f"\n[ÉXITO] Archivo reescalado guardado en: {result['output_file']}")
-            print(f"Dimensiones originales: {original_dim['width']:.1f}x{original_dim['height']:.1f}mm")
-            print(f"Dimensiones nuevas: {new_dim['width']:.1f}x{new_dim['height']:.1f}mm")
-            print(f"Factor de escala: {result['scale_factor']:.3f}")
-            print(f"Se reescalaron {result['commands_rescaled']['g0g1']} movimientos lineales y {result['commands_rescaled']['g2g3']} arcos")
+            self._print("success_rescale", color='green', output_file=result['output_file'])
+            self._print("rescale_original", width=original_dim['width'], height=original_dim['height'])
+            self._print("rescale_new", width=new_dim['width'], height=new_dim['height'])
+            self._print("rescale_factor", factor=result['scale_factor'])
+            self._print("rescale_cmds", g0g1=result['commands_rescaled']['g0g1'], g2g3=result['commands_rescaled']['g2g3'])
         return True
 
+    def _process_with_progress(self, items, process_func, prefix='Procesando'):
+        total = len(items)
+        for i, item in enumerate(items, 1):
+            process_func(item)
+            print_progress_bar(i, total, prefix=prefix)
+
     def run(self):
-        " Main method to run the SVG to G-code conversion process. "
+        """Método principal que ejecuta la aplicación"""
         error_handler = self.container.error_handler
-        operation_mode = self.select_operation_mode()
-        if operation_mode == 1:
-            result = error_handler.wrap_execution(
-                self._execute_workflow,
-                self._get_context_info()
-            )
+        if self.interactive_mode:
+            operation_mode = self.select_operation_mode()
+            if operation_mode == 1:
+                result = error_handler.wrap_execution(
+                    self._execute_workflow,
+                    self._get_context_info()
+                )
+            else:
+                result = error_handler.wrap_execution(
+                    self._execute_gcode_to_gcode_workflow,
+                    self._get_context_info()
+                )
+            if not result.get('success', False):
+                error_info = result.get('message', 'Error desconocido')
+                error_type = result.get('error', 'Error')
+                print(f"[{error_type.upper()}] {error_info}")
+                return 1
+            return 0
         else:
-            result = error_handler.wrap_execution(
-                self._execute_gcode_to_gcode_workflow,
-                self._get_context_info()
+            return self._run_non_interactive()
+
+    def _run_non_interactive(self):
+        """Ejecuta el flujo no interactivo basado en argumentos CLI"""
+        if not self.args or not self.args.input:
+            self._print("error_file_not_found", color='red')
+            return 2
+        input_path = self.args.input
+        output_path = self.args.output
+        optimize = getattr(self.args, 'optimize', False)
+        rescale = getattr(self.args, 'rescale', None)
+        # SVG a GCODE
+        if str(input_path).lower().endswith('.svg'):
+            svg_loader_factory = self.container.get_svg_loader
+            self._print("processing_start", color='blue')
+            paths = svg_loader_factory(input_path).get_paths()
+            self._print("processing_complete", color='green')
+            bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)
+            _xmin, _xmax, _ymin, _ymax = bbox
+            _cx, cy = DomainFactory.create_geometry_service()._center(bbox)
+            transform_strategies = []
+            if self.config.get_mirror_vertical():
+                transform_strategies.append(MirrorVerticalStrategy(cy))
+            path_processor = PathProcessingService(
+                min_length=1e-3,
+                remove_svg_border=self.config.get_remove_svg_border(),
+                border_tolerance=self.config.get_border_detection_tolerance()
             )
-        if not result.get('success', False):
-            error_info = result.get('message', 'Error desconocido')
-            error_type = result.get('error', 'Error')
-            print(f"[{error_type.upper()}] {error_info}")
+            generator = self.container.get_gcode_generator(transform_strategies=transform_strategies)
+            gcode_service = GCodeGenerationService(generator)
+            compression_service = create_gcode_compression_service(logger=self.logger)
+            config_reader = AdapterFactory.create_config_adapter(self.config)
+            compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
+            svg_to_gcode_use_case = SvgToGcodeUseCase(
+                svg_loader_factory=svg_loader_factory,
+                path_processing_service=path_processor,
+                gcode_generation_service=gcode_service,
+                gcode_compression_use_case=compress_use_case,
+                logger=self.logger,
+                filename_service=self.filename_service
+            )
+            result = svg_to_gcode_use_case.execute(input_path, transform_strategies=transform_strategies)
+            gcode_lines = result['compressed_gcode'] if optimize else result['gcode']
+            out_file = output_path or self.filename_service.next_filename(input_path)
+            self._write_gcode_file(out_file, gcode_lines)
+            self._print("processing_complete", color='green')
+            self._print("success_refactor", color='green', output_file=out_file)
+            return 0
+        # GCODE a GCODE
+        elif str(input_path).lower().endswith('.gcode'):
+            if optimize:
+                refactor_use_case = GcodeToGcodeUseCase(
+                    filename_service=self.filename_service,
+                    logger=self.logger
+                )
+                result = refactor_use_case.execute(input_path)
+                out_file = output_path or result['output_file']
+                self._print("success_refactor", color='green', output_file=out_file)
+                self._print("success_optimize", color='green', changes=result['changes_made'])
+                return 0
+            elif rescale:
+                from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
+                rescale_use_case = GcodeRescaleUseCase(
+                    filename_service=self.filename_service,
+                    logger=self.logger,
+                    config_provider=self.config
+                )
+                result = rescale_use_case.execute(input_path, rescale)
+                out_file = output_path or result['output_file']
+                original_dim = result['original_dimensions']
+                new_dim = result['new_dimensions']
+                self._print("success_rescale", color='green', output_file=out_file)
+                self._print("rescale_original", width=original_dim['width'], height=original_dim['height'])
+                self._print("rescale_new", width=new_dim['width'], height=new_dim['height'])
+                self._print("rescale_factor", factor=result['scale_factor'])
+                self._print("rescale_cmds", g0g1=result['commands_rescaled']['g0g1'], g2g3=result['commands_rescaled']['g2g3'])
+                return 0
+            else:
+                self._print("error_occurred", color='red')
+                return 3
+        else:
+            self._print("error_occurred", color='red')
+            return 3

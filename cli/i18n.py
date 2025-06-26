@@ -1,0 +1,77 @@
+"""
+Sistema de internacionalización para mensajes CLI.
+"""
+
+MESSAGES = {
+    "es": {
+        "menu_title": "Menú Principal",
+        "option_svg_to_gcode": "1. Convertir SVG a G-code",
+        "option_optimize": "2. Optimizar archivo G-code existente",
+        "select_file": "Seleccione un archivo:",
+        "processing_complete": "Procesamiento completado",
+        "processing_start": "Procesando archivo, por favor espere...",
+        "error_file_not_found": "[ERROR] Archivo no encontrado",
+        "error_permission_denied": "[ERROR] Permiso denegado",
+        "error_occurred": "[ERROR] Ocurrió un error",
+        "no_svg_files": "No se encontraron archivos SVG en el directorio.",
+        "exit": "Salir",
+        "enter_number": "Ingrese el número de opción",
+        "invalid_selection": "Selección inválida. Intente nuevamente.",
+        "invalid_number": "Por favor, ingrese un número válido.",
+        "error_no_svg": "[ERROR] No se seleccionó un archivo SVG válido. El proceso ha sido cancelado.",
+        "error_no_gcode": "[ERROR] No se seleccionó un archivo GCODE válido. El proceso ha sido cancelado.",
+        "operation_menu_title": "Seleccione la operación a realizar",
+        "operation_optimize": "1. Optimizar movimientos (G1 → G0)",
+        "operation_rescale": "2. Reescalar dimensiones",
+        "operation_cancelled": "Operación cancelada por el usuario.",
+        "success_refactor": "[ÉXITO] Archivo refactorizado guardado en: {output_file}",
+        "success_optimize": "Se optimizaron {changes} movimientos de G1 a G0",
+        "success_rescale": "[ÉXITO] Archivo reescalado guardado en: {output_file}",
+        "rescale_original": "Dimensiones originales: {width:.1f}x{height:.1f}mm",
+        "rescale_new": "Dimensiones nuevas: {width:.1f}x{height:.1f}mm",
+        "rescale_factor": "Factor de escala: {factor:.3f}",
+        "rescale_cmds": "Se reescalaron {g0g1} movimientos lineales y {g2g3} arcos",
+        "processing_paths": "Procesando paths SVG...",
+        "generating_gcode": "Generando G-code..."
+    },
+    "en": {
+        "menu_title": "Main Menu",
+        "option_svg_to_gcode": "1. Convert SVG to G-code",
+        "option_optimize": "2. Optimize existing G-code file",
+        "select_file": "Select a file:",
+        "processing_complete": "Processing complete",
+        "processing_start": "Processing file, please wait...",
+        "error_file_not_found": "[ERROR] File not found",
+        "error_permission_denied": "[ERROR] Permission denied",
+        "error_occurred": "[ERROR] An error occurred",
+        "no_svg_files": "No SVG files found in the directory.",
+        "exit": "Exit",
+        "enter_number": "Enter option number",
+        "invalid_selection": "Invalid selection. Please try again.",
+        "invalid_number": "Please enter a valid number.",
+        "error_no_svg": "[ERROR] No SVG file selected. Operation cancelled.",
+        "error_no_gcode": "[ERROR] No GCODE file selected. Operation cancelled.",
+        "operation_menu_title": "Select operation to perform",
+        "operation_optimize": "1. Optimize moves (G1 → G0)",
+        "operation_rescale": "2. Rescale dimensions",
+        "operation_cancelled": "Operation cancelled by user.",
+        "success_refactor": "[SUCCESS] Refactored file saved at: {output_file}",
+        "success_optimize": "{changes} G1 moves optimized to G0",
+        "success_rescale": "[SUCCESS] Rescaled file saved at: {output_file}",
+        "rescale_original": "Original dimensions: {width:.1f}x{height:.1f}mm",
+        "rescale_new": "New dimensions: {width:.1f}x{height:.1f}mm",
+        "rescale_factor": "Scale factor: {factor:.3f}",
+        "rescale_cmds": "{g0g1} linear moves and {g2g3} arcs rescaled",
+        "processing_paths": "Processing SVG paths...",
+        "generating_gcode": "Generating G-code..."
+    }
+}
+
+class I18n:
+    def __init__(self, language="es"):
+        self.language = language if language in MESSAGES else "es"
+    def get(self, key, **kwargs):
+        message = MESSAGES.get(self.language, {}).get(key, key)
+        if kwargs:
+            return message.format(**kwargs)
+        return message

@@ -86,9 +86,90 @@ El ajuste es automático y no requiere modificar el SVG ni el G-code manualmente
 
 ---
 
+## Uso interactivo
+
+1. Coloca tus archivos `.svg` en la carpeta que desees (por defecto `data/svg_input/`).
+2. Desde la raíz del proyecto, ejecuta:
+
+   ```powershell
+   python run.py
+   ```
+   O en Linux/Mac:
+   ```bash
+   python run.py
+   ```
+3. Selecciona el archivo SVG o GCODE y la operación cuando se te indique.
+4. El archivo G-code generado aparecerá en la carpeta configurada (por defecto `data/gcode_output/`).
+
+## Uso no interactivo (batch/script)
+
+Puedes automatizar la conversión y optimización usando argumentos:
+
+- `--input` (`-i`): Archivo de entrada (SVG o GCODE)
+- `--output` (`-o`): Archivo de salida (opcional)
+- `--optimize`: Optimiza movimientos G1→G0 en GCODE
+- `--rescale <factor>`: Reescala GCODE por el factor indicado (ej: 1.5)
+- `--lang <es|en>`: Idioma de los mensajes
+- `--no-color`: Desactiva colores en la terminal
+- `--no-interactive`: Ejecuta sin menús ni prompts
+- `--save-config`: Guarda los argumentos actuales como preferencias de usuario persistentes.
+- `--config <ruta>`: Usa un archivo de configuración personalizado (JSON).
+
+### Ejemplos
+
+**Convertir SVG a GCODE (no interactivo):**
+```powershell
+python run.py --no-interactive --input dibujo.svg --output resultado.gcode
+```
+
+**Optimizar movimientos en un GCODE existente:**
+```powershell
+python run.py --no-interactive --input archivo.gcode --optimize
+```
+
+**Reescalar un GCODE existente:**
+```powershell
+python run.py --no-interactive --input archivo.gcode --rescale 1.5
+```
+
+**Mostrar ayuda y opciones:**
+```powershell
+python run.py --help
+```
+
+> Todos los mensajes y errores respetan el idioma y colores configurados.
+
 ### Notas de arquitectura (2025)
 - Adaptadores consolidados en `adapters/`.
 - Optimizadores movidos a `domain/services/optimization/`.
 - Inyección de configuración en adaptadores.
 - Eliminados tests y código legacy.
 - Estructura y nomenclatura alineadas a Clean Architecture.
+
+## Solución de problemas (Troubleshooting)
+
+### El comando `python run.py` no hace nada o muestra error de importación
+- Asegúrate de estar en la raíz del proyecto y de tener Python 3.8+ instalado.
+- Verifica que ejecutas `python run.py` y **no** `cli/main.py` directamente.
+
+### Mensaje: `[ERROR] Archivo no encontrado`
+- Revisa la ruta y nombre del archivo pasado con `--input`.
+- Si usas modo interactivo, asegúrate de seleccionar un archivo válido.
+
+### Mensaje: `Permission denied` o problemas de escritura
+- Verifica permisos de escritura en la carpeta de salida (`data/gcode_output/` o la que configures).
+- En Windows, ejecuta la terminal como administrador si es necesario.
+
+### Los colores no se ven bien en mi terminal
+- Usa el flag `--no-color` para desactivar colores ANSI.
+- En Windows, algunos terminales antiguos no soportan colores.
+
+### Los mensajes aparecen en español pero quiero inglés
+- Usa el flag `--lang en` para mostrar los mensajes en inglés.
+
+### No se genera el archivo de salida esperado
+- Si no especificas `--output`, el sistema genera un nombre automáticamente en la carpeta de salida.
+- Revisa los logs o mensajes de error para más detalles.
+
+### ¿Cómo reporto un bug?
+- Abre un issue en el repositorio o contacta al mantenedor con el mensaje de error y los pasos para reproducirlo.
