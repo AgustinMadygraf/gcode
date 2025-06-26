@@ -16,3 +16,10 @@ class TerminalColors:
         return f"\033[94m{text}\033[0m" if self.use_colors else text
     def bold(self, text):
         return f"\033[1m{text}\033[0m" if self.use_colors else text
+    def colorize(self, text, color):
+        if not self.use_colors or not color:
+            return text
+        color_method = getattr(self, color, None)
+        if callable(color_method):
+            return color_method(text)
+        return text
