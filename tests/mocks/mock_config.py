@@ -2,29 +2,46 @@
 Mocks para pruebas relacionadas con configuración y settings.
 """
 
-class DummyConfigProvider:
+class DummyLogger:
     """
-    Implementación simulada de un proveedor de configuración para tests.
+    Implementación simulada de un logger para tests.
+    Registra mensajes en la salida estándar.
     """
-    def __init__(self, output_dir):
-        self._output_dir = output_dir
+    def info(self, msg):
+        """Registra un mensaje informativo."""
+        pass
     
-    def get_gcode_output_dir(self):
-        """Devuelve el directorio configurado para salida de archivos G-code"""
-        return self._output_dir
+    def debug(self, msg):
+        """Registra un mensaje de depuración."""
+        pass
+    
+    def error(self, msg):
+        """Registra un mensaje de error."""
+        pass
 
 class DummyConfig:
     """
     Implementación simulada de objeto de configuración para tests.
     Proporciona valores predeterminados para pruebas.
     """
-    def __init__(self, values=None):
-        self.values = values or {}
+    max_height_mm = 250.0
     
-    def get(self, key, default=None):
-        """Obtiene un valor de configuración por su clave"""
-        return self.values.get(key, default)
+    def __init__(self, temp_dir):
+        self._temp_dir = temp_dir
     
-    def __getattr__(self, name):
-        """Permite acceso a configuración como atributo"""
-        return self.values.get(name)
+    def get_gcode_output_dir(self):
+        """Devuelve el directorio configurado para salida de archivos G-code"""
+        from pathlib import Path
+        return Path(self._temp_dir)
+
+class DummyConfigProvider:
+    """
+    Implementación simulada de un proveedor de configuración para tests.
+    """
+    def __init__(self, temp_dir):
+        self.temp_dir = temp_dir
+    
+    def get_gcode_output_dir(self):
+        """Devuelve el directorio configurado para salida de archivos G-code"""
+        from pathlib import Path
+        return Path(self.temp_dir)

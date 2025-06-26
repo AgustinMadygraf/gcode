@@ -33,7 +33,7 @@ Avancemos con la tarea 1, desestima las tareas de medio y bajo impacto.
 ---
 
 ```
-¿de las dos opciones que me ofrecés, cuál me recomendás? ventajas y desventajas. Luego avanza con la opción mas recomendable
+Sobre las opciones que me ofrecés, ¿cuáles son las ventajas y las desventajas? en función de esto,  que me recomendás? Luego avanza con la opción mas recomendable
 ```
 
 ---

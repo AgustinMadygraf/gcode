@@ -89,27 +89,33 @@ Este patrón asegura la independencia y testabilidad del dominio, y previene aco
 
 1. El usuario ejecuta `python run.py` desde la raíz del proyecto.
 2. `run.py` importa y crea una instancia de `SvgToGcodeApp` desde `cli/main.py`.
-3. Toda la lógica de orquestación y ciclo de vida de la app reside en `cli/main.py`.
-4. Si se requiere otro entrypoint (API, GUI), debe crearse un archivo similar a `run.py`.
+3. `SvgToGcodeApp` delega la orquestación principal a `ApplicationOrchestrator` (`application/orchestrator.py`).
+4. La gestión de eventos desacoplada se realiza mediante `EventManager` (`infrastructure/events/event_manager.py`).
+5. Toda la lógica de ciclo de vida de la app reside en el orquestador y workflows.
+6. Si se requiere otro entrypoint (API, GUI), debe crearse un archivo similar a `run.py`.
 
 > **Nota:** Solo `run.py` debe usarse como punto de entrada. No ejecutar directamente `cli/main.py`.
 
-## Patrón de eventos (Event Bus)
+## Patrón de eventos (Event Manager)
 
 - El dominio define el puerto `EventBusPort` para publicar y suscribirse a eventos.
-- La infraestructura implementa el bus de eventos (ejemplo: `SimpleEventBus`).
-- El contenedor inyecta el bus de eventos y lo expone como dependencia transversal.
-- Los casos de uso y la CLI pueden publicar eventos (por ejemplo, `gcode_generated`) y suscribirse a ellos para acciones secundarias (notificaciones, logs, auditoría, etc.).
+- La infraestructura implementa el gestor de eventos (`EventManager`).
+- El contenedor inyecta el gestor de eventos y lo expone como dependencia transversal.
+- Los casos de uso y la CLI pueden publicar eventos (por ejemplo, `GcodeGeneratedEvent`) y suscribirse a ellos para acciones secundarias (notificaciones, logs, auditoría, etc.).
 - Este patrón permite desacoplar la lógica principal de acciones reactivas y facilita la extensión futura.
 
 ### Ejemplo de uso
 
 ```python
 # Publicar evento tras generar G-code
-event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
+from infrastructure.events.event_manager import EventManager
+from domain.events.events import GcodeGeneratedEvent
+
+event_manager = EventManager()
+event_manager.publish(GcodeGeneratedEvent(...))
 
 # Suscribirse a evento
-event_bus.subscribe('gcode_generated', handler_func)
+event_manager.subscribe(GcodeGeneratedEvent, handler_func)
 ```
 
 ## Notas y Recomendaciones

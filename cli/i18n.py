@@ -1,5 +1,5 @@
 """
-Sistema de internacionalización para mensajes CLI.
+Diccionario de mensajes para internacionalización CLI.
 """
 
 MESSAGES = {
@@ -66,12 +66,3 @@ MESSAGES = {
         "generating_gcode": "Generating G-code..."
     }
 }
-
-class I18n:
-    def __init__(self, language="es"):
-        self.language = language if language in MESSAGES else "es"
-    def get(self, key, **kwargs):
-        message = MESSAGES.get(self.language, {}).get(key, key)
-        if kwargs:
-            return message.format(**kwargs)
-        return message

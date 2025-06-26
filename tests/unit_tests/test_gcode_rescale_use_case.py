@@ -3,32 +3,14 @@ from pathlib import Path
 import tempfile
 import os
 from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
-from domain.services.filename_service import FilenameService
-
-class DummyLogger:
-    def info(self, msg):
-        pass
-    def debug(self, msg):
-        pass
-    def error(self, msg):
-        pass
-
-class DummyConfig:
-    max_height_mm = 250.0
-    def __init__(self, temp_dir):
-        self._temp_dir = temp_dir
-    def get_gcode_output_dir(self):
-        return Path(self._temp_dir)
-
-class DummyConfigProvider:
-    def get_gcode_output_dir(self):
-        return Path(self.temp_dir.name)
+from adapters.output.filename_service_adapter import FilenameServiceAdapter
+from tests.mocks.mock_config import DummyLogger, DummyConfig, DummyConfigProvider
 
 class TestGcodeRescaleUseCase(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.config_provider = DummyConfigProvider()
-        self.filename_service = FilenameService(self.config_provider)
+        self.config_provider = DummyConfigProvider(self.temp_dir.name)
+        self.filename_service = FilenameServiceAdapter(Path(self.temp_dir.name))
         self.logger = DummyLogger()
         self.config = DummyConfig(self.temp_dir.name)
         self.use_case = GcodeRescaleUseCase(self.filename_service, logger=self.logger, config_provider=self.config)

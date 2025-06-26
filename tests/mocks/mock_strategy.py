@@ -1,9 +1,9 @@
 """
 Mocks para pruebas de estrategias de transformación de rutas.
 """
-from domain.path_transform_strategy import PathTransformStrategy
+from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
 
-class MockStrategy(PathTransformStrategy):
+class MockStrategy(PathTransformStrategyPort):
     """
     Implementación simulada de estrategia de transformación para pruebas unitarias.
     """
@@ -11,7 +11,7 @@ class MockStrategy(PathTransformStrategy):
         """Implementación de identidad para pruebas"""
         return x, y
 
-class DummyStrategy(PathTransformStrategy):
+class DummyStrategy(PathTransformStrategyPort):
     """
     Estrategia de transformación simulada que suma valores constantes a las coordenadas.
     """
