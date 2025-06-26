@@ -213,3 +213,23 @@ La aplicación retorna diferentes códigos de salida según el resultado de la e
 | 99     | Error inesperado/desconocido       |
 
 > Los mensajes de error se muestran en el idioma configurado y con prefijos `[ERROR]`.
+
+## Selección de herramienta
+
+La aplicación permite elegir entre dos tipos de herramientas:
+
+- **Lapicera (`--tool pen`)**: Para trazado preciso de contornos
+  - Opción de doble pasada (`--double-pass`) para mejorar definición
+
+- **Fibrón grueso (`--tool marker`)**: Para rellenos o contornos sin repetición
+  - Usa una velocidad reducida automáticamente para mejor deposición de tinta
+
+### Ejemplos
+
+```bash
+# Usar lapicera con doble pasada
+python run.py --tool pen --double-pass
+
+# Usar fibrón grueso
+python run.py --tool marker
+```

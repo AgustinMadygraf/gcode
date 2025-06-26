@@ -64,7 +64,26 @@ class SvgToGcodeWorkflow:
             logger=self.container.logger,
             filename_service=self.filename_service
         )
-        result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies)
+        # --- Selección de herramienta ---
+        tool_type = self.presenter.prompt_selection(
+            self.presenter.i18n.get("tool_selection"),
+            options=[
+                self.presenter.i18n.get("tool_pen"),
+                self.presenter.i18n.get("tool_marker")
+            ]
+        )
+        tool_type_str = "pen" if tool_type == 1 else "marker"
+        double_pass = False
+        if tool_type_str == "pen":
+            double_pass = self.presenter.prompt_yes_no(
+                self.presenter.i18n.get("double_pass_question"),
+                default_yes=True
+            )
+        context = {
+            "tool_type": tool_type_str,
+            "double_pass": double_pass
+        }
+        result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies, context=context)
         gcode_lines = result['compressed_gcode']
         total_lines = len(gcode_lines)
         for i, _ in enumerate(gcode_lines, 1):

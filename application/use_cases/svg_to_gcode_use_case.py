@@ -19,7 +19,7 @@ class SvgToGcodeUseCase:
         self.logger = logger
         self.filename_service = filename_service
 
-    def execute(self, svg_file: Path, transform_strategies: List[Any] = None):
+    def execute(self, svg_file: Path, transform_strategies: List[Any] = None, context: dict = None):
         self.logger.info(f"Carga de SVG: {svg_file}")
         svg_loader = self.svg_loader_factory(svg_file)
         paths = svg_loader.get_paths()
@@ -29,7 +29,7 @@ class SvgToGcodeUseCase:
         processed_paths = self.path_processing_service.process(paths, svg_attr)
         self.logger.info(f"Paths útiles tras procesamiento: {len(processed_paths)}")
         # Generación de G-code
-        gcode_lines = self.gcode_generation_service.generate(processed_paths, svg_attr)
+        gcode_lines = self.gcode_generation_service.generate(processed_paths, svg_attr, context=context)
         self.logger.info(f"G-code generado con {len(gcode_lines)} líneas")
         # Compresión de G-code
         compression_result = self.gcode_compression_use_case.execute(gcode_lines)

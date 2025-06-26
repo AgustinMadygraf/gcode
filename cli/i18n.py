@@ -32,7 +32,13 @@ MESSAGES = {
         "rescale_factor": "Factor de escala: {factor:.3f}",
         "rescale_cmds": "Se reescalaron {g0g1} movimientos lineales y {g2g3} arcos",
         "processing_paths": "Procesando paths SVG...",
-        "generating_gcode": "Generando G-code..."
+        "generating_gcode": "Generando G-code...",
+        "tool_selection": "Seleccione el tipo de herramienta:",
+        "tool_pen": "1. Lapicera (sólo contornos)",
+        "tool_marker": "2. Fibrón grueso (plenos/contornos)",
+        "double_pass_question": "¿Realizar doble pasada en contornos con lapicera? [S/n]:",
+        "using_tool_pen": "Usando lapicera para contornos",
+        "using_tool_marker": "Usando fibrón grueso"
     },
     "en": {
         "menu_title": "Main Menu",
@@ -63,6 +69,12 @@ MESSAGES = {
         "rescale_factor": "Scale factor: {factor:.3f}",
         "rescale_cmds": "{g0g1} linear moves and {g2g3} arcs rescaled",
         "processing_paths": "Processing SVG paths...",
-        "generating_gcode": "Generating G-code..."
+        "generating_gcode": "Generating G-code...",
+        "tool_selection": "Select tool type:",
+        "tool_pen": "1. Fine pen (outlines only)",
+        "tool_marker": "2. Thick marker (fills/outlines)",
+        "double_pass_question": "Use double pass for pen outlines? [Y/n]:",
+        "using_tool_pen": "Using pen for outlines",
+        "using_tool_marker": "Using thick marker"
     }
 }

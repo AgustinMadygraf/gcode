@@ -142,8 +142,15 @@ class NonInteractiveSvgToGcodeWorkflow:
                 logger=self.logger,
                 filename_service=self.filename_service
             )
-            result = svg_to_gcode_use_case.execute(input_path, transform_strategies=transform_strategies)
-            gcode_lines = result['compressed_gcode'] if optimize else result['gcode']
+            # --- Contexto de herramienta desde argumentos CLI ---
+            tool_type = getattr(args, 'tool', 'pen')
+            double_pass = getattr(args, 'double_pass', True)
+            context = {
+                "tool_type": tool_type,
+                "double_pass": double_pass
+            }
+            result = svg_to_gcode_use_case.execute(input_path, transform_strategies=transform_strategies, context=context)
+            gcode_lines = result['compressed_gcode'] if optimize else result['gcode_lines']
             if output_path == '-' or output_path is None:
                 sys.stdout.write("\n".join(gcode_lines) + "\n")
                 return 0

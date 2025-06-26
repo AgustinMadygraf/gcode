@@ -11,8 +11,13 @@ class GCodeGenerationService:
     def __init__(self, generator: GcodeGeneratorPort):
         self.generator = generator
 
-    def generate(self, paths: List[Any], svg_attr: dict) -> List[str]:
+    def generate(self, paths: List[Any], svg_attr: dict, context=None) -> List[str]:
         """
         Genera las líneas de G-code a partir de los paths y atributos SVG.
         """
-        return self.generator.generate(paths, svg_attr)
+        context = context or {}
+        gcode_lines = []
+        for path in paths:
+            # Usar el nuevo método que respeta el contexto de herramienta
+            gcode_lines.extend(self.generator.generate_path_gcode(path, self.generator.feed, context=context))
+        return gcode_lines

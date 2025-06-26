@@ -41,4 +41,30 @@ class CliPresenter:
             self.print(f"[EVENTO] G-code reescalado: {payload['input_file']} → {payload['output_file']} (escala: {payload['scale_factor']:.3f})", color='blue')
         # Se pueden agregar más eventos aquí
 
+    def prompt_selection(self, prompt, options):
+        print(prompt)
+        for idx, opt in enumerate(options, 1):
+            print(f"  [{idx}] {opt}")
+        while True:
+            try:
+                selection = int(input("Seleccione una opción: "))
+                if 1 <= selection <= len(options):
+                    return selection
+                else:
+                    print("Selección inválida. Intente nuevamente.")
+            except ValueError:
+                print("Por favor, ingrese un número válido.")
+
+    def prompt_yes_no(self, prompt, default_yes=True):
+        default = "S/n" if default_yes else "s/N"
+        while True:
+            resp = input(f"{prompt} ({default}): ").strip().lower()
+            if not resp:
+                return default_yes
+            if resp in ("s", "si", "y", "yes"):
+                return True
+            if resp in ("n", "no"):
+                return False
+            print("Por favor, responda 's' (sí) o 'n' (no).")
+
     # Métodos adicionales para mensajes específicos, progreso, etc. pueden agregarse aquí

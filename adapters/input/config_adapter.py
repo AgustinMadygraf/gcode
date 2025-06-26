@@ -18,3 +18,15 @@ class ConfigAdapter(ConfigPort):
             use_relative_moves=compression_data.get("USE_RELATIVE_MOVES", False),
             remove_redundancies=compression_data.get("REMOVE_REDUNDANCIES", True)
         )
+
+    @property
+    def marker_feed_rate(self):
+        return self.config.marker_feed_rate
+
+    @property
+    def tool_type(self):
+        return self.config.tool_type
+
+    @property
+    def pen_double_pass(self):
+        return self.config.pen_double_pass

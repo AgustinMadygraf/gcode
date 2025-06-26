@@ -198,3 +198,34 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 points.append(Point(x, y))
             result.append(points)
         return result
+
+    def generate_path_gcode(self, path, feed, context=None):
+        context = context or {}
+        tool_type = context.get("tool_type", "pen")
+        double_pass = context.get("double_pass", False)
+        # Ajustar velocidad según la herramienta
+        if tool_type == "marker":
+            feed = self.config.marker_feed_rate
+        # Generar puntos para el path
+        points = []
+        for pt in self.path_sampler.sample(path):
+            x, y = self.transform_manager.apply(pt.x, pt.y)
+            points.append(Point(x, y))
+        gcode_lines = self._generate_single_path(points, feed)
+        # Si es lapicera y doble pasada, agregar el trazo inverso
+        if tool_type == "pen" and double_pass:
+            reverse_points = list(reversed(points))
+            gcode_lines += self._generate_single_path(reverse_points, feed)
+        return gcode_lines
+
+    def _generate_single_path(self, points, feed):
+        # Implementación simplificada para generar G-code de un solo path
+        builder = GCodeCommandBuilder()
+        if not points:
+            return []
+        builder.move_to(points[0].x, points[0].y, rapid=True)
+        builder.tool_down(self.cmd_down)
+        for pt in points[1:]:
+            builder.move_to(pt.x, pt.y, feed=feed, rapid=False)
+        builder.tool_up(self.cmd_up)
+        return builder.to_gcode_lines_with_metrics()[0] if hasattr(builder, 'to_gcode_lines_with_metrics') else builder.to_gcode_lines()

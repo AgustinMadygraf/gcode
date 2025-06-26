@@ -97,6 +97,21 @@ class Config:
         """Factor mínimo de velocidad (0.0-1.0, por defecto 0.5)"""
         return self._data.get("MINIMUM_FEED_FACTOR", 0.5)
 
+    @property
+    def tool_type(self):
+        """Tipo de herramienta seleccionada (pen o marker)"""
+        return self._data.get("TOOL_TYPE", "pen")  # Default: lapicera
+
+    @property
+    def pen_double_pass(self):
+        """Si es True, los trazos con lapicera se hacen dos veces (ida y vuelta)"""
+        return self._data.get("PEN_DOUBLE_PASS", True)
+
+    @property
+    def marker_feed_rate(self):
+        """Velocidad específica para fibrón (usualmente más lenta que lapicera)"""
+        return self._data.get("MARKER_FEED_RATE", self.feed * 0.7)  # 70% de la velocidad normal
+
     def get_gcode_output_dir(self):
         "Compatibilidad: Devuelve el directorio de salida de GCODE."
         return self.gcode_output_dir
