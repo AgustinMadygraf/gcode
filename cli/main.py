@@ -36,13 +36,18 @@ from infrastructure.factories.gcode_compression_factory import create_gcode_comp
 from domain.ports.filename_service_port import FilenameServicePort
 from cli.i18n import I18n
 from cli.terminal_colors import TerminalColors
-from cli.user_config import UserConfig
+from cli.user_config_manager import ConfigManager
 from cli.progress_bar import print_progress_bar
 from cli.presenters.cli_presenter import CliPresenter
 from cli.operations.svg_to_gcode import SvgToGcodeOperation
 from cli.operations.gcode_to_gcode import GcodeToGcodeOperation
 from application.workflows.svg_to_gcode_workflow import SvgToGcodeWorkflow
 from application.workflows.gcode_to_gcode_workflow import GcodeToGcodeWorkflow
+from application.workflows.non_interactive_svg_to_gcode_workflow import NonInteractiveSvgToGcodeWorkflow
+from cli.modes.interactive import InteractiveModeStrategy
+from cli.modes.non_interactive import NonInteractiveModeStrategy
+from domain.events.event_bus import EventBus
+from domain.events.events import GcodeGeneratedEvent, GcodeRescaledEvent
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
@@ -61,7 +66,7 @@ class SvgToGcodeApp:
         self.dwell_ms = self.container.dwell_ms
         self.max_height_mm = self.container.max_height_mm
         self.max_width_mm = self.container.max_width_mm
-        self.event_bus = self.container.event_bus
+        self.event_bus = EventBus()
         self.args = args
         self.interactive_mode = True if args is None else not getattr(args, 'no_interactive', False)
         self.use_colors = False if args is None else not getattr(args, 'no_color', False)
@@ -69,39 +74,38 @@ class SvgToGcodeApp:
         self.i18n = I18n(self.language)
         self.colors = TerminalColors(self.use_colors)
         self.presenter = CliPresenter(i18n=self.i18n, color_service=self.colors)
-        self.user_config = UserConfig()
-        # Cargar preferencias desde archivo personalizado si se indica
-        if args and getattr(args, 'config', None):
-            import json
-            try:
-                with open(args.config, 'r', encoding='utf-8') as f:
-                    self.user_config.data.update(json.load(f))
-            except Exception:
-                pass
-        # Sobrescribir args con preferencias guardadas si existen
-        if args:
-            for key in ["lang", "no_color", "input", "output"]:
-                if getattr(args, key, None) is None and self.user_config.get(key) is not None:
-                    setattr(args, key, self.user_config.get(key))
-        # Guardar preferencias si se solicita
-        if args and getattr(args, 'save_config', False):
-            self.user_config.update_from_args(args)
+        self.config_manager = ConfigManager(args)
+        self.user_config = self.config_manager.user_config
         # Suscribimos un handler de ejemplo al evento 'gcode_generated'
-        self.event_bus.subscribe('gcode_generated', self._on_gcode_generated)
+        self.event_bus.subscribe(GcodeGeneratedEvent, self._on_gcode_generated)
         # Suscribimos handler para evento de reescalado
-        self.event_bus.subscribe('gcode_rescaled', self._on_gcode_rescaled)
+        self.event_bus.subscribe(GcodeRescaledEvent, self._on_gcode_rescaled)
         self.svg_to_gcode_workflow = SvgToGcodeWorkflow(self.container, self.presenter, self.filename_service, self.config)
         self.gcode_to_gcode_workflow = GcodeToGcodeWorkflow(self.container, self.presenter, self.filename_service, self.config)
+        self.non_interactive_workflow = NonInteractiveSvgToGcodeWorkflow(
+            self.container, self.presenter, self.filename_service, self.config
+        )
         self.operations = {
             1: SvgToGcodeOperation(self.svg_to_gcode_workflow, self.selector),
             2: GcodeToGcodeOperation(self.gcode_to_gcode_workflow, self.config)
         }
+        self.mode_strategy = InteractiveModeStrategy() if self.interactive_mode else NonInteractiveModeStrategy()
 
-    def _on_gcode_generated(self, payload):
-        self.presenter.print_event('gcode_generated', payload)
+    def _on_gcode_generated(self, event: GcodeGeneratedEvent):
+        self.presenter.print_event('gcode_generated', {
+            'output_file': event.output_file,
+            'lines': event.lines,
+            'metadata': event.metadata
+        })
 
-    def _on_gcode_rescaled(self, payload):
-        self.presenter.print_event('gcode_rescaled', payload)
+    def _on_gcode_rescaled(self, event: GcodeRescaledEvent):
+        self.presenter.print_event('gcode_rescaled', {
+            'output_file': event.output_file,
+            'original_dimensions': event.original_dimensions,
+            'new_dimensions': event.new_dimensions,
+            'scale_factor': event.scale_factor,
+            'commands_rescaled': event.commands_rescaled
+        })
 
     def _write_gcode_file(self, gcode_file: Path, gcode_lines):
         with gcode_file.open("w", encoding="utf-8") as f:
@@ -140,105 +144,4 @@ class SvgToGcodeApp:
 
     def run(self):
         """Método principal que ejecuta la aplicación"""
-        error_handler = self.container.error_handler
-        if self.interactive_mode:
-            operation_mode = self.select_operation_mode()
-            operation = self.operations.get(operation_mode)
-            if operation:
-                result = error_handler.wrap_execution(
-                    operation.execute,
-                    self._get_context_info()
-                )
-            else:
-                self.presenter.print(self.i18n.get("invalid_selection"), color='yellow')
-                return 1
-            if not result.get('success', False):
-                error_info = result.get('message', 'Error desconocido')
-                error_type = result.get('error', 'Error')
-                self.presenter.print(f"[{error_type.upper()}] {error_info}", color='red')
-                return 1
-            return 0
-        else:
-            return self._run_non_interactive()
-
-    def _run_non_interactive(self):
-        """Ejecuta el flujo no interactivo basado en argumentos CLI"""
-        if not self.args or not self.args.input:
-            self._print("error_file_not_found", color='red')
-            return 2
-        input_path = self.args.input
-        output_path = self.args.output
-        optimize = getattr(self.args, 'optimize', False)
-        rescale = getattr(self.args, 'rescale', None)
-        # SVG a GCODE
-        if str(input_path).lower().endswith('.svg'):
-            svg_loader_factory = self.container.get_svg_loader
-            self._print("processing_start", color='blue')
-            paths = svg_loader_factory(input_path).get_paths()
-            self._print("processing_complete", color='green')
-            bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)
-            _xmin, _xmax, _ymin, _ymax = bbox
-            _cx, cy = DomainFactory.create_geometry_service()._center(bbox)
-            transform_strategies = []
-            if self.config.get_mirror_vertical():
-                transform_strategies.append(MirrorVerticalStrategy(cy))
-            path_processor = PathProcessingService(
-                min_length=1e-3,
-                remove_svg_border=self.config.get_remove_svg_border(),
-                border_tolerance=self.config.get_border_detection_tolerance()
-            )
-            generator = self.container.get_gcode_generator(transform_strategies=transform_strategies)
-            gcode_service = GCodeGenerationService(generator)
-            compression_service = create_gcode_compression_service(logger=self.logger)
-            config_reader = AdapterFactory.create_config_adapter(self.config)
-            compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
-            svg_to_gcode_use_case = SvgToGcodeUseCase(
-                svg_loader_factory=svg_loader_factory,
-                path_processing_service=path_processor,
-                gcode_generation_service=gcode_service,
-                gcode_compression_use_case=compress_use_case,
-                logger=self.logger,
-                filename_service=self.filename_service
-            )
-            result = svg_to_gcode_use_case.execute(input_path, transform_strategies=transform_strategies)
-            gcode_lines = result['compressed_gcode'] if optimize else result['gcode']
-            out_file = output_path or self.filename_service.next_filename(input_path)
-            self._write_gcode_file(out_file, gcode_lines)
-            self._print("processing_complete", color='green')
-            self._print("success_refactor", color='green', output_file=out_file)
-            return 0
-        # GCODE a GCODE
-        elif str(input_path).lower().endswith('.gcode'):
-            if optimize:
-                refactor_use_case = GcodeToGcodeUseCase(
-                    filename_service=self.filename_service,
-                    logger=self.logger
-                )
-                result = refactor_use_case.execute(input_path)
-                out_file = output_path or result['output_file']
-                self._print("success_refactor", color='green', output_file=out_file)
-                self._print("success_optimize", color='green', changes=result['changes_made'])
-                return 0
-            elif rescale:
-                from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
-                rescale_use_case = GcodeRescaleUseCase(
-                    filename_service=self.filename_service,
-                    logger=self.logger,
-                    config_provider=self.config
-                )
-                result = rescale_use_case.execute(input_path, rescale)
-                out_file = output_path or result['output_file']
-                original_dim = result['original_dimensions']
-                new_dim = result['new_dimensions']
-                self._print("success_rescale", color='green', output_file=out_file)
-                self._print("rescale_original", width=original_dim['width'], height=original_dim['height'])
-                self._print("rescale_new", width=new_dim['width'], height=new_dim['height'])
-                self._print("rescale_factor", factor=result['scale_factor'])
-                self._print("rescale_cmds", g0g1=result['commands_rescaled']['g0g1'], g2g3=result['commands_rescaled']['g2g3'])
-                return 0
-            else:
-                self._print("error_occurred", color='red')
-                return 3
-        else:
-            self._print("error_occurred", color='red')
-            return 3
+        return self.mode_strategy.run(self)
