@@ -54,6 +54,9 @@ from domain.events.event_bus import EventBus
 from domain.events.events import GcodeGeneratedEvent, GcodeRescaledEvent
 from application.orchestrator import ApplicationOrchestrator
 from infrastructure.events.event_manager import EventManager
+from cli.utils.i18n_utils import detect_language
+from cli.utils.terminal_utils import supports_color
+from cli.utils.cli_event_manager import CliEventManager
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
@@ -74,34 +77,17 @@ class SvgToGcodeApp:
         self.max_width_mm = self.container.max_width_mm
         self.args = args
         self.interactive_mode = True if args is None else not getattr(args, 'no_interactive', False)
-        # Detección automática de soporte de colores
-        def _supports_color():
-            if args and getattr(args, 'no_color', False):
-                return False
-            if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
-                return False
-            if os.name == "nt":
-                return "ANSICON" in os.environ or "WT_SESSION" in os.environ or os.environ.get("TERM_PROGRAM") == "vscode"
-            return True
-        self.use_colors = _supports_color()
-        # Detectar idioma del sistema si no se especifica --lang
-        if args and hasattr(args, 'lang') and args.lang:
-            self.language = args.lang
-        else:
-            sys_locale = locale.getdefaultlocale()[0] if hasattr(locale, 'getdefaultlocale') else None
-            if sys_locale and sys_locale.lower().startswith('en'):
-                self.language = 'en'
-            else:
-                self.language = 'es'
+        # Detección automática de soporte de colores (refactorizado)
+        self.use_colors = supports_color(args)
+        # Detección automática de idioma (refactorizado)
+        self.language = detect_language(args)
         self.i18n = I18nService(MESSAGES, default_lang=self.language)
         self.colors = TerminalColors(self.use_colors)
         self.presenter = CliPresenter(i18n=self.i18n, color_service=self.colors)
         self.config_manager = ConfigManager(args)
         self.user_config = self.config_manager.user_config
-        # --- Nueva gestión de eventos ---
-        self.event_manager = EventManager()
-        self.event_manager.subscribe(GcodeGeneratedEvent, self._on_gcode_generated)
-        self.event_manager.subscribe(GcodeRescaledEvent, self._on_gcode_rescaled)
+        # --- Nueva gestión de eventos (refactor: delegada) ---
+        self.event_manager = CliEventManager(self.presenter)
         # --- Workflows y operaciones ---
         self.svg_to_gcode_workflow = SvgToGcodeWorkflow(self.container, self.presenter, self.filename_service, self.config)
         self.gcode_to_gcode_workflow = GcodeToGcodeWorkflow(self.container, self.presenter, self.filename_service, self.config)
@@ -129,22 +115,6 @@ class SvgToGcodeApp:
             mode_strategy=self.mode_strategy,
             args=args
         )
-
-    def _on_gcode_generated(self, event: GcodeGeneratedEvent):
-        self.presenter.print_event('gcode_generated', {
-            'output_file': event.output_file,
-            'lines': event.lines,
-            'metadata': event.metadata
-        })
-
-    def _on_gcode_rescaled(self, event: GcodeRescaledEvent):
-        self.presenter.print_event('gcode_rescaled', {
-            'output_file': event.output_file,
-            'original_dimensions': event.original_dimensions,
-            'new_dimensions': event.new_dimensions,
-            'scale_factor': event.scale_factor,
-            'commands_rescaled': event.commands_rescaled
-        })
 
     def run(self):
         """Método principal que ejecuta la aplicación"""

@@ -6,13 +6,13 @@ Procesa argumentos CLI y los pasa a la aplicación.
 """
 
 from cli.argument_parser import create_parser
-from cli.main import SvgToGcodeApp
+from cli.factories.svg_to_gcode_app_factory import create_svg_to_gcode_app
 from application.exceptions import AppError, InputValidationError, ProcessingError, OutputGenerationError
 
 def main():
     parser = create_parser()
     args = parser.parse_args()
-    app = SvgToGcodeApp(args)
+    app = create_svg_to_gcode_app(args)
     try:
         return app.run()
     except InputValidationError as e:
