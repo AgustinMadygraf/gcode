@@ -5,3 +5,4 @@ data/svg_input/*
 !data/svg_input/test_lines.svg
 data/gcode_output/*
 !data/gcode_output/sample_compacted.gcode
+docs/00-Prompt-for-ProjectAnalysis.md
