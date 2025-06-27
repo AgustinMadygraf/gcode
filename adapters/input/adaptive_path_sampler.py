@@ -13,6 +13,9 @@ from domain.ports.path_sampler_port import PathSamplerPort
 from domain.models.svg_path import SVGPath
 from domain.models.point import Point
 from domain.services.geometry import GeometryService
+from domain.services.detectors.circle_detector import CircleDetector
+from domain.services.detectors.rectangle_detector import RectangleDetector
+from domain.services.detectors.ellipse_detector import EllipseDetector
 
 
 class AdaptivePathSampler(PathSamplerPort):
@@ -133,19 +136,19 @@ class AdaptivePathSampler(PathSamplerPort):
         path = svg_path.path
         
         # Círculo
-        circle_info = self.geometry_service.try_detect_circle(path)
+        circle_info = CircleDetector().try_detect_circle(path)
         if circle_info:
             center, radius = circle_info
             return self._generate_circle_points(center, radius)
             
         # Rectángulo
-        rect_info = self.geometry_service.try_detect_rectangle(path)
+        rect_info = RectangleDetector().try_detect_rectangle(path)
         if rect_info:
             corners = rect_info
             return [Point(c.real, c.imag) for c in corners]
             
         # Elipse
-        ellipse_info = self.geometry_service.try_detect_ellipse(path)
+        ellipse_info = EllipseDetector().try_detect_ellipse(path)
         if ellipse_info:
             center, rx, ry, phi = ellipse_info
             return self._generate_ellipse_points(center, rx, ry, phi)
