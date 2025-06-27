@@ -14,6 +14,11 @@ from infrastructure.events.simple_event_bus import SimpleEventBus
 from infrastructure.error_handling.error_handler import ErrorHandler
 from adapters.output.filename_service_adapter import FilenameServiceAdapter
 from domain.ports.filename_service_port import FilenameServicePort
+from application.use_cases.path_processing.path_processing_service import PathProcessingService
+from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
+from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
+from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
+from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 
 class Container:
     def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None):
@@ -24,6 +29,13 @@ class Container:
         self._event_bus = event_bus or SimpleEventBus()
         self._filename_gen = None
         self._error_handler = None
+        self._domain_factory = None
+        self._path_processing_service = None
+        self._gcode_generation_service = None
+        self._gcode_compression_service = None
+        self._adapter_factory = None
+        self._compress_gcode_use_case = None
+        self._svg_to_gcode_use_case = None
         self.feed = self.config.feed
         self.cmd_down = self.config.cmd_down
         self.cmd_up = self.config.cmd_up
@@ -61,6 +73,65 @@ class Container:
         if self._error_handler is None:
             self._error_handler = ErrorHandler(self.logger)
         return self._error_handler
+
+    @property
+    def domain_factory(self):
+        if self._domain_factory is None:
+            self._domain_factory = DomainFactory()
+        return self._domain_factory
+
+    @property
+    def path_processing_service(self):
+        if self._path_processing_service is None:
+            self._path_processing_service = PathProcessingService()
+        return self._path_processing_service
+
+    @property
+    def gcode_generation_service(self):
+        if self._gcode_generation_service is None:
+            generator = self.get_gcode_generator()
+            self._gcode_generation_service = GCodeGenerationService(generator)
+        return self._gcode_generation_service
+
+    @property
+    def gcode_compression_service(self):
+        if self._gcode_compression_service is None:
+            self._gcode_compression_service = create_gcode_compression_service()
+        return self._gcode_compression_service
+
+    @property
+    def adapter_factory(self):
+        if self._adapter_factory is None:
+            self._adapter_factory = AdapterFactory()
+        return self._adapter_factory
+
+    @property
+    def compress_gcode_use_case(self):
+        if self._compress_gcode_use_case is None:
+            # Se asume que la factory requiere el servicio de compresión y el config_port
+            compression_service = self.gcode_compression_service
+            config_reader = self.adapter_factory.create_config_adapter(self.config)
+            self._compress_gcode_use_case = CompressGcodeUseCase(compression_service, config_reader)
+        return self._compress_gcode_use_case
+
+    @property
+    def svg_to_gcode_use_case(self):
+        if self._svg_to_gcode_use_case is None:
+            svg_loader_factory = self.get_svg_loader
+            path_processor = self.path_processing_service
+            gcode_service = self.gcode_generation_service
+            gcode_compression_use_case = self.compress_gcode_use_case
+            logger = self.logger
+            filename_service = self.filename_gen
+            self._svg_to_gcode_use_case = SvgToGcodeUseCase(
+                svg_loader_factory=svg_loader_factory,
+                path_processing_service=path_processor,
+                gcode_generation_service=gcode_service,
+                gcode_compression_use_case=gcode_compression_use_case,
+                logger=logger,
+                filename_service=filename_service
+            )
+        return self._svg_to_gcode_use_case
 
     def get_gcode_generator(self, transform_strategies=None):
         path_sampler = AdapterFactory.create_path_sampler(self.step_mm, logger=self.logger)

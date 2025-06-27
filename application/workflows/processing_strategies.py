@@ -59,7 +59,8 @@ class SvgProcessingStrategy(ProcessingStrategy):
             workflow._write_gcode_file(Path(output_path), gcode_lines)
             out_file = output_path
             workflow.presenter.print("processing_complete", color='green')
-            workflow.presenter.print("success_refactor", color='green', output_file=out_file)
+            msg = workflow.presenter.i18n.get("success_refactor", output_file=out_file)
+            workflow.presenter.print(msg, color='green')
             return 0
 
 class GcodeProcessingStrategy(ProcessingStrategy):
@@ -85,7 +86,8 @@ class GcodeProcessingStrategy(ProcessingStrategy):
             else:
                 workflow._write_gcode_file(Path(output_path), gcode_out)
                 out_file = output_path
-                workflow.presenter.print("success_refactor", color='green', output_file=out_file)
+                msg = workflow.presenter.i18n.get("success_refactor", output_file=out_file)
+                workflow.presenter.print(msg, color='green')
                 workflow.presenter.print("success_optimize", color='green', changes=result['changes_made'])
                 return 0
         elif rescale:
@@ -105,7 +107,8 @@ class GcodeProcessingStrategy(ProcessingStrategy):
                 out_file = output_path
                 original_dim = result.get('original_dimensions', {})
                 new_dim = result.get('new_dimensions', {})
-                workflow.presenter.print("success_rescale", color='green', output_file=out_file)
+                msg = workflow.presenter.i18n.get("success_rescale", output_file=out_file)
+                workflow.presenter.print(msg, color='green')
                 workflow.presenter.print("rescale_original", width=original_dim.get('width', 0), height=original_dim.get('height', 0))
                 workflow.presenter.print("rescale_new", width=new_dim.get('width', 0), height=new_dim.get('height', 0))
                 workflow.presenter.print("rescale_factor", factor=result.get('scale_factor', 1.0))

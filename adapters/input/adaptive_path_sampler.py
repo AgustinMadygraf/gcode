@@ -12,10 +12,11 @@ from typing import List, Tuple, Dict, Any, Optional
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.models.svg_path import SVGPath
 from domain.models.point import Point
-from domain.services.geometry import GeometryService
 from domain.services.detectors.circle_detector import CircleDetector
 from domain.services.detectors.rectangle_detector import RectangleDetector
 from domain.services.detectors.ellipse_detector import EllipseDetector
+from domain.services.primitive_detection import SVGPrimitiveDetector
+from domain.services.geometry_service import GeometryService as NewGeometryService
 from adapters.input.segment_sampling_strategies import (
     sample_line, sample_bezier, sample_arc, sample_uniform
 )
@@ -61,10 +62,10 @@ class AdaptivePathSampler(PathSamplerPort):
         self.curvature_factor = curvature_factor
         self.min_angle_change = np.radians(min_angle_change)
         self.enable_primitive_detection = enable_primitive_detection
-        self.geometry_service = GeometryService()
         self.circle_detector = circle_detector or CircleDetector()
         self.rectangle_detector = rectangle_detector or RectangleDetector()
         self.ellipse_detector = ellipse_detector or EllipseDetector()
+        self.svg_primitive_detector = SVGPrimitiveDetector()
         self.primitive_detection_strategy = primitive_detection_strategy or PrimitiveDetectionStrategy(
             self.circle_detector, self.rectangle_detector, self.ellipse_detector, self.min_segment_length
         )
@@ -82,13 +83,31 @@ class AdaptivePathSampler(PathSamplerPort):
         Returns:
             Lista de puntos muestreados con densidad adaptativa
         """
-        # Primero intentamos detectar si es una primitiva geométrica
+        # 1. Detección de primitivas con SVGPrimitiveDetector
         if self.enable_primitive_detection:
-            primitive_points = self.primitive_detection_strategy.detect(svg_path)
-            if primitive_points:
-                return primitive_points
-                
-        # Si no es una primitiva o la detección está desactivada, usamos muestreo adaptativo
+            primitives = self.svg_primitive_detector.detect(svg_path.path)
+            if primitives:
+                # Aquí podrías convertir la primitiva a puntos optimizados
+                # Por ahora, solo retorna los puntos extremos de la primitiva
+                # (Mejorar según tipo de primitiva)
+                points = []
+                for prim in primitives:
+                    if prim['type'] == 'circle' and prim['center']:
+                        # Ejemplo: muestrea 16 puntos en el círculo
+                        cx, cy = prim['center']
+                        r = prim['radius']
+                        for i in range(16):
+                            angle = 2 * np.pi * i / 16
+                            x = cx + r * np.cos(angle)
+                            y = cy + r * np.sin(angle)
+                            points.append(Point(x, y))
+                        return points
+                    # Agregar otros tipos aquí
+                # Si no se puede convertir, sigue con el pipeline normal
+        # 2. Simplificación previa al muestreo adaptativo
+        simplified_path = self.new_geometry_service.simplify_path(svg_path.path, tolerance=0.01)
+        # 3. Muestreo adaptativo sobre el path simplificado
+        svg_path.path = simplified_path
         return self._adaptive_sampling(svg_path)
     
     def _adaptive_sampling(self, svg_path: SVGPath) -> List[Point]:

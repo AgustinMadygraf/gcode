@@ -118,4 +118,6 @@ class SvgToGcodeApp:
 
     def run(self):
         """Método principal que ejecuta la aplicación"""
-        return self.orchestrator.run()
+        # Antes: return self.orchestrator.run()
+        # Ahora: delega en la estrategia de modo, pasando self
+        return self.mode_strategy.run(self)
