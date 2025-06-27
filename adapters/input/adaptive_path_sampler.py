@@ -20,6 +20,8 @@ from adapters.input.segment_sampling_strategies import (
     sample_line, sample_bezier, sample_arc, sample_uniform
 )
 from adapters.input.primitive_point_generators import generate_circle_points, generate_ellipse_points
+from adapters.input.primitive_detection_strategy import PrimitiveDetectionStrategy
+from adapters.input.segment_sampling_registry import SegmentSamplingRegistry
 
 
 class AdaptivePathSampler(PathSamplerPort):
@@ -41,7 +43,9 @@ class AdaptivePathSampler(PathSamplerPort):
                  enable_primitive_detection: bool = True,
                  circle_detector=None,
                  rectangle_detector=None,
-                 ellipse_detector=None):
+                 ellipse_detector=None,
+                 primitive_detection_strategy=None,
+                 segment_sampling_registry=None):
         """
         Inicializa el muestreador adaptativo.
         
@@ -61,6 +65,12 @@ class AdaptivePathSampler(PathSamplerPort):
         self.circle_detector = circle_detector or CircleDetector()
         self.rectangle_detector = rectangle_detector or RectangleDetector()
         self.ellipse_detector = ellipse_detector or EllipseDetector()
+        self.primitive_detection_strategy = primitive_detection_strategy or PrimitiveDetectionStrategy(
+            self.circle_detector, self.rectangle_detector, self.ellipse_detector, self.min_segment_length
+        )
+        self.segment_sampling_registry = segment_sampling_registry or SegmentSamplingRegistry(
+            self.max_segment_length, self.curvature_factor, self.min_segment_length
+        )
         
     def sample(self, svg_path: SVGPath) -> List[Point]:
         """
@@ -74,7 +84,7 @@ class AdaptivePathSampler(PathSamplerPort):
         """
         # Primero intentamos detectar si es una primitiva geométrica
         if self.enable_primitive_detection:
-            primitive_points = self._try_primitive_detection(svg_path)
+            primitive_points = self.primitive_detection_strategy.detect(svg_path)
             if primitive_points:
                 return primitive_points
                 
@@ -110,18 +120,7 @@ class AdaptivePathSampler(PathSamplerPort):
                 continue
             
             # Determinamos el método de muestreo según el tipo de segmento
-            if isinstance(segment, Line):
-                # Para líneas rectas, usamos menor densidad
-                segment_points = sample_line(segment)
-            elif isinstance(segment, (CubicBezier, QuadraticBezier)):
-                # Para curvas de Bezier, usamos muestreo basado en curvatura
-                segment_points = sample_bezier(segment, self.max_segment_length, self.curvature_factor)
-            elif isinstance(segment, Arc):
-                # Para arcos, usamos muestreo uniforme según radio
-                segment_points = sample_arc(segment, self.min_segment_length)
-            else:
-                # Para otros tipos, fallback a muestreo uniforme
-                segment_points = sample_uniform(segment, 10)
+            segment_points = self.segment_sampling_registry.sample(segment)
                 
             # Añadimos los puntos del segmento (excepto el último para evitar duplicados)
             points.extend(segment_points[:-1])
@@ -143,30 +142,8 @@ class AdaptivePathSampler(PathSamplerPort):
         Returns:
             Lista de puntos optimizada si es una primitiva, None en caso contrario
         """
-        path = svg_path.path
-        
-        # Círculo
-        circle_info = self.circle_detector.try_detect_circle(path)
-        if circle_info:
-            center, radius = circle_info
-            from adapters.input.primitive_point_generators import generate_circle_points
-            return generate_circle_points(center, radius, self.min_segment_length)
-            
-        # Rectángulo
-        rect_info = self.rectangle_detector.try_detect_rectangle(path)
-        if rect_info:
-            corners = rect_info
-            return [Point(c.real, c.imag) for c in corners]
-            
-        # Elipse
-        ellipse_info = self.ellipse_detector.try_detect_ellipse(path)
-        if ellipse_info:
-            center, rx, ry, phi = ellipse_info
-            from adapters.input.primitive_point_generators import generate_ellipse_points
-            return generate_ellipse_points(center, rx, ry, phi, self.min_segment_length)
-            
-        # No es una primitiva reconocible
-        return None
+        # Deprecated: use PrimitiveDetectionStrategy
+        return self.primitive_detection_strategy.detect(svg_path)
     
     def _sample_line(self, line: Line) -> List[Point]:
         """Muestreo optimizado para línea recta"""
