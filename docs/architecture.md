@@ -24,6 +24,11 @@ gcode/
 ```
 
 ## Cambios recientes (06/2025)
+- Refactorización modular de `GCodeGeneratorAdapter`:
+    - Lógica de ajuste de velocidad/curvatura extraída a `adapters/output/feed_rate_strategy.py`.
+    - Pipeline de muestreo y transformación extraído a `adapters/output/sample_transform_pipeline.py`.
+    - Lógica de construcción de comandos G-code extraída a `adapters/output/gcode_builder_helper.py`.
+    - Métodos y dependencias desacoplados para facilitar extensión y pruebas.
 - Implementado lazy loading de dependencias en `infrastructure/factories/container.py`.
 - `FilenameService` migrado de `application/use_cases/file_output` a `domain/services/filename_service.py`.
 - Caso de uso orquestador `SvgToGcodeUseCase` en `application/use_cases/svg_to_gcode_use_case.py`.

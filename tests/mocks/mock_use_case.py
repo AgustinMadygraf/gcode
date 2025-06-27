@@ -21,7 +21,7 @@ class DummyPathProcessor:
 
 class DummyGcodeGen:
     """Mock de generador de GCode para casos de uso"""
-    def generate(self, paths, attrs):
+    def generate(self, paths, attrs, context=None):
         return [f'G1 X{p}' for p in paths]
 
 class DummyCompressUseCase:

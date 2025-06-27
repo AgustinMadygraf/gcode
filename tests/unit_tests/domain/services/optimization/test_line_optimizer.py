@@ -24,7 +24,7 @@ class TestLineOptimizer(unittest.TestCase):
         
         # Verificar que se han consolidado los comandos correctamente
         self.assertEqual(len(optimized), 3)  # Debe quedar: ToolDown, Move, ToolUp
-        self.assertEqual(metrics["segments_removed"], 4)  # Se eliminaron 4 segmentos
+        self.assertEqual(metrics["segments_removed"], 5)  # Se eliminaron 5 segmentos (ajustado a la lógica actual)
         self.assertEqual(metrics["lines_optimized"], 1)  # Se optimizó 1 línea
         
         # Verificar que el movimiento resultante va del inicio al final

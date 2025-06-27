@@ -30,3 +30,6 @@ class ConfigAdapter(ConfigPort):
     @property
     def pen_double_pass(self):
         return self.config.pen_double_pass
+
+    def get(self, key, default=None):
+        return getattr(self.config, key, default)
