@@ -21,6 +21,8 @@ from infrastructure.transform_manager import TransformManager
 from adapters.output.feed_rate_strategy import FeedRateStrategy
 from adapters.output.sample_transform_pipeline import SampleTransformPipeline
 from adapters.output.gcode_builder_helper import GCodeBuilderHelper
+from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
+from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """Adapter for G-code generation from SVG paths, implementing the domain port."""
@@ -67,58 +69,20 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             curvature_factor=getattr(config, 'curvature_adjustment_factor', 0.35),
             min_feed_factor=getattr(config, 'minimum_feed_factor', 0.4)
         )
+        self.curvature_feed_calculator = CurvatureFeedCalculator(self.feed_rate_strategy)
 
     def calculate_curvature_factor(self, p1, p2, p3, base_feed_rate):
         """
-        DEPRECATED: Usar FeedRateStrategy.adjust_feed en su lugar.
+        DEPRECATED: Usar CurvatureFeedCalculator.adjust_feed en su lugar.
         """
-        import math
-        if p1 is None or p2 is None or p3 is None:
-            return base_feed_rate
-        v1 = (p2.x - p1.x, p2.y - p1.y)
-        v2 = (p3.x - p2.x, p3.y - p2.y)
-        mag1 = math.hypot(*v1)
-        mag2 = math.hypot(*v2)
-        if mag1 < 1e-6 or mag2 < 1e-6:
-            return base_feed_rate
-        dot = (v1[0]*v2[0] + v1[1]*v2[1]) / (mag1 * mag2)
-        dot = max(-1.0, min(1.0, dot))
-        angle = math.acos(dot)
-        angle_deg = math.degrees(angle)
-        curvature = angle_deg / 180
-        return self.feed_rate_strategy.adjust_feed(curvature=curvature)
+        return self.curvature_feed_calculator.adjust_feed(p1, p2, p3)
 
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
         def feed_fn(prev_pt, curr_pt, next_pt, future_pt):
-            # Usar FeedRateStrategy para calcular el feed
-            curvature = None
-            if prev_pt and curr_pt and next_pt:
-                import math
-                v1 = (curr_pt.x - prev_pt.x, curr_pt.y - prev_pt.y)
-                v2 = (next_pt.x - curr_pt.x, next_pt.y - curr_pt.y)
-                mag1 = math.hypot(*v1)
-                mag2 = math.hypot(*v2)
-                if mag1 > 1e-6 and mag2 > 1e-6:
-                    dot = (v1[0]*v2[0] + v1[1]*v2[1]) / (mag1 * mag2)
-                    dot = max(-1.0, min(1.0, dot))
-                    angle = math.acos(dot)
-                    angle_deg = math.degrees(angle)
-                    curvature = angle_deg / 180
-            feed = self.feed_rate_strategy.adjust_feed(curvature=curvature)
+            # Usar CurvatureFeedCalculator para calcular el feed
+            feed = self.curvature_feed_calculator.adjust_feed(prev_pt, curr_pt, next_pt)
             if future_pt is not None:
-                future_curvature = None
-                if curr_pt and next_pt and future_pt:
-                    v1 = (next_pt.x - curr_pt.x, next_pt.y - curr_pt.y)
-                    v2 = (future_pt.x - next_pt.x, future_pt.y - next_pt.y)
-                    mag1 = math.hypot(*v1)
-                    mag2 = math.hypot(*v2)
-                    if mag1 > 1e-6 and mag2 > 1e-6:
-                        dot = (v1[0]*v2[0] + v1[1]*v2[1]) / (mag1 * mag2)
-                        dot = max(-1.0, min(1.0, dot))
-                        angle = math.acos(dot)
-                        angle_deg = math.degrees(angle)
-                        future_curvature = angle_deg / 180
-                future_feed = self.feed_rate_strategy.adjust_feed(curvature=future_curvature)
+                future_feed = self.curvature_feed_calculator.adjust_feed(curr_pt, next_pt, future_pt)
                 feed = min(feed, future_feed)
             return feed
         builder_helper = GCodeBuilderHelper(self.cmd_down, self.cmd_up, self.dwell_ms)
@@ -135,16 +99,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 f"Bounding box: xmin={xmin:.3f}, xmax={xmax:.3f}, "
                 f"ymin={ymin:.3f}, ymax={ymax:.3f}")
             self.logger.info(f"Scale applied: {scale:.3f}")
-        try:
-            remove_border = self.config.get("REMOVE_BORDER_RECTANGLE", True)
-            use_relative_moves = False
-            if hasattr(self.config, '_data') and "COMPRESSION" in self.config._data:
-                use_relative_moves = self.config._data["COMPRESSION"].get("USE_RELATIVE_MOVES", False)
-            else:
-                use_relative_moves = self.config.get("USE_RELATIVE_MOVES", False)
-        except Exception:
-            remove_border = True
-            use_relative_moves = False
+        remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
+        use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
         if self.logger:
             self.logger.info(f"Relative moves enabled: {use_relative_moves}")
         all_points = self.sample_transform_pipeline(paths, scale)

@@ -20,3 +20,5 @@ class TransformManagerPort(ABC):
 class NullTransformManager:
     def apply(self, x, y):
         return x, y
+    def add_strategy(self, strategy):
+        pass
