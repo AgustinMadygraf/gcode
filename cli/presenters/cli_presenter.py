@@ -45,15 +45,23 @@ class CliPresenter:
         print(prompt)
         for idx, opt in enumerate(options, 1):
             print(f"  [{idx}] {opt}")
+        exit_keywords = {'salir', 'exit', 'quit'}
         while True:
             try:
-                selection = int(input("Seleccione una opción: "))
+                user_input = input("Seleccione una opción: ")
+                if user_input.strip().lower() in exit_keywords:
+                    print("\nSaliendo del programa. ¡Hasta luego!")
+                    exit(0)
+                selection = int(user_input)
                 if 1 <= selection <= len(options):
                     return selection
                 else:
                     print("Selección inválida. Intente nuevamente.")
             except ValueError:
                 print("Por favor, ingrese un número válido.")
+            except KeyboardInterrupt:
+                print("\nSaliendo del programa por interrupción (Ctrl+C).")
+                exit(0)
 
     def prompt_yes_no(self, prompt, default_yes=True):
         default = "S/n" if default_yes else "s/N"

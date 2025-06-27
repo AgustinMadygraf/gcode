@@ -32,14 +32,22 @@ class ApplicationOrchestrator:
         self.presenter.print('menu_title', color='bold')
         self.presenter.print('option_svg_to_gcode')
         self.presenter.print('option_optimize')
+        exit_keywords = {'salir', 'exit', 'quit'}
         while True:
             try:
-                choice = int(self.presenter.input('Ingrese el número de opción: '))
+                user_input = self.presenter.input('Ingrese el número de opción: ')
+                if user_input.strip().lower() in exit_keywords:
+                    self.presenter.print('\nSaliendo del programa. ¡Hasta luego!', color='yellow')
+                    exit(0)
+                choice = int(user_input)
                 if choice in [1, 2]:
                     return choice
                 self.presenter.print('invalid_selection', color='yellow')
             except ValueError:
                 self.presenter.print('invalid_number', color='yellow')
+            except KeyboardInterrupt:
+                self.presenter.print('\nSaliendo del programa por interrupción (Ctrl+C).', color='yellow')
+                exit(0)
 
     def _get_context_info(self):
         """Obtener información de contexto para el manejo de excepciones o UI"""
