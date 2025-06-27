@@ -18,6 +18,9 @@ from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
 from domain.ports.transform_manager_port import NullTransformManager
 from infrastructure.transform_manager import TransformManager
+from adapters.output.feed_rate_strategy import FeedRateStrategy
+from adapters.output.sample_transform_pipeline import SampleTransformPipeline
+from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """Adapter for G-code generation from SVG paths, implementing the domain port."""
@@ -59,11 +62,15 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.transform_manager = NullTransformManager()
         self.optimizer = optimizer
         self.config = config
+        self.feed_rate_strategy = FeedRateStrategy(
+            base_feed=feed,
+            curvature_factor=getattr(config, 'curvature_adjustment_factor', 0.35),
+            min_feed_factor=getattr(config, 'minimum_feed_factor', 0.4)
+        )
 
     def calculate_curvature_factor(self, p1, p2, p3, base_feed_rate):
         """
-        Calcula el feed rate ajustado según el ángulo entre tres puntos consecutivos y la longitud de segmento.
-        Optimizado para papel kraft: reduce más la velocidad en curvas y en segmentos cortos.
+        DEPRECATED: Usar FeedRateStrategy.adjust_feed en su lugar.
         """
         import math
         if p1 is None or p2 is None or p3 is None:
@@ -78,78 +85,44 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         dot = max(-1.0, min(1.0, dot))
         angle = math.acos(dot)
         angle_deg = math.degrees(angle)
-        # Parámetros de configuración, con valores recomendados para kraft
-        k = getattr(self.config, 'curvature_adjustment_factor', 0.35)
-        min_factor = getattr(self.config, 'minimum_feed_factor', 0.4)
-        # Factor de longitud de segmento: penaliza segmentos cortos
-        segment_factor = min(1.0, math.sqrt(min(mag1, mag2)) / 5.0)
-        # Ajuste combinado: más agresivo en detalles pequeños y curvas cerradas
-        adjustment = 1 - (k * (angle_deg / 180)) * (1.2 - segment_factor)
-        adjustment = max(min_factor, adjustment)
-        return int(base_feed_rate * adjustment)
+        curvature = angle_deg / 180
+        return self.feed_rate_strategy.adjust_feed(curvature=curvature)
 
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
-        import math
-        TOLERANCIA = 1e-4
-        def diferentes(p1, p2):
-            dx = p1.x - p2.x
-            dy = p1.y - p2.y
-            return math.hypot(dx, dy) > TOLERANCIA
-        def apply_optimizers(cmds):
-            if self.optimizer:
-                return self.optimizer.optimize(cmds)
-            return cmds, {}
-        builder = GCodeCommandBuilder(optimizer=apply_optimizers)
-        builder.move_to(0, 0, rapid=True)
-        builder.dwell(self.dwell_ms / 1000.0)
-        last_pos = Point(0, 0)
-        for i, points in enumerate(all_points):
-            if not points:
-                continue
-            dedup_points = [points[0]]
-            for j in range(1, len(points)):
-                if diferentes(points[j], points[j-1]):
-                    dedup_points.append(points[j])
-            points = dedup_points
-            if i > 0:
-                builder.dwell(self.dwell_ms / 1000.0)
-                builder.tool_up(self.cmd_up)
-                builder.dwell(self.dwell_ms / 1000.0)
-            if diferentes(last_pos, points[0]):
-                if use_relative_moves:
-                    dx = points[0].x - last_pos.x
-                    dy = points[0].y - last_pos.y
-                    builder.commands.append(RelativeMoveCommand(dx, dy, rapid=True))
-                else:
-                    builder.move_to(points[0].x, points[0].y, rapid=True)
-                last_pos = points[0]
-            builder.dwell(self.dwell_ms / 1000.0)
-            builder.tool_down(self.cmd_down)
-            builder.dwell(self.dwell_ms / 1000.0)
-            base_feed = self.feed
-            n = len(points)
-            for j in range(1, n):
-                prev_pt = points[j-2] if j > 1 else None
-                curr_pt = points[j-1]
-                next_pt = points[j]
-                future_pt = points[j+1] if j+1 < n else None
-                feed = self.calculate_curvature_factor(prev_pt, curr_pt, next_pt, base_feed)
-                if future_pt is not None:
-                    future_feed = self.calculate_curvature_factor(curr_pt, next_pt, future_pt, base_feed)
-                    feed = min(feed, future_feed)
-                if use_relative_moves:
-                    dx = next_pt.x - curr_pt.x
-                    dy = next_pt.y - curr_pt.y
-                    builder.commands.append(RelativeMoveCommand(dx, dy, feed=feed, rapid=False))
-                else:
-                    builder.move_to(next_pt.x, next_pt.y, feed=feed, rapid=False)
-                last_pos = next_pt
-        builder.dwell(self.dwell_ms / 1000.0)
-        builder.tool_up(self.cmd_up)
-        builder.dwell(self.dwell_ms / 1000.0)
-        builder.move_to(0, 0, rapid=True)
-        builder.commands.append(type('EndComment', (), {'to_gcode': lambda self: "(End)"})())
-        return builder.to_gcode_lines_with_metrics()
+        def feed_fn(prev_pt, curr_pt, next_pt, future_pt):
+            # Usar FeedRateStrategy para calcular el feed
+            curvature = None
+            if prev_pt and curr_pt and next_pt:
+                import math
+                v1 = (curr_pt.x - prev_pt.x, curr_pt.y - prev_pt.y)
+                v2 = (next_pt.x - curr_pt.x, next_pt.y - curr_pt.y)
+                mag1 = math.hypot(*v1)
+                mag2 = math.hypot(*v2)
+                if mag1 > 1e-6 and mag2 > 1e-6:
+                    dot = (v1[0]*v2[0] + v1[1]*v2[1]) / (mag1 * mag2)
+                    dot = max(-1.0, min(1.0, dot))
+                    angle = math.acos(dot)
+                    angle_deg = math.degrees(angle)
+                    curvature = angle_deg / 180
+            feed = self.feed_rate_strategy.adjust_feed(curvature=curvature)
+            if future_pt is not None:
+                future_curvature = None
+                if curr_pt and next_pt and future_pt:
+                    v1 = (next_pt.x - curr_pt.x, next_pt.y - curr_pt.y)
+                    v2 = (future_pt.x - next_pt.x, future_pt.y - next_pt.y)
+                    mag1 = math.hypot(*v1)
+                    mag2 = math.hypot(*v2)
+                    if mag1 > 1e-6 and mag2 > 1e-6:
+                        dot = (v1[0]*v2[0] + v1[1]*v2[1]) / (mag1 * mag2)
+                        dot = max(-1.0, min(1.0, dot))
+                        angle = math.acos(dot)
+                        angle_deg = math.degrees(angle)
+                        future_curvature = angle_deg / 180
+                future_feed = self.feed_rate_strategy.adjust_feed(curvature=future_curvature)
+                feed = min(feed, future_feed)
+            return feed
+        builder_helper = GCodeBuilderHelper(self.cmd_down, self.cmd_up, self.dwell_ms)
+        return builder_helper.build(all_points, feed_fn, use_relative_moves=use_relative_moves)
 
     def generate(self, paths, svg_attr: Dict[str, Any]) -> List[str]:
         bbox = BoundingBoxCalculator.get_svg_bbox(paths)
@@ -188,24 +161,15 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         return gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:
-        result = []
-        for p in paths:
-            points = []
-            for pt in self.path_sampler.sample(p):
-                x, y = self.transform_manager.apply(pt.x, pt.y)
-                # Escalado directo aplicado si no hay estrategia de escalado polimórfica
-                x, y = x * scale, y * scale
-                points.append(Point(x, y))
-            result.append(points)
-        return result
+        pipeline = SampleTransformPipeline(self.path_sampler, self.transform_manager, scale)
+        return pipeline.process(paths)
 
     def generate_path_gcode(self, path, feed, context=None):
         context = context or {}
         tool_type = context.get("tool_type", "pen")
         double_pass = context.get("double_pass", False)
-        # Ajustar velocidad según la herramienta
-        if tool_type == "marker":
-            feed = self.config.marker_feed_rate
+        # Ajustar velocidad según la herramienta usando FeedRateStrategy
+        feed = self.feed_rate_strategy.adjust_feed(tool_type=tool_type)
         # Generar puntos para el path
         points = []
         for pt in self.path_sampler.sample(path):

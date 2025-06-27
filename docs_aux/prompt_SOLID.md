@@ -12,11 +12,7 @@ evaluar si su longitud es aceptable y decidir:
   (OCP), interfaces pequeñas (ISP) y sustitución correcta (LSP).
 
 # 📄 ARCHIVO A REVISAR
-```
-
 \<ruta/archivo.py> (\<número de líneas> LOC)
-
-```
 
 # 🔍 PROCESO DE REVISIÓN
 
