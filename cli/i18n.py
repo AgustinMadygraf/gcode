@@ -34,8 +34,8 @@ MESSAGES = {
         "processing_paths": "Procesando paths SVG...",
         "generating_gcode": "Generando G-code...",
         "tool_selection": "Seleccione el tipo de herramienta:",
-        "tool_pen": "1. Lapicera (sólo contornos)",
-        "tool_marker": "2. Fibrón grueso (plenos/contornos)",
+        "tool_pen": "Lapicera (sólo contornos)",
+        "tool_marker": "Fibrón grueso (plenos/contornos)",
         "double_pass_question": "¿Realizar doble pasada en contornos con lapicera? [S/n]:",
         "using_tool_pen": "Usando lapicera para contornos",
         "using_tool_marker": "Usando fibrón grueso"
@@ -71,9 +71,9 @@ MESSAGES = {
         "processing_paths": "Processing SVG paths...",
         "generating_gcode": "Generating G-code...",
         "tool_selection": "Select tool type:",
-        "tool_pen": "1. Fine pen (outlines only)",
-        "tool_marker": "2. Thick marker (fills/outlines)",
-        "double_pass_question": "Use double pass for pen outlines? [Y/n]:",
+        "tool_pen": "Fine pen (outlines only)",
+        "tool_marker": "Thick marker (fills/outlines)",
+        "double_pass_question": "Double pass for pen outlines? [Y/n]:",
         "using_tool_pen": "Using pen for outlines",
         "using_tool_marker": "Using thick marker"
     }

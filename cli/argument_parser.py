@@ -25,4 +25,8 @@ def create_parser() -> argparse.ArgumentParser:
                         help="Usar doble pasada para contornos con lapicera")
     parser.add_argument("--no-double-pass", dest="double_pass", action="store_false",
                         help="Deshabilitar doble pasada para contornos")
+    parser.add_argument(
+        "--dev", "--debug", action="store_true",
+        help="Activar modo desarrollador (logging DEBUG, stacktrace extendido)"
+    )
     return parser

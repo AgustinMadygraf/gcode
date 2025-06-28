@@ -112,6 +112,7 @@ Puedes automatizar la conversión y optimización usando argumentos:
 - `--lang <es|en>`: Idioma de los mensajes
 - `--no-color`: Desactiva colores en la terminal
 - `--no-interactive`: Ejecuta sin menús ni prompts
+- `--dev`, `--debug`: Activa modo desarrollador (logging DEBUG, stacktrace extendido)
 - `--save-config`: Guarda los argumentos actuales como preferencias de usuario persistentes.
 - `--config <ruta>`: Usa un archivo de configuración personalizado (JSON).
 

@@ -21,14 +21,17 @@ class CliPresenter:
             prompt = self.color_service.colorize(prompt, color)
         return input(prompt)
 
-    def print_error(self, message):
-        self.print(message, color='red')
+    def print_error(self, message, file=None, line=None, dev_mode=False, use_color=True):
+        self.print_colored(message, level="error", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
 
-    def print_success(self, message):
-        self.print(message, color='green')
+    def print_success(self, message, file=None, line=None, dev_mode=False, use_color=True):
+        self.print_colored(message, level="info", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
 
-    def print_warning(self, message):
-        self.print(message, color='yellow')
+    def print_warning(self, message, file=None, line=None, dev_mode=False, use_color=True):
+        self.print_colored(message, level="warning", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
+
+    def print_debug(self, message, file=None, line=None, dev_mode=False, use_color=True):
+        self.print_colored(message, level="debug", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
 
     def print_progress(self, current, total, prefix=None):
         from cli.progress_bar import print_progress_bar
@@ -65,8 +68,9 @@ class CliPresenter:
 
     def prompt_yes_no(self, prompt, default_yes=True):
         default = "S/n" if default_yes else "s/N"
+        prompt_full = f"{prompt} ({default}): "
         while True:
-            resp = input(f"{prompt} ({default}): ").strip().lower()
+            resp = input(prompt_full).strip().lower()
             if not resp:
                 return default_yes
             if resp in ("s", "si", "y", "yes"):
@@ -74,5 +78,32 @@ class CliPresenter:
             if resp in ("n", "no"):
                 return False
             print("Por favor, responda 's' (sí) o 'n' (no).")
+
+    def print_colored(self, message, level="info", file=None, line=None, dev_mode=False, use_color=True):
+        """
+        Imprime un mensaje con color y formato según nivel.
+        Si dev_mode es True, agrega archivo y línea si se proveen.
+        Niveles: debug (cyan), info (green), warning (yellow), error (magenta)
+        """
+        color_map = {
+            "debug": "cyan",
+            "info": "green",
+            "warning": "yellow",
+            "error": "magenta"
+        }
+        color = color_map.get(level, None) if use_color else None
+        prefix_map = {
+            "debug": "[DEBUG]",
+            "info": "[INFO]",
+            "warning": "[WARN]",
+            "error": "[ERROR]"
+        }
+        prefix = prefix_map.get(level, "[INFO]")
+        if dev_mode and file and line:
+            prefix = f"{prefix} - {file}:{line}"
+        msg = f"{prefix} {message}"
+        if self.color_service and color:
+            msg = self.color_service.colorize(msg, color)
+        print(msg)
 
     # Métodos adicionales para mensajes específicos, progreso, etc. pueden agregarse aquí

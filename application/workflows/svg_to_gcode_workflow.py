@@ -17,9 +17,11 @@ class SvgToGcodeWorkflow:
             self.presenter.print(self.presenter.i18n.get("error_no_svg"), color='red')
             return False
         svg_file = Path(svg_file)
-        self.presenter.print(f"Archivo SVG seleccionado: {svg_file}", color='blue')
+        svg_file_str = str(svg_file).replace('\\', '/')
+        self.presenter.print(f"Archivo SVG seleccionado: {svg_file_str}" , color='blue')
         gcode_file = self.filename_service.next_filename(svg_file)
-        self.presenter.print(f"Archivo G-code de salida: {gcode_file}", color='blue')
+        gcode_file_str = str(gcode_file).replace('\\', '/')
+        self.presenter.print(f"Archivo G-code de salida: {gcode_file_str}" , color='blue')
         svg_loader_factory = self.container.get_svg_loader
         self.presenter.print(self.presenter.i18n.get("processing_start"), color='blue')
         self.presenter.print(self.presenter.i18n.get("processing_complete"), color='green')
@@ -91,6 +93,10 @@ class SvgToGcodeWorkflow:
                 self.presenter.print_progress(i, total_lines, prefix=self.presenter.i18n.get("generating_gcode"))
         with gcode_file.open("w", encoding="utf-8") as f:
             f.write("\n".join(gcode_lines))
-        self.container.logger.info(f"Archivo G-code escrito: {gcode_file}")
-        self.container.event_bus.publish('gcode_generated', {'svg_file': svg_file, 'gcode_file': gcode_file})
+        # Separador visual antes de logs técnicos si modo dev
+        if hasattr(self.container, 'logger') and getattr(self.container.logger, 'level', None) == 10:  # logging.DEBUG == 10
+            self.presenter.print("\n--- [LOGS TÉCNICOS] ---\n", color='yellow')
+        self.container.logger.info(f"Archivo G-code escrito: {gcode_file_str}")
+        self.container.event_bus.publish('gcode_generated', {'svg_file': svg_file_str, 'gcode_file': gcode_file_str})
+        self.presenter.print_success(f"✔ G-code generado exitosamente: {gcode_file_str}")
         return True
