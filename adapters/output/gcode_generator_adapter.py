@@ -23,6 +23,7 @@ from adapters.output.sample_transform_pipeline import SampleTransformPipeline
 from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
+from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """Adapter for G-code generation from SVG paths, implementing the domain port."""
@@ -88,12 +89,39 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         builder_helper = GCodeBuilderHelper(self.cmd_down, self.cmd_up, self.dwell_ms)
         return builder_helper.build(all_points, feed_fn, use_relative_moves=use_relative_moves)
 
+    def _path_id(self, path, idx):
+        # Devuelve un identificador legible para logs
+        return getattr(path, 'id', f'path_{idx}')
+
+    def _total_travel_distance(self, paths):
+        # Calcula la distancia total "en el aire" entre el final de un path y el inicio del siguiente
+        if not paths:
+            return 0.0
+        dist = 0.0
+        for i in range(len(paths) - 1):
+            end_pt = getattr(paths[i], 'end_point', None)
+            start_pt = getattr(paths[i+1], 'start_point', None)
+            if end_pt and start_pt:
+                dist += ((end_pt.x - start_pt.x)**2 + (end_pt.y - start_pt.y)**2) ** 0.5
+        return dist
+
     def generate(self, paths, svg_attr: Dict[str, Any]) -> List[str]:
-        bbox = BoundingBoxCalculator.get_svg_bbox(paths)
+        # Log orden y distancia antes de optimizar
+        if self.logger:
+            original_ids = [self._path_id(p, i) for i, p in enumerate(paths)]
+            self.logger.info(f"Orden original de paths: {original_ids}")
+            self.logger.info(f"Distancia total original: {self._total_travel_distance(paths):.2f}")
+        optimizer = TrajectoryOptimizer()
+        optimized_paths = optimizer.optimize_order(paths)
+        if self.logger:
+            opt_ids = [self._path_id(p, i) for i, p in enumerate(optimized_paths)]
+            self.logger.info(f"Orden optimizado de paths: {opt_ids}")
+            self.logger.info(f"Distancia total optimizada: {self._total_travel_distance(optimized_paths):.2f}")
+        bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
         xmin, xmax, ymin, ymax = bbox
         scale = ScaleManager.viewbox_scale(svg_attr)
-        scale = ScaleManager.adjust_scale_for_max_height(paths, scale, self.max_height_mm)
-        scale = ScaleManager.adjust_scale_for_max_width(paths, scale, self.max_width_mm)
+        scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
+        scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
         if self.logger:
             self.logger.info(
                 f"Bounding box: xmin={xmin:.3f}, xmax={xmax:.3f}, "
@@ -103,7 +131,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
         if self.logger:
             self.logger.info(f"Relative moves enabled: {use_relative_moves}")
-        all_points = self.sample_transform_pipeline(paths, scale)
+        all_points = self.sample_transform_pipeline(optimized_paths, scale)
         gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
         if self.logger:
             self.logger.info(f"G-code lines generated: {len(gcode)}")

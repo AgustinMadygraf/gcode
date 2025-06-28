@@ -115,3 +115,44 @@ La arquitectura actual sigue los principios de Clean Architecture con las siguie
 2. Mejora en la precisión de reproducción de curvas
 3. Reducción de tiempo de ejecución en máquina CNC/plotter
 4. Mantener compatibilidad con flujos de trabajo existentes
+
+---
+
+## 6. Detalle de la Optimización de Trayectorias (Continuidad)
+
+Para minimizar movimientos en vacío y mejorar la continuidad del trazado, se requiere modificar dos componentes clave:
+
+### a) `adapters/output/gcode_generator_adapter.py`
+- **Motivo:** Integrar la optimización de trayectorias en el pipeline de generación de G-code.
+- **Acción:**
+  - Llamar a un optimizador de trayectorias antes de muestrear y transformar los paths.
+  - Loguear el orden y la distancia total recorrida antes y después de la optimización para facilitar la validación y depuración.
+  - Ejemplo de integración:
+    ```python
+    from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
+    optimizer = TrajectoryOptimizer()
+    optimized_paths = optimizer.optimize_order(paths)
+    # ...
+    ```
+
+### b) `domain/services/optimization/trajectory_optimizer.py`
+- **Motivo:** Implementar el algoritmo de reordenamiento de paths (heurística greedy).
+- **Acción:**
+  - Crear la clase `TrajectoryOptimizer` con el método `optimize_order`.
+  - El método debe recibir una lista de paths (con atributos `start_point` y `end_point`) y devolver la lista reordenada para minimizar la distancia total.
+  - Ejemplo de método:
+    ```python
+    class TrajectoryOptimizer:
+        def optimize_order(self, paths: List) -> List:
+            # ...implementación...
+    ```
+
+**Justificación:**
+- Estas modificaciones permiten reducir el tiempo de ejecución, el desgaste mecánico y mejorar la calidad del resultado final.
+- El impacto es inmediato y medible, especialmente en archivos SVG con muchos paths desconectados.
+
+**Estado:**
+- [x] Implementado y probado con SVG de ejemplo.
+- [ ] Validación continua y ajuste fino según feedback de usuario y casos reales.
+
+> **Nota:** Para validar la optimización, se recomienda usar SVGs pequeños y revisar los logs generados por el sistema.
