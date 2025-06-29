@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, List
 from domain.ports.file_selector_port import FileSelectorPort
+from infrastructure.logger import logger
 
 class GcodeFileSelectorAdapter(FileSelectorPort):
     """Adaptador para selección de archivos GCODE desde la consola."""
@@ -20,23 +21,26 @@ class GcodeFileSelectorAdapter(FileSelectorPort):
         while True:
             gcode_files = self._find_gcode_files_recursively(gcode_dir)
             if gcode_files:
-                print("\nArchivos GCODE encontrados:")
+                logger.info("\nArchivos GCODE encontrados:")
                 for idx, file in enumerate(gcode_files, 1):
-                    print(f"  [{idx}] {file}")
-                print("  [0] Cancelar")
+                    logger.option(f"  [{idx}] {file}")
+                logger.option("  [0] Cancelar")
                 try:
-                    choice = int(input("\nSeleccione un archivo GCODE por número: "))
+                    choice = int(input("[INPUT] Seleccione un archivo GCODE por número: "))
                     if choice == 0:
-                        print("Operación cancelada por el usuario.")
+                        logger.info("Operación cancelada por el usuario.")
                         return None
                     if 1 <= choice <= len(gcode_files):
                         return gcode_files[choice - 1]
-                    print("Opción inválida.")
+                    logger.warning("Opción inválida.")
                 except ValueError:
-                    print("Por favor, ingrese un número válido.")
+                    logger.warning("Por favor, ingrese un número válido.")
+                except KeyboardInterrupt:
+                    logger.info("\nOperación cancelada por el usuario (Ctrl+C).")
+                    return None
             else:
-                print(f"No se encontraron archivos GCODE en {gcode_dir}")
-                new_dir = input("Ingrese otra carpeta (o 'q' para cancelar): ")
+                logger.warning(f"No se encontraron archivos GCODE en {gcode_dir}")
+                new_dir = input("[INPUT] Ingrese otra carpeta (o 'q' para cancelar): ")
                 if new_dir.lower() == 'q':
                     return None
                 gcode_dir = new_dir

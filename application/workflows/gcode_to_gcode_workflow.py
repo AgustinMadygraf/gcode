@@ -23,9 +23,9 @@ class GcodeToGcodeWorkflow:
         gcode_file = Path(gcode_file)
         self.presenter.print(f"Archivo GCODE seleccionado: {gcode_file}", color='blue')
         self.presenter.print(self.presenter.i18n.get("operation_menu_title"), color='bold')
-        self.presenter.print(self.presenter.i18n.get("operation_optimize"))
-        self.presenter.print(self.presenter.i18n.get("operation_rescale"))
-        self.presenter.print(self.presenter.i18n.get("exit"), color='yellow')
+        self.presenter.print_option(self.presenter.i18n.get("operation_optimize"))
+        self.presenter.print_option(self.presenter.i18n.get("operation_rescale"))
+        self.presenter.print_option(self.presenter.i18n.get("exit"), color='yellow')
         operation_choice = -1
         while operation_choice not in [0, 1, 2]:
             try:
