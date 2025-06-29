@@ -3,10 +3,13 @@ CliPresenter: Maneja toda la interacción de entrada/salida con el usuario en la
 Permite inyectar dependencias como i18n y manejo de colores.
 """
 
+from infrastructure.logger import logger
+
 class CliPresenter:
-    def __init__(self, i18n=None, color_service=None):
+    def __init__(self, i18n=None, color_service=None, logger_instance=None):
         self.i18n = i18n
         self.color_service = color_service
+        self.logger = logger_instance or logger
 
     def print(self, message, color=None):
         # Si es clave i18n, traducir
@@ -14,18 +17,21 @@ class CliPresenter:
             message = self.i18n.get(message)
         if self.color_service and color:
             message = self.color_service.colorize(message, color)
-        print(message)
+        self.logger.info(message)
 
     def input(self, prompt, color=None):
         if self.color_service and color:
             prompt = self.color_service.colorize(prompt, color)
-        return input(prompt)
+        # Mostrar el prompt solo una vez, con prefijo [INPUT]
+        prompt_final = f"[INPUT] {prompt}" if not prompt.strip().startswith('[INPUT]') else prompt
+        return input(prompt_final)
 
     def print_error(self, message, file=None, line=None, dev_mode=False, use_color=True):
         self.print_colored(message, level="error", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
 
     def print_success(self, message, file=None, line=None, dev_mode=False, use_color=True):
-        self.print_colored(message, level="info", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
+        # Solo pasar el mensaje, el logger agrega el prefijo
+        self.logger.info(message)
 
     def print_warning(self, message, file=None, line=None, dev_mode=False, use_color=True):
         self.print_colored(message, level="warning", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
@@ -45,53 +51,43 @@ class CliPresenter:
         # Se pueden agregar más eventos aquí
 
     def prompt_selection(self, prompt, options):
-        print(prompt)
+        input_prompt = f"[INPUT] {prompt}" if not prompt.strip().startswith('[INPUT]') else prompt
         for idx, opt in enumerate(options, 1):
-            print(f"  [{idx}] {opt}")
+            self.print_option(f"  [{idx}] {opt}")
         exit_keywords = {'salir', 'exit', 'quit'}
         while True:
             try:
                 user_input = input("Seleccione una opción: ")
                 if user_input.strip().lower() in exit_keywords:
-                    print("\nSaliendo del programa. ¡Hasta luego!")
+                    self.logger.info("\nSaliendo del programa. ¡Hasta luego!")
                     exit(0)
                 selection = int(user_input)
                 if 1 <= selection <= len(options):
                     return selection
                 else:
-                    print("Selección inválida. Intente nuevamente.")
+                    self.logger.warning("Selección inválida. Intente nuevamente.")
             except ValueError:
-                print("Por favor, ingrese un número válido.")
+                self.logger.warning("Por favor, ingrese un número válido.")
             except KeyboardInterrupt:
-                print("\nSaliendo del programa por interrupción (Ctrl+C).")
+                self.logger.info("\nSaliendo del programa por interrupción (Ctrl+C).")
                 exit(0)
 
     def prompt_yes_no(self, prompt, default_yes=True):
         default = "S/n" if default_yes else "s/N"
-        prompt_full = f"{prompt} ({default}): "
+        prompt_full = f"[INPUT] {prompt} ({default}): "
+        self.print_option("  [s] Sí")
+        self.print_option("  [n] No")
         while True:
-            resp = input(prompt_full).strip().lower()
-            if not resp:
+            user_input = input(prompt_full).strip().lower()
+            if not user_input:
                 return default_yes
-            if resp in ("s", "si", "y", "yes"):
+            if user_input in ("s", "si", "y", "yes"):
                 return True
-            if resp in ("n", "no"):
+            if user_input in ("n", "no"):
                 return False
-            print("Por favor, responda 's' (sí) o 'n' (no).")
+            self.logger.warning("Por favor, responda 's' (sí) o 'n' (no).")
 
     def print_colored(self, message, level="info", file=None, line=None, dev_mode=False, use_color=True):
-        """
-        Imprime un mensaje con color y formato según nivel.
-        Si dev_mode es True, agrega archivo y línea si se proveen.
-        Niveles: debug (cyan), info (green), warning (yellow), error (magenta)
-        """
-        color_map = {
-            "debug": "cyan",
-            "info": "green",
-            "warning": "yellow",
-            "error": "magenta"
-        }
-        color = color_map.get(level, None) if use_color else None
         prefix_map = {
             "debug": "[DEBUG]",
             "info": "[INFO]",
@@ -102,8 +98,20 @@ class CliPresenter:
         if dev_mode and file and line:
             prefix = f"{prefix} - {file}:{line}"
         msg = f"{prefix} {message}"
-        if self.color_service and color:
-            msg = self.color_service.colorize(msg, color)
-        print(msg)
+        if level == "debug":
+            self.logger.debug(msg)
+        elif level == "warning":
+            self.logger.warning(msg)
+        elif level == "error":
+            self.logger.error(msg)
+        else:
+            self.logger.info(msg)
+
+    def print_option(self, message, color=None):
+        # Si es clave i18n, traducir
+        if message in self.i18n._messages.get(self.i18n._default_lang, {}):
+            message = self.i18n.get(message)
+        # El color se ignora, se usa el del logger.option
+        self.logger.option(message)
 
     # Métodos adicionales para mensajes específicos, progreso, etc. pueden agregarse aquí

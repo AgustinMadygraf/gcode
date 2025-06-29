@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, List
 from cli.i18n import MESSAGES
 from infrastructure.i18n.i18n_service import I18nService
+from infrastructure.logger import logger
 
 i18n = I18nService(MESSAGES)
 
@@ -22,9 +23,9 @@ class SvgFileSelector:
         svg_files = self.list_svg_files()
         if not svg_files:
             raise FileNotFoundError("No SVG files found in svg_input.")
-        print(i18n.get("available_svg_files"))
+        logger.info(i18n.get("available_svg_files"))
         for idx, f in enumerate(svg_files, 1):
-            print(f"  {idx}. {f.name}")
+            logger.info(f"  {idx}. {f.name}")
         while True:
             try:
                 sel = int(input(prompt or f"Select an SVG file (1-{len(svg_files)}): "))
@@ -32,4 +33,4 @@ class SvgFileSelector:
                     return svg_files[sel-1]
             except (ValueError, TypeError):
                 pass
-            print(i18n.get("invalid_selection"))
+            logger.warning(i18n.get("invalid_selection"))

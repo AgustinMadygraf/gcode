@@ -29,11 +29,11 @@ class ApplicationOrchestrator:
         if hasattr(self.presenter, 'select_operation_mode'):
             return self.presenter.select_operation_mode()
         # Fallback: lógica mínima
-        self.presenter.print('menu_title', color='bold')
-        self.presenter.print('option_svg_to_gcode')
-        self.presenter.print('option_optimize')
         exit_keywords = {'salir', 'exit', 'quit'}
         while True:
+            self.presenter.print('menu_title', color='bold')
+            self.presenter.print_option('option_svg_to_gcode')
+            self.presenter.print_option('option_optimize')
             try:
                 user_input = self.presenter.input('Ingrese el número de opción: ')
                 if user_input.strip().lower() in exit_keywords:

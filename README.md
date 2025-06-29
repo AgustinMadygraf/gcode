@@ -215,6 +215,32 @@ La aplicación retorna diferentes códigos de salida según el resultado de la e
 
 > Los mensajes de error se muestran en el idioma configurado y con prefijos `[ERROR]`.
 
+## Logging, colores y niveles
+
+Todos los mensajes de la aplicación usan un sistema de logging centralizado con los siguientes niveles y colores ANSI (desactivables con `--no-color`):
+
+| Nivel     | Prefijo     | Color ANSI   |
+|-----------|-------------|-------------|
+| `ERROR`   | `[ERROR]`   | Rojo         |
+| `WARNING` | `[WARN]`    | Amarillo     |
+| `INFO`    | `[INFO]`    | Verde        |
+| `DEBUG`   | `[DEBUG]`   | Cian         |
+| `INPUT`   | `[INPUT]`   | Azul         |
+
+- El flag `--no-color` fuerza salida sin colores (accesible para lectores de pantalla o logs).
+- El flag `--dev` o `--debug` activa nivel `DEBUG` y muestra stacktrace extendido.
+- Todos los mensajes de input interactivo usan el prefijo `[INPUT]`.
+
+**Ejemplo de salida en consola:**
+
+```
+[INFO]   Archivo SVG cargado correctamente
+[INPUT]  Selecciona el archivo a procesar:
+[WARN]   El archivo ya existe, se sobrescribirá
+[ERROR]  Validación de entrada: El archivo no es SVG válido
+[DEBUG]  [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
+```
+
 ## Selección de herramienta
 
 La aplicación permite elegir entre dos tipos de herramientas:
