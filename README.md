@@ -281,3 +281,30 @@ python run.py --no-color --input ejemplo.svg --output salida.gcode
 ```
 
 > **Advertencia:** Si ves caracteres extraños como `[91m`, tu terminal no soporta colores ANSI. Usa `--no-color`.
+
+## Modo desarrollador (`--dev`)
+
+Puedes activar el modo desarrollador para obtener logs detallados (nivel DEBUG) y stacktrace extendido en caso de error:
+
+```bash
+python run.py --dev --input archivo_invalido.svg
+```
+
+- Si ocurre un error, verás información de depuración y el stacktrace completo.
+- Sin `--dev`, solo se muestra un mensaje de error amigable.
+
+**Ejemplo de salida con `--dev`:**
+```
+[DEBUG] [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
+[ERROR] Validación de entrada: Archivo no encontrado: archivo_invalido.svg
+Traceback (most recent call last):
+  ...
+FileNotFoundError: ...
+```
+
+**Ejemplo de salida sin `--dev`:**
+```
+[ERROR] Validación de entrada: Archivo no encontrado: archivo_invalido.svg
+```
+
+Este flag es útil para desarrollo, debugging y reporte de errores detallados.

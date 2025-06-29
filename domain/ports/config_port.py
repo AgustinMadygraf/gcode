@@ -3,7 +3,7 @@ Puerto ConfigPort: interfaz para obtener configuración de compresión en el dom
 """
 
 from abc import ABC, abstractmethod
-from domain.models.compression_config import CompressionConfig
+from domain.compression_config import CompressionConfig
 
 class ConfigPort(ABC):
     """

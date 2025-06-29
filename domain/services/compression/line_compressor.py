@@ -2,7 +2,7 @@
 Compresor para optimizar líneas de G-code consolidando movimientos lineales.
 """
 from domain.ports.gcode_compression_port import GcodeCompressionPort
-from domain.models.compression_metrics import CompressionMetrics
+from domain.compression_metrics import CompressionMetrics
 from typing import List, Tuple
 import re
 

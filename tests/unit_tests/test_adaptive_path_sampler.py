@@ -28,11 +28,13 @@ class TestAdaptivePathSampler(unittest.TestCase):
         self.assertGreaterEqual(len(points), 2)
 
     def test_sample_arc(self):
-        arc = Arc(0+0j, 10+0j, radius=5+0j, rotation=0, large_arc=False, sweep=True)
+        # Arc(start, radius, rotation, large_arc, sweep, end)
+        arc = Arc(0+0j, 5+5j, 0, False, True, 10+0j)
         path = Path(arc)
         svg_path = SVGPath(path)
         points = self.sampler.sample(svg_path)
-        self.assertEqual(points[0], Point(0, 0))
+        self.assertAlmostEqual(points[0].x, 0, places=6)
+        self.assertAlmostEqual(points[0].y, 0, places=6)
         self.assertGreaterEqual(len(points), 2)
 
     def test_sample_small_segment(self):

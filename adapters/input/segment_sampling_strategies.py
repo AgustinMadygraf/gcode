@@ -13,7 +13,7 @@ Todas retornan una lista de Point.
 
 import numpy as np
 from svgpathtools import Line, CubicBezier, QuadraticBezier, Arc
-from domain.models.point import Point
+from domain.models import Point
 from typing import List
 
 

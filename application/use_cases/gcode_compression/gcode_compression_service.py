@@ -2,8 +2,8 @@
 # (Movido desde domain/gcode_compression_service.py)
 from typing import List, Tuple
 from domain.ports.gcode_compression_port import GcodeCompressionPort
-from domain.models.compression_metrics import CompressionMetrics
-from domain.models.compression_config import CompressionConfig
+from domain.compression_metrics import CompressionMetrics
+from domain.compression_config import CompressionConfig
 from domain.services.validation.gcode_validator import GCodeValidator
 
 class GcodeCompressionService:

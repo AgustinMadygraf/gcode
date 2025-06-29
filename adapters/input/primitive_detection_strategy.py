@@ -3,9 +3,11 @@ Módulo: primitive_detection_strategy.py
 
 Define una estrategia desacoplada para la detección de primitivas geométricas en paths SVG.
 """
-from typing import Optional, List
-from domain.models.svg_path import SVGPath
-from domain.models.point import Point
+from typing import Optional, List, Any
+from domain.models import Point
+
+# from domain.models.svg_path import SVGPath  # Comentado: archivo no existe
+SVGPath = Any
 
 class PrimitiveDetectionStrategy:
     def __init__(self, circle_detector, rectangle_detector, ellipse_detector, min_segment_length):

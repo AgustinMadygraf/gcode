@@ -1,7 +1,7 @@
 # Archivo migrado a infrastructure/adapters/input/config_adapter.py
 
 from domain.ports.config_port import ConfigPort
-from domain.models.compression_config import CompressionConfig
+from domain.compression_config import CompressionConfig
 
 class ConfigAdapter(ConfigPort):
     """Adaptador para leer configuración desde config.json"""

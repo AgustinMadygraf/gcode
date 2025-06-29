@@ -1,5 +1,5 @@
 from domain.ports.gcode_compression_port import GcodeCompressionPort
-from domain.models.compression_metrics import CompressionMetrics
+from domain.compression_metrics import CompressionMetrics
 from typing import List, Tuple
 from domain.services.optimization.arc_optimizer import ArcOptimizer
 

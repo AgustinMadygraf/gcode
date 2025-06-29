@@ -8,10 +8,13 @@ aplica mayor densidad de puntos en áreas de alta curvatura.
 import numpy as np
 from svgpathtools import Path, Line, CubicBezier, QuadraticBezier, Arc
 from typing import List, Tuple, Dict, Any, Optional
+# SVGPath = Any  # Fallback temporal para tipado
+from typing import Any
+SVGPath = Any
 
 from domain.ports.path_sampler_port import PathSamplerPort
-from domain.models.svg_path import SVGPath
-from domain.models.point import Point
+# from domain.models.svg_path import SVGPath  # Comentado: archivo no existe
+from domain.models import Point
 from domain.services.detectors.circle_detector import CircleDetector
 from domain.services.detectors.rectangle_detector import RectangleDetector
 from domain.services.detectors.ellipse_detector import EllipseDetector
@@ -72,6 +75,7 @@ class AdaptivePathSampler(PathSamplerPort):
         self.segment_sampling_registry = segment_sampling_registry or SegmentSamplingRegistry(
             self.max_segment_length, self.curvature_factor, self.min_segment_length
         )
+        self.new_geometry_service = NewGeometryService()
         
     def sample(self, svg_path: SVGPath) -> List[Point]:
         """
