@@ -171,14 +171,83 @@ Por defecto, la aplicación detecta el idioma del sistema operativo:
 - En cualquier otro caso, la interfaz será en español.
 - Puedes forzar el idioma con el flag `--lang es` o `--lang en`.
 
-### Notas de arquitectura (2025)
-- Adaptadores consolidados en `adapters/`.
-- Optimizadores movidos a `domain/services/optimization/`.
-- Inyección de configuración en adaptadores.
-- Eliminados tests y código legacy.
-- Estructura y nomenclatura alineadas a Clean Architecture.
+## Documentación avanzada
 
-## Solución de problemas (Troubleshooting)
+- [Arquitectura y capas](docs/architecture.md)
+- [Logging y modo desarrollador](docs/logging.md)
+- [Solución de problemas (Troubleshooting)](docs/troubleshooting.md)
+- [Ejemplos y uso avanzado](docs/usage_advanced.md)
+
+## Logging, colores y niveles
+
+> Para detalles avanzados de logging, formato `[INFO archivo:línea]` y modo `--dev`, consulta [docs/logging.md](docs/logging.md).
+
+Todos los mensajes de la aplicación usan un sistema de logging centralizado con los siguientes niveles y colores ANSI (desactivables con `--no-color`):
+
+| Nivel     | Prefijo     | Color ANSI   |
+|-----------|-------------|-------------|
+| `ERROR`   | `[ERROR]`   | Rojo         |
+| `WARNING` | `[WARN]`    | Amarillo     |
+| `INFO`    | `[INFO]`    | Verde        |
+| `DEBUG`   | `[DEBUG]`   | Cian         |
+| `INPUT`   | `[INPUT]`   | Azul         |
+
+- El flag `--no-color` fuerza salida sin colores (accesible para lectores de pantalla o logs).
+- El flag `--dev` o `--debug` activa nivel `DEBUG`, muestra stacktrace extendido y agrega archivo:línea a cada mensaje `[INFO]` y `[DEBUG]`.
+- Todos los mensajes de input interactivo usan el prefijo `[INPUT]`.
+
+**Ejemplo de salida en consola (modo normal):**
+```
+[INFO]   Archivo SVG cargado correctamente
+[INPUT]  Selecciona el archivo a procesar:
+[WARN]   El archivo ya existe, se sobrescribirá
+[ERROR]  Validación de entrada: El archivo no es SVG válido
+```
+
+**Ejemplo de salida en consola (modo desarrollador `--dev`):**
+```
+[INFO cli/main.py:42] Archivo SVG cargado correctamente
+[DEBUG adapters/input/svg_loader_adapter.py:17] SVG parseado exitosamente
+[ERROR] Validación de entrada: El archivo no es SVG válido
+Traceback (most recent call last):
+  ...
+FileNotFoundError: ...
+```
+
+## Modo desarrollador (`--dev`)
+
+> Para ejemplos y explicación completa del modo desarrollador, consulta [docs/logging.md](docs/logging.md).
+
+Puedes activar el modo desarrollador para obtener logs detallados (nivel DEBUG), stacktrace extendido y trazabilidad de archivo:línea en cada mensaje `[INFO]` y `[DEBUG]`:
+
+```bash
+python run.py --dev --input archivo_invalido.svg
+```
+
+- Si ocurre un error, verás información de depuración y el stacktrace completo.
+- Sin `--dev`, solo se muestra un mensaje de error amigable.
+- En modo `--dev`, cada mensaje `[INFO]` y `[DEBUG]` incluye el archivo y línea de origen.
+
+**Ejemplo de salida con `--dev`:**
+```
+[DEBUG run.py:18] [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
+[INFO adapters/input/svg_loader_adapter.py:17] Archivo SVG cargado correctamente
+[ERROR] Validación de entrada: Archivo no encontrado: archivo_invalido.svg
+Traceback (most recent call last):
+  ...
+FileNotFoundError: ...
+```
+
+**Ejemplo de salida sin `--dev`:**
+```
+[ERROR] Validación de entrada: Archivo no encontrado: archivo_invalido.svg
+```
+
+Este flag es útil para desarrollo, debugging y reporte de errores detallados.
+
+## Troubleshooting
+
+> Para solución de problemas y preguntas frecuentes, consulta [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ### El comando `python run.py` no hace nada o muestra error de importación
 - Asegúrate de estar en la raíz del proyecto y de tener Python 3.8+ instalado.
@@ -221,50 +290,9 @@ La aplicación retorna diferentes códigos de salida según el resultado de la e
 
 > Los mensajes de error se muestran en el idioma configurado y con prefijos `[ERROR]`.
 
-## Logging, colores y niveles
+## Ejecución avanzada
 
-Todos los mensajes de la aplicación usan un sistema de logging centralizado con los siguientes niveles y colores ANSI (desactivables con `--no-color`):
-
-| Nivel     | Prefijo     | Color ANSI   |
-|-----------|-------------|-------------|
-| `ERROR`   | `[ERROR]`   | Rojo         |
-| `WARNING` | `[WARN]`    | Amarillo     |
-| `INFO`    | `[INFO]`    | Verde        |
-| `DEBUG`   | `[DEBUG]`   | Cian         |
-| `INPUT`   | `[INPUT]`   | Azul         |
-
-- El flag `--no-color` fuerza salida sin colores (accesible para lectores de pantalla o logs).
-- El flag `--dev` o `--debug` activa nivel `DEBUG` y muestra stacktrace extendido.
-- Todos los mensajes de input interactivo usan el prefijo `[INPUT]`.
-
-**Ejemplo de salida en consola:**
-
-```
-[INFO]   Archivo SVG cargado correctamente
-[INPUT]  Selecciona el archivo a procesar:
-[WARN]   El archivo ya existe, se sobrescribirá
-[ERROR]  Validación de entrada: El archivo no es SVG válido
-[DEBUG]  [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
-```
-
-## Logging avanzado y configuración
-
-- El sistema crea un logger independiente para cada ejecución usando `InfraFactory.get_logger()`, configurable por nivel (`INFO`, `DEBUG`), colores y destino.
-- El flag `--dev` activa nivel `DEBUG` y stacktrace extendido en logs y consola.
-- El flag `--no-color` fuerza salida sin colores ANSI.
-- Se recomienda evitar el uso del logger global y siempre inyectar el logger contextual en presenters, contenedores y casos de uso.
-- Para flujos concurrentes o extensiones (API, plugins), crea un logger por contexto usando la infraestructura.
-
-**Ejemplo avanzado:**
-
-```python
-from infrastructure.factories.infra_factory import InfraFactory
-logger = InfraFactory.get_logger(use_color=False, level='DEBUG')
-```
-
-> **Advertencia:** El uso de un logger global único puede causar efectos colaterales en escenarios concurrentes o multi-entrypoint. Consulta `/docs/architecture.md` para recomendaciones.
-
-## Selección de herramienta
+> Para ejemplos de uso batch, pipes y configuración avanzada, consulta [docs/usage_advanced.md](docs/usage_advanced.md).
 
 La aplicación permite elegir entre dos tipos de herramientas:
 
@@ -298,30 +326,3 @@ python run.py --no-color --input ejemplo.svg --output salida.gcode
 ```
 
 > **Advertencia:** Si ves caracteres extraños como `[91m`, tu terminal no soporta colores ANSI. Usa `--no-color`.
-
-## Modo desarrollador (`--dev`)
-
-Puedes activar el modo desarrollador para obtener logs detallados (nivel DEBUG) y stacktrace extendido en caso de error:
-
-```bash
-python run.py --dev --input archivo_invalido.svg
-```
-
-- Si ocurre un error, verás información de depuración y el stacktrace completo.
-- Sin `--dev`, solo se muestra un mensaje de error amigable.
-
-**Ejemplo de salida con `--dev`:**
-```
-[DEBUG] [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
-[ERROR] Validación de entrada: Archivo no encontrado: archivo_invalido.svg
-Traceback (most recent call last):
-  ...
-FileNotFoundError: ...
-```
-
-**Ejemplo de salida sin `--dev`:**
-```
-[ERROR] Validación de entrada: Archivo no encontrado: archivo_invalido.svg
-```
-
-Este flag es útil para desarrollo, debugging y reporte de errores detallados.

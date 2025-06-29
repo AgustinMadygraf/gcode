@@ -17,7 +17,8 @@ def main():
     # Configurar logger según modo dev y color
     use_color = not getattr(args, 'no_color', False)
     log_level = 'DEBUG' if getattr(args, 'dev', False) else 'INFO'
-    logger = InfraFactory.get_logger(use_color=use_color, level=log_level)
+    show_file_line = getattr(args, 'dev', False)
+    logger = InfraFactory.get_logger(use_color=use_color, level=log_level, show_file_line=show_file_line)
     if getattr(args, 'dev', False):
         logger.debug("[DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.")
     app = create_svg_to_gcode_app(args, logger=logger)

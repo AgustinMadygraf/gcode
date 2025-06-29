@@ -48,3 +48,15 @@ def test_logger_input(monkeypatch):
     assert '[INPUT]' in output
     assert '\x1b[34m' in output  # Azul
     assert 'Ingrese valor:' in output
+
+def test_logger_info_file_line(monkeypatch):
+    buf = io.StringIO()
+    logger = ConsoleLogger(use_color=False, stream=buf, level='INFO', show_file_line=True)
+    logger.info('Mensaje info fileline')
+    output = buf.getvalue()
+    # Debe contener el nombre de este archivo y un número de línea
+    import re
+    assert '[INFO]' in output
+    assert 'Mensaje info fileline' in output
+    # Buscar patrón archivo:línea
+    assert re.search(r'test_logger.py:\d+ Mensaje info fileline', output)

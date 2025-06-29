@@ -134,6 +134,30 @@ El sistema soporta la creación de loggers por contexto/app usando `InfraFactory
 - Inyectar el logger en presenters, contenedores y casos de uso.
 - Documentar y testear el comportamiento esperado en modo `--dev` y en flujos concurrentes.
 
+## Logger, modo desarrollador y trazabilidad
+
+El logger centralizado soporta el flag `--dev` (o `--debug`), que activa:
+- Nivel de logging `DEBUG`.
+- Stacktrace extendido en caso de error.
+- Inclusión automática de archivo y línea de origen en cada mensaje `[INFO]` y `[DEBUG]`.
+
+**Ejemplo de log en modo desarrollador:**
+```
+[INFO adapters/input/svg_loader_adapter.py:17] Archivo SVG cargado correctamente
+[DEBUG run.py:18] [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
+[ERROR] Validación de entrada: Archivo no encontrado: archivo_invalido.svg
+Traceback (most recent call last):
+  ...
+FileNotFoundError: ...
+```
+
+Esto permite depuración precisa y reporte de errores reproducibles.
+
+**Recomendaciones:**
+- Usar siempre `InfraFactory.get_logger()` y propagar el flag `show_file_line` según el modo.
+- No activar `--dev` por defecto en producción ni en CI.
+- Documentar el uso de logs con archivo:línea en reportes de bugs.
+
 ## Notas y Recomendaciones
 - Mantener la documentación de modelos e invariantes en `docs/domain_models.md`.
 - Documentar cambios relevantes en `docs/CHANGELOG.md`.

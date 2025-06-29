@@ -4,6 +4,8 @@ Soporta niveles: INPUT, INFO, DEBUG, ERROR, WARN, y colores ANSI.
 """
 import logging
 import sys
+import inspect
+import os
 
 class AnsiColor:
     RED = '\x1b[31m'
@@ -34,10 +36,11 @@ LEVEL_PREFIXES = {
 
 class ConsoleLogger:
     LEVELS = {'DEBUG': 10, 'INFO': 20, 'OPTION': 21, 'INPUT': 15, 'WARNING': 30, 'ERROR': 40}
-    def __init__(self, use_color=True, stream=sys.stderr, level='INFO'):
+    def __init__(self, use_color=True, stream=sys.stderr, level='INFO', show_file_line=False):
         self.use_color = use_color
         self.stream = stream
         self.level = self.LEVELS.get(level.upper(), 20)
+        self.show_file_line = show_file_line
 
     def set_level(self, level):
         if isinstance(level, int):
@@ -55,6 +58,17 @@ class ConsoleLogger:
         prefix = LEVEL_PREFIXES.get(level, '[INFO]')
         color = LEVEL_COLORS.get(level, '') if self.use_color else ''
         reset = AnsiColor.RESET if self.use_color and color else ''
+        # Añadir archivo:línea si es INFO y show_file_line está activo
+        if (level == 'INFO' and self.show_file_line) or (level == 'DEBUG' and self.show_file_line):
+            # Buscar el frame llamador fuera del logger
+            frame = inspect.currentframe()
+            outer = frame
+            for _ in range(3):
+                if outer.f_back:
+                    outer = outer.f_back
+            filename = os.path.basename(outer.f_code.co_filename)
+            lineno = outer.f_lineno
+            msg = f"{filename}:{lineno} {msg}"
         print(f"{color}{prefix} {msg}{reset}", file=self.stream)
 
     def info(self, msg, *args, **kwargs):
@@ -73,5 +87,5 @@ class ConsoleLogger:
 # Instancia global por defecto
 logger = ConsoleLogger(use_color=True)
 
-def get_logger(use_color=True, level='INFO'):
-    return ConsoleLogger(use_color=use_color, level=level)
+def get_logger(use_color=True, level='INFO', show_file_line=False):
+    return ConsoleLogger(use_color=use_color, level=level, show_file_line=show_file_line)
