@@ -4,11 +4,12 @@ TrajectoryOptimizer: Reordena paths/segmentos para minimizar movimientos en vac�
 from typing import List
 
 class TrajectoryOptimizer:
-    def optimize_order(self, paths: List) -> List:
+    def optimize_order(self, paths: List, progress_callback=None) -> List:
         """
         Reordena los paths para minimizar la distancia entre el final de uno y el inicio del siguiente.
         paths: lista de objetos con atributos start_point y end_point, o una lista de puntos.
         Omite paths vacíos o inválidos.
+        progress_callback: función opcional (current, total) para reportar progreso.
         """
         # Filtrar paths inválidos
         valid_paths = []
@@ -27,6 +28,8 @@ class TrajectoryOptimizer:
         remaining = valid_paths[:]
         current = remaining.pop(0)
         ordered.append(current)
+        total = len(valid_paths)
+        step = 1
         while remaining:
             last_point = self._get_end_point(current)
             # Encuentra el path más cercano al final del anterior
@@ -37,6 +40,9 @@ class TrajectoryOptimizer:
             ordered.append(next_path)
             current = next_path
             remaining.pop(next_idx)
+            if progress_callback:
+                progress_callback(step, total)
+            step += 1
         return ordered
 
     def _get_start_point(self, path):

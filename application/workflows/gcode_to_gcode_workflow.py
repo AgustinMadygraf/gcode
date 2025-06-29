@@ -15,7 +15,7 @@ class GcodeToGcodeWorkflow:
         from adapters.input.gcode_file_selector_adapter import GcodeFileSelectorAdapter
         from application.use_cases.gcode_to_gcode_use_case import GcodeToGcodeUseCase
         from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
-        gcode_selector = GcodeFileSelectorAdapter(self.config, i18n=self.presenter.i18n)
+        gcode_selector = GcodeFileSelectorAdapter(self.config, i18n=self.presenter.i18n, logger=self.container.logger)
         gcode_file = gcode_selector.select_gcode_file()
         if not gcode_file:
             self.presenter.print(self.presenter.i18n.get("ERROR_NO_GCODE"), color='red')

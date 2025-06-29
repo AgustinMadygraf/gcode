@@ -35,7 +35,7 @@ class ApplicationOrchestrator:
             return None  # El modo ya se maneja en la estrategia
         # 2. Si hay input/output por argumento, saltar selección de archivos
         if args and getattr(args, 'input', None) and getattr(args, 'output', None):
-            self.presenter.print('Ejecución directa: usando archivos especificados por argumentos.', color='cyan')
+            self.presenter.print(self.presenter.i18n.get('INFO_DIRECT_EXECUTION'), color='cyan')
             return 1 if str(args.input).lower().endswith('.svg') else 2
         # 3. Si no hay archivos SVG/GCODE disponibles, menú reducido
         svg_dir = './data/svg_input'
@@ -52,40 +52,40 @@ class ApplicationOrchestrator:
         except Exception:
             pass
         if not svg_files and not gcode_files:
-            self.presenter.print('No se encontraron archivos SVG ni GCODE disponibles.', color='yellow')
-            self.presenter.print('Opciones:', color='bold')
+            self.presenter.print(self.presenter.i18n.get('WARN_NO_FILES_FOUND'), color='yellow')
+            self.presenter.print(self.presenter.i18n.get('INFO_OPTIONS'), color='bold')
             self.presenter.print_option('1) Cambiar carpeta de entrada')
             self.presenter.print_option('0) Salir')
             while True:
-                user_input = self.presenter.input('Ingrese el número de opción: ')
+                user_input = self.presenter.input(self.presenter.i18n.get('PROMPT_SELECT_OPTION'))
                 if user_input.strip() in {'0', 'salir', 'exit', 'quit'}:
-                    self.presenter.print('\nSaliendo del programa. ¡Hasta luego!', color='yellow')
+                    self.presenter.print(self.presenter.i18n.get('INFO_EXIT'), color='yellow')
                     exit(0)
                 elif user_input.strip() == '1':
-                    self.presenter.print('Funcionalidad para cambiar carpeta aún no implementada.', color='yellow')
+                    self.presenter.print(self.presenter.i18n.get('WARN_NOT_IMPLEMENTED'), color='yellow')
                 else:
-                    self.presenter.print('Opción inválida.', color='yellow')
+                    self.presenter.print(self.presenter.i18n.get('WARN_INVALID_OPTION'), color='yellow')
         # 4. Menú clásico por defecto
         if hasattr(self.presenter, 'select_operation_mode'):
             return self.presenter.select_operation_mode()
         # Fallback clásico
         while True:
-            self.presenter.print('MENU_MAIN_TITLE', color='bold')
-            self.presenter.print_option('MENU_OPTION_CONVERT')
-            self.presenter.print_option('MENU_OPTION_OPTIMIZE')
+            self.presenter.print(self.presenter.i18n.get('MENU_MAIN_TITLE'), color='bold')
+            self.presenter.print_option(self.presenter.i18n.get('MENU_OPTION_CONVERT'))
+            self.presenter.print_option(self.presenter.i18n.get('MENU_OPTION_OPTIMIZE'))
             try:
-                user_input = self.presenter.input('Ingrese el número de opción: ')
+                user_input = self.presenter.input(self.presenter.i18n.get('PROMPT_SELECT_OPTION'))
                 if user_input.strip().lower() in exit_keywords:
-                    self.presenter.print('\nSaliendo del programa. ¡Hasta luego!', color='yellow')
+                    self.presenter.print(self.presenter.i18n.get('INFO_EXIT'), color='yellow')
                     exit(0)
                 choice = int(user_input)
                 if choice in [1, 2]:
                     return choice
-                self.presenter.print('invalid_selection', color='yellow')
+                self.presenter.print(self.presenter.i18n.get('WARN_INVALID_SELECTION'), color='yellow')
             except ValueError:
-                self.presenter.print('invalid_number', color='yellow')
+                self.presenter.print(self.presenter.i18n.get('WARN_INVALID_NUMBER'), color='yellow')
             except KeyboardInterrupt:
-                self.presenter.print('\nSaliendo del programa por interrupción (Ctrl+C).', color='yellow')
+                self.presenter.print(self.presenter.i18n.get('INFO_EXIT_INTERRUPT'), color='yellow')
                 exit(0)
 
     def _get_context_info(self):

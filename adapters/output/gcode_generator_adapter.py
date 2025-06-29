@@ -114,8 +114,18 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             original_ids = [self._path_id(p, i) for i, p in enumerate(paths)]
             self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_ORIG", list=f"{original_ids[:20]}{'...' if len(original_ids) > 20 else ''}"))
             self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
+        from cli.progress_bar import print_progress_bar
         optimizer = TrajectoryOptimizer()
-        optimized_paths = optimizer.optimize_order(paths)
+        def progress_callback(current, total):
+            if total > 5:
+                # Solo actualizar si cambia el porcentaje
+                percent = int((current / float(total)) * 100) if total else 100
+                if not hasattr(progress_callback, '_last_percent') or percent != progress_callback._last_percent:
+                    print_progress_bar(current, total, prefix=self.i18n.get('OPTIMIZING_PATHS'), suffix='', length=40, lang=getattr(self.i18n, 'default_lang', 'es'))
+                    progress_callback._last_percent = percent
+                if current == total:
+                    print()  # salto de línea final
+        optimized_paths = optimizer.optimize_order(paths, progress_callback=progress_callback)
         if self.logger:
             opt_ids = [self._path_id(p, i) for i, p in enumerate(optimized_paths)]
             self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_OPT", list=f"{opt_ids[:20]}{'...' if len(opt_ids) > 20 else ''}"))

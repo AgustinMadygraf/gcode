@@ -22,15 +22,15 @@ class SvgFileSelector:
         " Permite al usuario seleccionar un archivo SVG de una lista. "
         svg_files = self.list_svg_files()
         if not svg_files:
-            raise FileNotFoundError("No SVG files found in svg_input.")
-        logger.info(i18n.get("available_svg_files"))
+            raise FileNotFoundError(i18n.get("WARN_NO_SVG_FOUND", svg_input_dir=str(self.svg_dir)))
+        logger.info(i18n.get("INFO_SVG_FILES_FOUND"))
         for idx, f in enumerate(svg_files, 1):
-            logger.info(f"  {idx}. {f.name}")
+            logger.info(i18n.get("OPTION_SVG_FILE", num=idx, filename=f.name))
         while True:
             try:
-                sel = int(input(prompt or f"Select an SVG file (1-{len(svg_files)}): "))
+                sel = int(input(prompt or i18n.get("PROMPT_SELECT_SVG_FILE_RANGE", range=f"1-{len(svg_files)}")))
                 if 1 <= sel <= len(svg_files):
                     return svg_files[sel-1]
             except (ValueError, TypeError):
                 pass
-            logger.warning(i18n.get("invalid_selection"))
+            logger.warning(i18n.get("ERROR_INVALID_SELECTION"))
