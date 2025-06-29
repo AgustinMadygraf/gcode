@@ -18,12 +18,12 @@ class SvgToGcodeWorkflow:
             return False
         svg_file = Path(svg_file)
         svg_file_str = str(svg_file).replace('\\', '/')
-        self.presenter.print(f"Archivo SVG seleccionado: {svg_file_str}" , color='blue')
+        self.presenter.print(f"Archivo SVG seleccionado: {svg_file_str}" , color='green')
         gcode_file = self.filename_service.next_filename(svg_file)
         gcode_file_str = str(gcode_file).replace('\\', '/')
-        self.presenter.print(f"Archivo G-code de salida: {gcode_file_str}" , color='blue')
+        self.presenter.print(f"Archivo G-code de salida: {gcode_file_str}" , color='green')
         svg_loader_factory = self.container.get_svg_loader
-        self.presenter.print(self.presenter.i18n.get("processing_start"), color='blue')
+        self.presenter.print(self.presenter.i18n.get("processing_start"), color='green')
         self.presenter.print(self.presenter.i18n.get("processing_complete"), color='green')
         paths = svg_loader_factory(svg_file).get_paths()
         def dummy_process(_):
