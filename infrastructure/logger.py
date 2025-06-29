@@ -60,15 +60,23 @@ class ConsoleLogger:
         reset = AnsiColor.RESET if self.use_color and color else ''
         # Añadir archivo:línea si es INFO y show_file_line está activo
         if (level == 'INFO' and self.show_file_line) or (level == 'DEBUG' and self.show_file_line):
-            # Buscar el frame llamador fuera del logger
-            frame = inspect.currentframe()
-            outer = frame
-            for _ in range(3):
-                if outer.f_back:
-                    outer = outer.f_back
-            filename = os.path.basename(outer.f_code.co_filename)
-            lineno = outer.f_lineno
-            msg = f"{filename}:{lineno} {msg}"
+            import os
+            stack = inspect.stack()
+            logger_file = os.path.abspath(__file__)
+            caller_frame = None
+            for frame_info in stack:
+                frame_file = os.path.abspath(frame_info.filename)
+                if frame_file != logger_file:
+                    caller_frame = frame_info
+                    break
+            if caller_frame:
+                filename = os.path.basename(caller_frame.filename)
+                lineno = caller_frame.lineno
+                prefix = f"[{level} {filename}:{lineno}]" if level in LEVEL_PREFIXES else f"[INFO {filename}:{lineno}]"
+            else:
+                prefix = LEVEL_PREFIXES.get(level, '[INFO]')
+        else:
+            prefix = LEVEL_PREFIXES.get(level, '[INFO]')
         print(f"{color}{prefix} {msg}{reset}", file=self.stream)
 
     def info(self, msg, *args, **kwargs):

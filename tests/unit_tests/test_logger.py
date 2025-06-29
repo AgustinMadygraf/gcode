@@ -54,9 +54,22 @@ def test_logger_info_file_line(monkeypatch):
     logger = ConsoleLogger(use_color=False, stream=buf, level='INFO', show_file_line=True)
     logger.info('Mensaje info fileline')
     output = buf.getvalue()
-    # Debe contener el nombre de este archivo y un número de línea
     import re
-    assert '[INFO]' in output
+    # El prefijo ahora es '[INFO archivo.py:línea]'
+    assert '[INFO ' in output
     assert 'Mensaje info fileline' in output
     # Buscar patrón archivo:línea
-    assert re.search(r'test_logger.py:\d+ Mensaje info fileline', output)
+    assert re.search(r'\[INFO test_logger.py:\d+\] Mensaje info fileline', output)
+
+def test_logger_info_file_line_indirect(monkeypatch):
+    import io, re, os
+    buf = io.StringIO()
+    logger = ConsoleLogger(use_color=False, stream=buf, level='INFO', show_file_line=True)
+    def wrapper():
+        logger.info('Mensaje indirecto')
+    wrapper()
+    output = buf.getvalue()
+    # Debe contener el nombre de este archivo y la línea donde se llama logger.info dentro de wrapper
+    filename = os.path.basename(__file__)
+    # Buscar patrón [INFO <archivo>:<línea>] Mensaje indirecto
+    assert re.search(rf'\[INFO {filename}:(\d+)\] Mensaje indirecto', output)
