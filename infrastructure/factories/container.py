@@ -133,7 +133,7 @@ class Container:
             )
         return self._svg_to_gcode_use_case
 
-    def get_gcode_generator(self, transform_strategies=None):
+    def get_gcode_generator(self, transform_strategies=None, i18n=None):
         path_sampler = AdapterFactory.create_path_sampler(self.step_mm, logger=self.logger)
         return AdapterFactory.create_gcode_generator(
             path_sampler=path_sampler,
@@ -146,7 +146,8 @@ class Container:
             max_width_mm=self.max_width_mm,
             config=self.config_port,
             logger=self.logger,
-            transform_strategies=transform_strategies or []
+            transform_strategies=transform_strategies or [],
+            i18n=i18n
         )
 
     def get_svg_loader(self, svg_file):

@@ -14,10 +14,10 @@ class InteractiveModeStrategy(ModeStrategy):
                 app.orchestrator._get_context_info()
             )
         else:
-            app.presenter.print(app.i18n.get("invalid_selection"), color='yellow')
+            app.presenter.print(app.i18n.get("ERROR_INVALID_SELECTION"), color='yellow')
             return 1
         if not result.get('success', False):
-            error_info = result.get('message', 'Error desconocido')
+            error_info = result.get('message', app.i18n.get('ERROR_GENERIC'))
             error_type = result.get('error', 'Error')
             app.presenter.print(f"[{error_type.upper()}] {error_info}", color='red')
             return 1

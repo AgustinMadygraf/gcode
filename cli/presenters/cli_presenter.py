@@ -58,17 +58,17 @@ class CliPresenter:
             try:
                 user_input = input("Seleccione una opción: ")
                 if user_input.strip().lower() in exit_keywords:
-                    self.logger.info("\nSaliendo del programa. ¡Hasta luego!")
+                    self.logger.info(self.i18n.get('INFO_EXIT'))
                     exit(0)
                 selection = int(user_input)
                 if 1 <= selection <= len(options):
                     return selection
                 else:
-                    self.logger.warning("Selección inválida. Intente nuevamente.")
+                    self.logger.warning(self.i18n.get('WARN_INVALID_SELECTION'))
             except ValueError:
-                self.logger.warning("Por favor, ingrese un número válido.")
+                self.logger.warning(self.i18n.get('WARN_INVALID_NUMBER'))
             except KeyboardInterrupt:
-                self.logger.info("\nSaliendo del programa por interrupción (Ctrl+C).")
+                self.logger.info(self.i18n.get('INFO_EXIT_INTERRUPT'))
                 exit(0)
 
     def prompt_yes_no(self, prompt, default_yes=True):
@@ -84,7 +84,7 @@ class CliPresenter:
                 return True
             if user_input in ("n", "no"):
                 return False
-            self.logger.warning("Por favor, responda 's' (sí) o 'n' (no).")
+            self.logger.warning(self.i18n.get('WARN_YES_NO'))
 
     def print_colored(self, message, level="info", file=None, line=None, dev_mode=False, use_color=True):
         # Eliminar prefijos manuales, dejar que el logger maneje formato y color

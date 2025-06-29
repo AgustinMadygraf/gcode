@@ -25,8 +25,9 @@ class SvgFileSelectorAdapter(FileSelectorPort):
     """
     CONFIG_PATH = os.path.join(os.path.dirname(__file__), '../../infrastructure/config/config.json')
 
-    def __init__(self, logger):
+    def __init__(self, logger, i18n=None):
         self.logger = logger
+        self.i18n = i18n
 
     def _load_config(self):
         """Carga la configuración desde el archivo JSON."""
@@ -48,41 +49,41 @@ class SvgFileSelectorAdapter(FileSelectorPort):
         while True:
             svg_files = _find_svg_files_recursively(svg_input_dir)
             if svg_files:
-                self.logger.info("Archivos SVG encontrados:")
+                self.logger.info(self.i18n.get("INFO_SVG_FILES_FOUND"))
                 for idx, file in enumerate(svg_files, 1):
                     self.logger.option(f"  [{idx}] {file}")
-                self.logger.option("  [0] Cancelar")
+                self.logger.option(self.i18n.get("OPTION_CANCEL"))
                 try:
-                    choice = int(input("[INPUT] Seleccione un archivo SVG por número: "))
+                    choice = int(input("[INPUT] " + self.i18n.get("PROMPT_SELECT_SVG_FILE")))
                 except ValueError:
-                    self.logger.warning("Opción inválida.")
+                    self.logger.warning(self.i18n.get("WARN_INVALID_OPTION"))
                     continue
                 if choice == 0:
-                    self.logger.info("Operación cancelada por el usuario.")
+                    self.logger.info(self.i18n.get("INFO_OPERATION_CANCELLED"))
                     return None
                 if 1 <= choice <= len(svg_files):
                     return svg_files[choice - 1]
-                self.logger.warning("Selección fuera de rango.")
+                self.logger.warning(self.i18n.get("WARN_OUT_OF_RANGE"))
             else:
-                self.logger.warning(f"No se encontraron archivos SVG en '{svg_input_dir}'.")
-                self.logger.info("1) Asignar nueva carpeta de entrada")
-                self.logger.info("2) Reintentar (debe colocar un archivo SVG en la carpeta actual)")
-                self.logger.info("0) Cancelar")
-                opt = input("Seleccione una opción: ").strip()
+                self.logger.warning(self.i18n.get("WARN_NO_SVG_FOUND", svg_input_dir=svg_input_dir))
+                self.logger.info(self.i18n.get("INFO_ASSIGN_NEW_DIR"))
+                self.logger.info(self.i18n.get("INFO_RETRY"))
+                self.logger.info(self.i18n.get("OPTION_CANCEL"))
+                opt = input(self.i18n.get("PROMPT_SELECT_OPTION")).strip()
                 if opt == '1':
-                    new_dir = input("Ingrese la nueva ruta de carpeta para SVGs: ").strip()
+                    new_dir = input(self.i18n.get("PROMPT_NEW_SVG_DIR")).strip()
                     if os.path.isdir(new_dir):
                         svg_input_dir = new_dir
                         config['SVG_INPUT_DIR'] = new_dir
                         self._save_config(config)
-                        self.logger.info(f"SVG_INPUT_DIR actualizado a: {new_dir}")
+                        self.logger.info(self.i18n.get("INFO_SVG_INPUT_UPDATED", new_dir=new_dir))
                     else:
-                        self.logger.warning("Carpeta no válida.")
+                        self.logger.warning(self.i18n.get("WARN_INVALID_DIR"))
                 elif opt == '2':
-                    self.logger.info("Por favor, coloque al menos un archivo SVG en la carpeta y presione Enter para reintentar.")
+                    self.logger.info(self.i18n.get("INFO_PLACE_SVG_AND_RETRY"))
                     input()
                 elif opt == '0':
-                    self.logger.info("Operación cancelada por el usuario.")
+                    self.logger.info(self.i18n.get("INFO_OPERATION_CANCELLED"))
                     return None
                 else:
-                    self.logger.warning("Opción inválida.")
+                    self.logger.warning(self.i18n.get("WARN_INVALID_OPTION"))

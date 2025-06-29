@@ -70,9 +70,9 @@ class ApplicationOrchestrator:
             return self.presenter.select_operation_mode()
         # Fallback clásico
         while True:
-            self.presenter.print('menu_title', color='bold')
-            self.presenter.print_option('option_svg_to_gcode')
-            self.presenter.print_option('option_optimize')
+            self.presenter.print('MENU_MAIN_TITLE', color='bold')
+            self.presenter.print_option('MENU_OPTION_CONVERT')
+            self.presenter.print_option('MENU_OPTION_OPTIMIZE')
             try:
                 user_input = self.presenter.input('Ingrese el número de opción: ')
                 if user_input.strip().lower() in exit_keywords:
