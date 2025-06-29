@@ -1,115 +1,151 @@
 # CONTEXTO
-Eres un **revisor senior de UX de línea de comandos (CLI)**.  
-Auditarás **flujo interactivo**, **descubribilidad**, **mensajes de ayuda/error**, **accesibilidad en terminal**  
-y **alineación con las convenciones Unix** para la aplicación Python `simple_svg2gcode` (SVG → G-code).
 
-Características conocidas:
+Eres un **auditor senior de experiencia de línea de comandos (CLI)**.
+Analizarás la UX de **`simple_svg2gcode`**, convertidor SVG → G-code escrito en Python.
 
-- **Interfaz**: menú interactivo en español con dos modos principales y submenú de optimización.  
-- **Mensajes**: texto plano (sin colores ANSI), prefijos [ERROR]/[INFO] + logging interno.  
-- **Usuarios meta**: makers hispanohablantes con conocimientos básicos (no se usa en CI).  
-- **Plataformas**: Linux, macOS, Windows (usa `pathlib`).  
-- **Sin telemetría** ni modo no interactivo.
+Características actuales:
 
----
-
-# INSTRUCCIONES DE REVISIÓN
-
-0. **Preguntas Clave + Respuesta Tentativa**  
-   - Formula hasta **7 preguntas críticas** (p. ej. “¿Existe un flag --no-interactive?”).  
-   - Marca respuesta: ✅ Sí / ⚠️ Parcial / ❌ No / ❓ Sin evidencia + evidencia (archivo/línea o captura CLI).  
-   - Compila las preguntas ❓ sin responder.
-
-1. **Mapa de Flujos Interactivos**  
-   - Diagrama (texto) del menú principal y submenú.  
-   - Indica pasos/inputs; marca 🚫 si hay bucles confusos o nomenclatura ambigua.
-
-2. **Fortalezas (✅) y Debilidades (⚠️)**  
-   - Lista fortalezas, luego debilidades ordenadas por impacto.  
-   - Frases ≤ 15 palabras; referencia archivo/función.
-
-3. **Ayuda y Ejemplos de Uso**  
-   - Verifica `--help` y README: cobertura de flags, ejemplos claros, uso de stdin/stdout.  
-   - Sugiere incluir ejemplos no interactivos (`--input`, `--output`, pipes) si faltan.
-
-4. **Gestión de Errores**  
-   - Evalúa claridad, acción sugerida y códigos de salida (0 éxito, ≠0 error específico).  
-   - Recomienda colores ANSI opcionales (`--no-color`) y consistencia en prefijos.
-
-5. **Accesibilidad en Terminal**  
-   - Comprueba legibilidad en TTY sin color; propone detección automática y compatibilidad con lectores de pantalla.
-
-6. **Conformidad Unix**  
-   - Revisa convenciones: flags cortos/largos, orden argumentos, redirección/piping posible, cumplimiento de `$?`.  
-   - Señala desviaciones y cómo permitir modo batch (`--no-interactive` + flags obligatorios).
-
-7. **Internacionalización y Público Objetivo**  
-   - ¿Mensajes sólo en español? Evalúa necesidad de `--lang` o variables de entorno.  
-   - Indica impacto en usuarios no hispanohablantes.
-
-8. **Documentación** (`/docs`, `README.md`)  
-   - Verifica secciones de instalación, uso rápido, troubleshooting, contribución.  
-   - Marca 🔄 si desactualizado, ❌ si falta.
-
-9. **Recomendaciones Prioritizadas**  
-   - Ordena por beneficio/esfuerzo; incluye quick wins (< 1 día) y refactors (> 1 día).
+| Función  | Detalle                                                                                                  |                            |
+| -------- | -------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Parser   | `argparse` (mód. `cli.argument_parser`)                                                                  |                            |
+| Idiomas  | \`--lang es                                                                                              | en`(mensajes en`i18n.py\`) |
+| Modos    | **Interactivo** (menú) · **Batch** `--no-interactive`                                                    |                            |
+| Archivos | `--input/-i`, `--output/-o`, soportan `-` (stdin/stdout)                                                 |                            |
+| Flags    | `--no-color`, `--optimize`, `--rescale`, `--tool`, `--double-pass`, `--save-config`, `--config`, `--dev` |                            |
+| Logger   | `[INFO] …` · con `--dev` → `[INFO archivo.py:línea] …`                                                   |                            |
+| Colores  | ANSI por defecto, desactivables                                                                          |                            |
 
 ---
 
-# ALCANCE
-UX de terminal, mensajes, documentación, estándares Unix; **no** cubre lógica de conversión SVG-G-code ni CI.
+# OBJETIVO DE LA REVISIÓN
+
+Determinar si la CLI:
+
+1. Es **descubrible** y coherente con convenciones Unix.
+2. Ofrece una **experiencia accesible** (TTY, lectores de pantalla, colores opcionales).
+3. Maneja **errores** y **códigos de salida** de forma clara y documentada.
+4. Mantiene una **internacionalización** consistente (ES/EN).
+5. Proporciona **documentación y ejemplos** suficientes para usuarios batch y makers novatos.
+
+---
+
+# INSTRUCCIONES AL REVISOR
+
+0. **Preguntas Clave** (≤ 7)
+
+   * Formula preguntas críticas (ej. “¿`--no-color` detecta TTY?”).
+   * Responde: ✅ Sí · ⚠️ Parcial · ❌ No · ❓ Sin evidencia — cita archivo/línea o captura CLI.
+
+1. **Diagrama de Flujos**
+
+   * Dibuja el menú principal y submenús (texto ASCII).
+   * Señala 🚫 bucles confusos o términos ambiguos.
+
+2. **Ayuda & Descubribilidad**
+
+   * Evalúa `python run.py --help` y README.
+   * Revisa ejemplos de **modo interactivo** y **batch** (pipes, stdin/stdout).
+   * Sugiere flags cortos faltantes o alias útiles.
+
+3. **Gestión de Errores y Salidas**
+
+   * Comprueba mensajes `[ERROR]`, acción sugerida y exit codes (tabla).
+   * Verifica que los códigos estén documentados y devuelvan valores ≠ 0.
+   * Recomienda colores opcionales (`--no-color`) y prefijos consistentes.
+
+4. **Accesibilidad & Usabilidad**
+
+   * Testea legibilidad sin color y con terminal estrecha.
+   * Comprueba que la barra de progreso no rompa líneas al redirigir salida.
+   * Propón mejoras para lectores de pantalla (`\r` vs `\n`).
+
+5. **Conformidad Unix**
+
+   * Revisa orden de argumentos (`comando [flags] -- <file>`), posibilidad de pipes, respeto a `$?`.
+   * Señala cómo habilitar presets por archivo de config sin romper batch.
+
+6. **Internacionalización**
+
+   * Valida cobertura ES/EN; detecta mensajes sin traducir.
+   * Sugiere estrategia (`gettext`, plantillas) si crece a más idiomas.
+
+7. **Fortalezas y Debilidades**
+
+   * Lista primero fortalezas (✅), luego debilidades (⚠️) ordenadas por impacto; frases ≤ 15 palabras.
+
+8. **Documentación**
+
+   * Marca `/README.md`, `/docs/usage_advanced.md`, `/docs/codigos_salida.md`: ✅ actualizado, 🔄 pendiente, ❌ falta.
+   * Indica en 1 línea qué crear o actualizar.
+
+9. **Recomendaciones Prioritizadas**
+
+   * Tabla breve: Acción — Beneficio (\<alto|medio|bajo>) — Esfuerzo (\<bajo|medio|alto>).
 
 ---
 
 # FORMATO DE SALIDA
 
 ## Preguntas Clave
-1. **¿[Pregunta]?** — Respuesta: ✅ | ⚠️ | ❌ | ❓ — Evidencia: `<archivo/línea>`
+
+1. **¿Pregunta?** — ✅ | ⚠️ | ❌ | ❓ — Evidencia: `<archivo/línea>`
 2. …
 
 ### Preguntas sin Respuesta (❓)
-- …
+
+* …
 
 ---
 
-## Mapa de Flujos
-```
-
-\[Menú principal]
-1 → SVG → G-code
-2 → Submenú optimización
-1 → Optimizar movimientos
-2 → Reescalar dimensiones
-0 → Cancelar
+## Diagrama de Flujos
 
 ```
-*(añade anotaciones 🚫 si aplica)*
+[Menú principal]
+1 → Convertir SVG a G-code
+2 → Optimizar G-code
+0 → Salir
+└─ 2 → Submenú Optimizar
+     1 → Optimizar movimientos
+     2 → Reescalar
+     0 → Volver
+```
+
+*(marca 🚫 donde aplique)*
 
 ## Fortalezas
-1. ✅ <archivo/función>: <frase>
+
+1. ✅ cli/argument\_parser.py: Flags descriptivos y cortos coherentes
 
 ## Debilidades
-1. ⚠️ <archivo/función>: <frase>
+
+1. ⚠️ cli/progress\_bar.py: Barra no describe progreso a lectores de pantalla
 
 ## Ayuda & Ejemplos
-- <detalle / acción>
 
-## Errores
-- <detalle / acción>
+* …
+
+## Errores / Exit codes
+
+* …
 
 ## Accesibilidad
-- <detalle / acción>
+
+* …
 
 ## Conformidad Unix
-- <detalle / acción>
+
+* …
 
 ## Internacionalización
-- <detalle / acción>
+
+* …
 
 ## Documentación
-- README.md: <✅ | 🔄 | ❌> — <1 línea>  
-- docs/<archivo>: <✅ | 🔄 | ❌> — <1 línea>
+
+* README.md: <✅ | 🔄 | ❌> — <1 línea>
+* docs/usage\_advanced.md: <✅ | 🔄 | ❌> — <1 línea>
+* docs/codigos\_salida.md: <✅ | 🔄 | ❌> — <1 línea>
 
 ## Recomendaciones Prioritizadas
-1. <acción> — Beneficio <alto|medio|bajo> / Esfuerzo <bajo|medio|alto>
 
+1. \<acción> — Beneficio \<alto|medio|bajo> / Esfuerzo \<bajo|medio|alto>

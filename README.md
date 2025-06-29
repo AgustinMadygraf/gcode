@@ -359,3 +359,5 @@ Esto garantiza archivos más pequeños, recorridos más eficientes y menor desga
   ```
 
 Esto asegura que los logs de usuario siempre muestran el archivo/línea del llamador real, y los de sistema muestran el entrypoint.
+
+> **Nota:** En entornos sin TTY (pipes/redirección), la barra de progreso imprime líneas de avance tipo "Progreso: XX%" para mayor accesibilidad y seguimiento en logs.

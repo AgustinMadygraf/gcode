@@ -38,7 +38,8 @@ MESSAGES = {
         "tool_marker": "Fibrón grueso (plenos/contornos)",
         "double_pass_question": "¿Realizar doble pasada en contornos con lapicera? [S/n]:",
         "using_tool_pen": "Usando lapicera para contornos",
-        "using_tool_marker": "Usando fibrón grueso"
+        "using_tool_marker": "Usando fibrón grueso",
+        "progress_percent": "Progreso: {percent}%"
     },
     "en": {
         "menu_title": "Main Menu",
@@ -75,6 +76,45 @@ MESSAGES = {
         "tool_marker": "Thick marker (fills/outlines)",
         "double_pass_question": "Double pass for pen outlines? [Y/n]:",
         "using_tool_pen": "Using pen for outlines",
-        "using_tool_marker": "Using thick marker"
+        "using_tool_marker": "Using thick marker",
+        "progress_percent": "Progress: {percent}%"
+    },
+    "zh": {
+        "menu_title": "主菜单",
+        "option_svg_to_gcode": "1. 将SVG转换为G代码",
+        "option_optimize": "2. 优化现有G代码文件",
+        "select_file": "选择文件:",
+        "processing_complete": "处理完成",
+        "processing_start": "正在处理文件，请稍候...",
+        "error_file_not_found": "[错误] 文件未找到。提示：检查文件路径和名称。",
+        "error_permission_denied": "[错误] 权限被拒绝。提示：以管理员身份运行或检查文件夹权限。",
+        "error_occurred": "[错误] 发生错误。提示：检查参数后重试。",
+        "no_svg_files": "目录中未找到SVG文件。",
+        "exit": "退出",
+        "enter_number": "输入选项编号",
+        "invalid_selection": "选择无效，请重试。",
+        "invalid_number": "请输入有效数字。",
+        "error_no_svg": "[错误] 未选择有效的SVG文件。操作已取消。提示：选择现有的SVG文件。",
+        "error_no_gcode": "[错误] 未选择有效的G代码文件。操作已取消。提示：选择现有的G代码文件。",
+        "operation_menu_title": "选择要执行的操作",
+        "operation_optimize": "1. 优化移动指令 (G1 → G0)",
+        "operation_rescale": "2. 重新缩放尺寸",
+        "operation_cancelled": "用户已取消操作。",
+        "success_refactor": "[成功] 重构的文件已保存至: {output_file}",
+        "success_optimize": "已将 {changes} 个G1移动指令优化为G0",
+        "success_rescale": "[成功] 缩放后的文件已保存至: {output_file}",
+        "rescale_original": "原始尺寸: {width:.1f}x{height:.1f}毫米",
+        "rescale_new": "新尺寸: {width:.1f}x{height:.1f}毫米",
+        "rescale_factor": "缩放比例: {factor:.3f}",
+        "rescale_cmds": "已缩放 {g0g1} 个线性移动和 {g2g3} 个圆弧",
+        "processing_paths": "正在处理SVG路径...",
+        "generating_gcode": "正在生成G代码...",
+        "tool_selection": "选择工具类型:",
+        "tool_pen": "细笔 (仅轮廓)",
+        "tool_marker": "粗记号笔 (填充/轮廓)",
+        "double_pass_question": "用细笔轮廓执行双路径? [是/否]:",
+        "using_tool_pen": "使用细笔绘制轮廓",
+        "using_tool_marker": "使用粗记号笔",
+        "progress_percent": "进度: {percent}%"
     }
 }

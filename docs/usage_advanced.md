@@ -54,3 +54,5 @@ python run.py --no-interactive --input archivo.gcode --optimize --output - > opt
 cat dibujo.svg | python run.py --no-interactive --input - --output - | \
   python run.py --no-interactive --input - --optimize --output resultado.gcode
 ```
+
+> **Nota:** En entornos sin TTY (pipes/redirección), la barra de progreso imprime líneas de avance tipo "Progreso: XX%" para mayor accesibilidad y seguimiento en logs.
