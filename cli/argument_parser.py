@@ -6,7 +6,16 @@ from pathlib import Path
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Convierte archivos SVG en recorridos G-code para plotters o CNC sencillos.",
+        description="""Convierte archivos SVG en recorridos G-code para plotters o CNC sencillos.
+
+Ejemplos de uso:
+  python run.py --input ejemplo.svg --output salida.gcode
+  python run.py --no-interactive -i ejemplo.svg -o - > resultado.gcode
+  cat ejemplo.svg | python run.py --no-interactive -i - -o salida.gcode
+  python run.py --no-interactive --optimize -i entrada.gcode -o optimizado.gcode
+
+Use -h o --help para ver todas las opciones.
+""",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("-v", "--version", action="version", version="%(prog)s 2.0.0")

@@ -3,6 +3,8 @@ application/orchestrator.py
 Orquestador principal de la aplicación. Separa la lógica de orquestación de la UI.
 """
 
+import os
+
 class ApplicationOrchestrator:
     def __init__(self, container, presenter, filename_service, config, event_bus, workflows, operations, mode_strategy, args=None):
         self.container = container
@@ -25,11 +27,48 @@ class ApplicationOrchestrator:
 
     # Métodos de UI requeridos por estrategias de modo
     def select_operation_mode(self):
-        # Delegar en el presentador o lógica de UI
+        # Adaptación de menú según contexto avanzado
+        args = self.args
+        exit_keywords = {'salir', 'exit', 'quit'}
+        # 1. Si modo batch/no-interactive, omitir menú
+        if args and getattr(args, 'no_interactive', False):
+            return None  # El modo ya se maneja en la estrategia
+        # 2. Si hay input/output por argumento, saltar selección de archivos
+        if args and getattr(args, 'input', None) and getattr(args, 'output', None):
+            self.presenter.print('Ejecución directa: usando archivos especificados por argumentos.', color='cyan')
+            return 1 if str(args.input).lower().endswith('.svg') else 2
+        # 3. Si no hay archivos SVG/GCODE disponibles, menú reducido
+        svg_dir = './data/svg_input'
+        gcode_dir = './data/gcode_output'
+        svg_files = []
+        gcode_files = []
+        try:
+            from adapters.input.svg_file_selector_adapter import _find_svg_files_recursively
+            svg_files = _find_svg_files_recursively(svg_dir)
+        except Exception:
+            pass
+        try:
+            gcode_files = [f for f in os.listdir(gcode_dir) if f.lower().endswith('.gcode')]
+        except Exception:
+            pass
+        if not svg_files and not gcode_files:
+            self.presenter.print('No se encontraron archivos SVG ni GCODE disponibles.', color='yellow')
+            self.presenter.print('Opciones:', color='bold')
+            self.presenter.print_option('1) Cambiar carpeta de entrada')
+            self.presenter.print_option('0) Salir')
+            while True:
+                user_input = self.presenter.input('Ingrese el número de opción: ')
+                if user_input.strip() in {'0', 'salir', 'exit', 'quit'}:
+                    self.presenter.print('\nSaliendo del programa. ¡Hasta luego!', color='yellow')
+                    exit(0)
+                elif user_input.strip() == '1':
+                    self.presenter.print('Funcionalidad para cambiar carpeta aún no implementada.', color='yellow')
+                else:
+                    self.presenter.print('Opción inválida.', color='yellow')
+        # 4. Menú clásico por defecto
         if hasattr(self.presenter, 'select_operation_mode'):
             return self.presenter.select_operation_mode()
-        # Fallback: lógica mínima
-        exit_keywords = {'salir', 'exit', 'quit'}
+        # Fallback clásico
         while True:
             self.presenter.print('menu_title', color='bold')
             self.presenter.print_option('option_svg_to_gcode')

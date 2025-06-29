@@ -29,6 +29,12 @@ pip install svgpathtools numpy
 
 ## Uso
 
+> **Nota:** El menú principal de la aplicación siempre muestra las mismas opciones principales:
+>  1. Convertir SVG → G-code
+>  2. Optimizar G-code (submenú)
+>  0. Salir
+> Estas opciones son fijas salvo que se extienda la aplicación mediante plugins o desarrollo avanzado.
+
 1. Coloca tus archivos `.svg` en la carpeta que desees (por defecto `data/svg_input/`).
 2. Desde la raíz del proyecto, ejecuta:
 
@@ -260,3 +266,18 @@ python run.py --tool pen --double-pass
 # Usar fibrón grueso
 python run.py --tool marker
 ```
+
+## Colores en la terminal
+
+La aplicación detecta automáticamente si la terminal soporta colores ANSI. Si no es compatible, los mensajes se mostrarán sin color.
+
+- Para forzar la salida sin color, usa el flag `--no-color`.
+- En Windows, los colores funcionan en terminales modernas (PowerShell, Windows Terminal, VSCode). En CMD clásico pueden no verse.
+- En scripts o pipes, los colores se desactivan automáticamente.
+
+**Ejemplo:**
+```bash
+python run.py --no-color --input ejemplo.svg --output salida.gcode
+```
+
+> **Advertencia:** Si ves caracteres extraños como `[91m`, tu terminal no soporta colores ANSI. Usa `--no-color`.
