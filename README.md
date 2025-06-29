@@ -327,6 +327,18 @@ python run.py --no-color --input ejemplo.svg --output salida.gcode
 
 > **Advertencia:** Si ves caracteres extraños como `[91m`, tu terminal no soporta colores ANSI. Usa `--no-color`.
 
+## Optimización y compresión automática de G-code
+
+A partir de la versión 2025, la optimización de trayectorias y la compresión inteligente de comandos G-code están **siempre activas**. No es necesario usar flags ni opciones especiales: todos los archivos generados pasan automáticamente por un proceso de optimización y compresión que incluye:
+
+- Reordenamiento global de trayectorias para minimizar movimientos en vacío.
+- Compresión avanzada de comandos (reducción de redundancias, uso de arcos y líneas optimizadas, alternancia entre modos absoluto/relativo si es seguro).
+- Minimización de movimientos no productivos.
+
+Esto garantiza archivos más pequeños, recorridos más eficientes y menor desgaste mecánico, sin intervención manual.
+
+> Si necesitas desactivar la optimización por motivos de debugging avanzado, consulta la documentación técnica para opciones internas.
+
 ## Convención de logging: logger directo vs presentador
 
 - **Mensajes de sistema** (inicio, errores globales, stacktrace): usar el logger directamente. Ejemplo:

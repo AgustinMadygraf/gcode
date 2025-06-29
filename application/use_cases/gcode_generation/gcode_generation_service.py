@@ -15,9 +15,5 @@ class GCodeGenerationService:
         """
         Genera las líneas de G-code a partir de los paths y atributos SVG.
         """
-        context = context or {}
-        gcode_lines = []
-        for path in paths:
-            # Usar el nuevo método que respeta el contexto de herramienta
-            gcode_lines.extend(self.generator.generate_path_gcode(path, self.generator.feed, context=context))
-        return gcode_lines
+        # Usar el método global del adaptador para optimización y logs
+        return self.generator.generate(paths, svg_attr)

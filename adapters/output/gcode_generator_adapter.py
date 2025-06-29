@@ -24,6 +24,7 @@ from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
+from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """Adapter for G-code generation from SVG paths, implementing the domain port."""
@@ -109,13 +110,13 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         # Log orden y distancia antes de optimizar
         if self.logger:
             original_ids = [self._path_id(p, i) for i, p in enumerate(paths)]
-            self.logger.info(f"Orden original de paths: {original_ids}")
+            self.logger.info(f"Orden original de paths: {original_ids[:20]}{'...' if len(original_ids) > 20 else ''}")
             self.logger.info(f"Distancia total original: {self._total_travel_distance(paths):.2f}")
         optimizer = TrajectoryOptimizer()
         optimized_paths = optimizer.optimize_order(paths)
         if self.logger:
             opt_ids = [self._path_id(p, i) for i, p in enumerate(optimized_paths)]
-            self.logger.info(f"Orden optimizado de paths: {opt_ids}")
+            self.logger.info(f"Orden optimizado de paths: {opt_ids[:20]}{'...' if len(opt_ids) > 20 else ''}")
             self.logger.info(f"Distancia total optimizada: {self._total_travel_distance(optimized_paths):.2f}")
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
         xmin, xmax, ymin, ymax = bbox
@@ -133,6 +134,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.logger.info(f"Relative moves enabled: {use_relative_moves}")
         all_points = self.sample_transform_pipeline(optimized_paths, scale)
         gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+        # Compresión inteligente de G-code SIEMPRE activa
+        compression_service = create_gcode_compression_service(logger=self.logger)
+        # Configuración por defecto, puede ser extendida para leer de self.config
+        from domain.compression_config import CompressionConfig
+        compression_config = CompressionConfig()
+        gcode, _ = compression_service.compress(gcode, compression_config)
         if self.logger:
             self.logger.info(f"G-code lines generated: {len(gcode)}")
             self.logger.info(f"Métricas de optimización: {metrics}")
