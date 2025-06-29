@@ -247,6 +247,23 @@ Todos los mensajes de la aplicación usan un sistema de logging centralizado con
 [DEBUG]  [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
 ```
 
+## Logging avanzado y configuración
+
+- El sistema crea un logger independiente para cada ejecución usando `InfraFactory.get_logger()`, configurable por nivel (`INFO`, `DEBUG`), colores y destino.
+- El flag `--dev` activa nivel `DEBUG` y stacktrace extendido en logs y consola.
+- El flag `--no-color` fuerza salida sin colores ANSI.
+- Se recomienda evitar el uso del logger global y siempre inyectar el logger contextual en presenters, contenedores y casos de uso.
+- Para flujos concurrentes o extensiones (API, plugins), crea un logger por contexto usando la infraestructura.
+
+**Ejemplo avanzado:**
+
+```python
+from infrastructure.factories.infra_factory import InfraFactory
+logger = InfraFactory.get_logger(use_color=False, level='DEBUG')
+```
+
+> **Advertencia:** El uso de un logger global único puede causar efectos colaterales en escenarios concurrentes o multi-entrypoint. Consulta `/docs/architecture.md` para recomendaciones.
+
 ## Selección de herramienta
 
 La aplicación permite elegir entre dos tipos de herramientas:

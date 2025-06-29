@@ -123,15 +123,16 @@ event_manager.publish(GcodeGeneratedEvent(...))
 event_manager.subscribe(GcodeGeneratedEvent, handler_func)
 ```
 
-## Logger y Modo Debug
+## Logger y riesgos de logger global
 
-El logger principal de la CLI es una instancia global (`ConsoleLogger`) expuesta por `infrastructure.logger` y accedida mediante `InfraFactory.get_logger()`. El nivel de logging puede modificarse en tiempo de ejecución (por ejemplo, usando el flag `--dev`), lo que afecta a todos los consumidores que usen la instancia global.
+El sistema soporta la creación de loggers por contexto/app usando `InfraFactory.get_logger()`, permitiendo configurar nivel, color y destino de logs para cada ejecución.
 
-Para pruebas, servicios concurrentes o componentes que requieran aislamiento, se recomienda inyectar instancias separadas usando el puerto `LoggerPort` y el adaptador correspondiente (`LoggerAdapter`).
+> **Advertencia:** El uso de un logger global único puede causar efectos colaterales en escenarios concurrentes, multi-entrypoint o cuando se extienden los flujos (por ejemplo, API, threads, plugins). Se recomienda siempre inyectar un logger contextual y evitar dependencias directas al logger global.
 
-**Riesgo:** Si varias partes del sistema cambian el nivel del logger global, pueden interferir entre sí. En CLI single-thread esto no suele ser un problema, pero debe considerarse para futuras extensiones.
-
-El flag `--dev` activa el modo desarrollador, elevando el nivel de logging a DEBUG y mostrando stacktrace extendido en caso de error.
+**Recomendaciones:**
+- Usar siempre `InfraFactory.get_logger()` para obtener loggers configurados por contexto.
+- Inyectar el logger en presenters, contenedores y casos de uso.
+- Documentar y testear el comportamiento esperado en modo `--dev` y en flujos concurrentes.
 
 ## Notas y Recomendaciones
 - Mantener la documentación de modelos e invariantes en `docs/domain_models.md`.

@@ -14,14 +14,13 @@ from infrastructure.logger import logger
 def main():
     parser = create_parser()
     args = parser.parse_args()
-    # Configurar logger según modo dev
-    logger = InfraFactory.get_logger()
+    # Configurar logger según modo dev y color
+    use_color = not getattr(args, 'no_color', False)
+    log_level = 'DEBUG' if getattr(args, 'dev', False) else 'INFO'
+    logger = InfraFactory.get_logger(use_color=use_color, level=log_level)
     if getattr(args, 'dev', False):
-        logger.set_level('DEBUG')
         logger.debug("[DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.")
-    else:
-        logger.set_level('INFO')  # Mostrar menús y opciones siempre
-    app = create_svg_to_gcode_app(args)
+    app = create_svg_to_gcode_app(args, logger=logger)
     try:
         return app.run()
     except InputValidationError as e:
@@ -40,7 +39,8 @@ def main():
         logger.error(f"Error inesperado: {e}")
         if getattr(args, 'dev', False):
             import traceback
-            traceback.print_exc()
+            tb_str = traceback.format_exc()
+            logger.error(tb_str)
         return 99
 
 if __name__ == "__main__":
