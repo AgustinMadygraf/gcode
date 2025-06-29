@@ -8,3 +8,4 @@ data/gcode_output/*
 docs/00-Prompt-for-ProjectAnalysis.md
 vulture/vulture_report.txt
 vulture/candidates.txt
+vulture/ok_removal_plan.txt

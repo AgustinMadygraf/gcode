@@ -13,9 +13,9 @@ plan_file = 'vulture/ok_removal_plan.txt'
 with open(candidates_file, 'r', encoding='utf-8') as f:
     candidates = set(line.strip() for line in f if line.strip())
 
-# Parsear el reporte de vulture
+# Parsear el reporte de vulture (ahora con encoding utf-16)
 ok_locations = []
-with open(vulture_report, 'r', encoding='utf-8') as f:
+with open(vulture_report, 'r', encoding='utf-16') as f:
     for line in f:
         m = re.match(r"(.+?):(\d+): unused (?:class|method|function|variable|import) '([^']+)'", line)
         if m:
