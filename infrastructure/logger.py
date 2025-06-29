@@ -52,7 +52,7 @@ class ConsoleLogger:
         lvl = self.LEVELS.get(level, 20)
         return lvl >= self.level or level in ('INPUT', 'OPTION')
 
-    def _log(self, level, msg, *args, **kwargs):
+    def _log(self, level, msg, *args, stacklevel=2, **kwargs):
         if not self._should_log(level):
             return
         prefix = LEVEL_PREFIXES.get(level, '[INFO]')
@@ -62,38 +62,37 @@ class ConsoleLogger:
         if (level == 'INFO' and self.show_file_line) or (level == 'DEBUG' and self.show_file_line):
             import os
             stack = inspect.stack()
-            logger_file = os.path.abspath(__file__)
-            caller_frame = None
-            for frame_info in stack:
-                frame_file = os.path.abspath(frame_info.filename)
-                if frame_file != logger_file:
-                    caller_frame = frame_info
-                    break
-            if caller_frame:
-                filename = os.path.basename(caller_frame.filename)
-                lineno = caller_frame.lineno
-                prefix = f"[{level} {filename}:{lineno}]" if level in LEVEL_PREFIXES else f"[INFO {filename}:{lineno}]"
-            else:
-                prefix = LEVEL_PREFIXES.get(level, '[INFO]')
+            idx = stacklevel
+            if idx >= len(stack):
+                idx = len(stack) - 1
+            frame_info = stack[idx]
+            filename = os.path.basename(frame_info.filename)
+            lineno = frame_info.lineno
+            prefix = f"[{level} {filename}:{lineno}]" if level in LEVEL_PREFIXES else f"[INFO {filename}:{lineno}]"
         else:
             prefix = LEVEL_PREFIXES.get(level, '[INFO]')
         print(f"{color}{prefix} {msg}{reset}", file=self.stream)
 
-    def info(self, msg, *args, **kwargs):
-        self._log('INFO', msg, *args, **kwargs)
-    def debug(self, msg, *args, **kwargs):
-        self._log('DEBUG', msg, *args, **kwargs)
-    def error(self, msg, *args, **kwargs):
-        self._log('ERROR', msg, *args, **kwargs)
-    def warning(self, msg, *args, **kwargs):
-        self._log('WARNING', msg, *args, **kwargs)
-    def input(self, msg, *args, **kwargs):
-        self._log('INPUT', msg, *args, **kwargs)
-    def option(self, msg, *args, **kwargs):
-        self._log('OPTION', msg, *args, **kwargs)
+    def info(self, msg, *args, stacklevel=2, **kwargs):
+        self._log('INFO', msg, *args, stacklevel=stacklevel, **kwargs)
+    def debug(self, msg, *args, stacklevel=2, **kwargs):
+        self._log('DEBUG', msg, *args, stacklevel=stacklevel, **kwargs)
+    def error(self, msg, *args, stacklevel=2, **kwargs):
+        self._log('ERROR', msg, *args, stacklevel=stacklevel, **kwargs)
+    def warning(self, msg, *args, stacklevel=2, **kwargs):
+        self._log('WARNING', msg, *args, stacklevel=stacklevel, **kwargs)
+    def input(self, msg, *args, stacklevel=2, **kwargs):
+        self._log('INPUT', msg, *args, stacklevel=stacklevel, **kwargs)
+    def option(self, msg, *args, stacklevel=2, **kwargs):
+        self._log('OPTION', msg, *args, stacklevel=stacklevel, **kwargs)
 
-# Instancia global por defecto
-logger = ConsoleLogger(use_color=True)
+# Instancia global por defecto (solo para fallback o tests; NO usar en producción)
+# Usar siempre get_logger() y pasar el logger configurado desde run.py
+logger = None
 
 def get_logger(use_color=True, level='INFO', show_file_line=False):
+    """
+    Retorna una instancia de ConsoleLogger configurada.
+    Siempre usar esta función y pasar el logger a los componentes.
+    """
     return ConsoleLogger(use_color=use_color, level=level, show_file_line=show_file_line)

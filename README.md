@@ -326,3 +326,24 @@ python run.py --no-color --input ejemplo.svg --output salida.gcode
 ```
 
 > **Advertencia:** Si ves caracteres extraños como `[91m`, tu terminal no soporta colores ANSI. Usa `--no-color`.
+
+## Convención de logging: logger directo vs presentador
+
+- **Mensajes de sistema** (inicio, errores globales, stacktrace): usar el logger directamente. Ejemplo:
+  ```python
+  logger.debug("[DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.")
+  ```
+  Salida:
+  ```
+  [DEBUG run.py:23] [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
+  ```
+- **Mensajes de usuario/interacción**: usar siempre el presentador o adapters, que pasan el logger con stacklevel adecuado. Ejemplo:
+  ```python
+  presenter.print("Menú Principal")
+  ```
+  Salida:
+  ```
+  [INFO orchestrator.py:73] Menú Principal
+  ```
+
+Esto asegura que los logs de usuario siempre muestran el archivo/línea del llamador real, y los de sistema muestran el entrypoint.

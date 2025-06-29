@@ -8,7 +8,6 @@ from typing import Optional
 import os
 import json
 from pathlib import Path
-from infrastructure.logger import logger
 
 def _find_svg_files_recursively(directory: str):
     """Busca archivos SVG de forma recursiva en el directorio dado."""
@@ -25,6 +24,9 @@ class SvgFileSelectorAdapter(FileSelectorPort):
     Permite al usuario navegar y seleccionar archivos SVG, y actualiza la configuración de la carpeta de entrada.
     """
     CONFIG_PATH = os.path.join(os.path.dirname(__file__), '../../infrastructure/config/config.json')
+
+    def __init__(self, logger):
+        self.logger = logger
 
     def _load_config(self):
         """Carga la configuración desde el archivo JSON."""
@@ -46,26 +48,26 @@ class SvgFileSelectorAdapter(FileSelectorPort):
         while True:
             svg_files = _find_svg_files_recursively(svg_input_dir)
             if svg_files:
-                logger.info("Archivos SVG encontrados:")
+                self.logger.info("Archivos SVG encontrados:")
                 for idx, file in enumerate(svg_files, 1):
-                    logger.option(f"  [{idx}] {file}")
-                logger.option("  [0] Cancelar")
+                    self.logger.option(f"  [{idx}] {file}")
+                self.logger.option("  [0] Cancelar")
                 try:
                     choice = int(input("[INPUT] Seleccione un archivo SVG por número: "))
                 except ValueError:
-                    logger.warning("Opción inválida.")
+                    self.logger.warning("Opción inválida.")
                     continue
                 if choice == 0:
-                    logger.info("Operación cancelada por el usuario.")
+                    self.logger.info("Operación cancelada por el usuario.")
                     return None
                 if 1 <= choice <= len(svg_files):
                     return svg_files[choice - 1]
-                logger.warning("Selección fuera de rango.")
+                self.logger.warning("Selección fuera de rango.")
             else:
-                logger.warning(f"No se encontraron archivos SVG en '{svg_input_dir}'.")
-                logger.info("1) Asignar nueva carpeta de entrada")
-                logger.info("2) Reintentar (debe colocar un archivo SVG en la carpeta actual)")
-                logger.info("0) Cancelar")
+                self.logger.warning(f"No se encontraron archivos SVG en '{svg_input_dir}'.")
+                self.logger.info("1) Asignar nueva carpeta de entrada")
+                self.logger.info("2) Reintentar (debe colocar un archivo SVG en la carpeta actual)")
+                self.logger.info("0) Cancelar")
                 opt = input("Seleccione una opción: ").strip()
                 if opt == '1':
                     new_dir = input("Ingrese la nueva ruta de carpeta para SVGs: ").strip()
@@ -73,14 +75,14 @@ class SvgFileSelectorAdapter(FileSelectorPort):
                         svg_input_dir = new_dir
                         config['SVG_INPUT_DIR'] = new_dir
                         self._save_config(config)
-                        logger.info(f"SVG_INPUT_DIR actualizado a: {new_dir}")
+                        self.logger.info(f"SVG_INPUT_DIR actualizado a: {new_dir}")
                     else:
-                        logger.warning("Carpeta no válida.")
+                        self.logger.warning("Carpeta no válida.")
                 elif opt == '2':
-                    logger.info("Por favor, coloque al menos un archivo SVG en la carpeta y presione Enter para reintentar.")
+                    self.logger.info("Por favor, coloque al menos un archivo SVG en la carpeta y presione Enter para reintentar.")
                     input()
                 elif opt == '0':
-                    logger.info("Operación cancelada por el usuario.")
+                    self.logger.info("Operación cancelada por el usuario.")
                     return None
                 else:
-                    logger.warning("Opción inválida.")
+                    self.logger.warning("Opción inválida.")

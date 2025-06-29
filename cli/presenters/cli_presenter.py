@@ -17,7 +17,7 @@ class CliPresenter:
             message = self.i18n.get(message)
         if self.color_service and color:
             message = self.color_service.colorize(message, color)
-        self.logger.info(message)
+        self.logger.info(message, stacklevel=3)
 
     def input(self, prompt, color=None):
         if self.color_service and color:
@@ -30,8 +30,7 @@ class CliPresenter:
         self.print_colored(message, level="error", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
 
     def print_success(self, message, file=None, line=None, dev_mode=False, use_color=True):
-        # Solo pasar el mensaje, el logger agrega el prefijo
-        self.logger.info(message)
+        self.logger.info(message, stacklevel=3)
 
     def print_warning(self, message, file=None, line=None, dev_mode=False, use_color=True):
         self.print_colored(message, level="warning", file=file, line=line, dev_mode=dev_mode, use_color=use_color)
@@ -88,24 +87,15 @@ class CliPresenter:
             self.logger.warning("Por favor, responda 's' (sí) o 'n' (no).")
 
     def print_colored(self, message, level="info", file=None, line=None, dev_mode=False, use_color=True):
-        prefix_map = {
-            "debug": "[DEBUG]",
-            "info": "[INFO]",
-            "warning": "[WARN]",
-            "error": "[ERROR]"
-        }
-        prefix = prefix_map.get(level, "[INFO]")
-        if dev_mode and file and line:
-            prefix = f"{prefix} - {file}:{line}"
-        msg = f"{prefix} {message}"
+        # Eliminar prefijos manuales, dejar que el logger maneje formato y color
         if level == "debug":
-            self.logger.debug(msg)
+            self.logger.debug(message, stacklevel=3)
         elif level == "warning":
-            self.logger.warning(msg)
+            self.logger.warning(message, stacklevel=3)
         elif level == "error":
-            self.logger.error(msg)
+            self.logger.error(message, stacklevel=3)
         else:
-            self.logger.info(msg)
+            self.logger.info(message, stacklevel=3)
 
     def print_option(self, message, color=None):
         # Si es clave i18n, traducir

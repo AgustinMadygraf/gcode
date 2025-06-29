@@ -61,7 +61,7 @@ from cli.utils.cli_event_manager import CliEventManager
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
     def __init__(self, args=None, logger=None):
-        file_selector: FileSelectorPort = SvgFileSelectorAdapter()
+        file_selector: FileSelectorPort = SvgFileSelectorAdapter(logger)
         self.container = Container(file_selector=file_selector, logger=logger)
         self.filename_service: FilenameServicePort = self.container.filename_gen
         self.config = self.container.config
@@ -83,7 +83,7 @@ class SvgToGcodeApp:
         self.language = detect_language(args)
         self.i18n = I18nService(MESSAGES, default_lang=self.language)
         self.colors = TerminalColors(self.use_colors)
-        self.presenter = CliPresenter(i18n=self.i18n, color_service=self.colors)
+        self.presenter = CliPresenter(i18n=self.i18n, color_service=self.colors, logger_instance=self.logger)
         self.config_manager = ConfigManager(args)
         self.user_config = self.config_manager.user_config
         # --- Nueva gestión de eventos (refactor: delegada) ---
