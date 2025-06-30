@@ -47,18 +47,22 @@ class GCodeBuilderHelper:
             builder.tool_down(self.cmd_down)
             builder.dwell(self.dwell_ms / 1000.0)
             n = len(points)
+            last_feed = None
             for j in range(1, n):
                 prev_pt = points[j-2] if j > 1 else None
                 curr_pt = points[j-1]
                 next_pt = points[j]
                 future_pt = points[j+1] if j+1 < n else None
                 feed = feed_fn(prev_pt, curr_pt, next_pt, future_pt)
+                # Incluir feed en el primer G1 del trazo o si cambia el valor
+                feed_to_use = feed if (j == 1 or feed != last_feed) else None
                 if use_relative_moves:
                     dx = next_pt.x - curr_pt.x
                     dy = next_pt.y - curr_pt.y
-                    builder.commands.append(RelativeMoveCommand(dx, dy, feed=feed, rapid=False))
+                    builder.commands.append(RelativeMoveCommand(dx, dy, feed=feed_to_use, rapid=False))
                 else:
-                    builder.move_to(next_pt.x, next_pt.y, feed=feed, rapid=False)
+                    builder.move_to(next_pt.x, next_pt.y, feed=feed_to_use, rapid=False)
+                last_feed = feed
                 last_pos = next_pt
         builder.dwell(self.dwell_ms / 1000.0)
         builder.tool_up(self.cmd_up)

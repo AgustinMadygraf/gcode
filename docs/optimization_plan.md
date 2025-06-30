@@ -156,3 +156,37 @@ Para minimizar movimientos en vacío y mejorar la continuidad del trazado, se re
 - [ ] Validación continua y ajuste fino según feedback de usuario y casos reales.
 
 > **Nota:** Para validar la optimización, se recomienda usar SVGs pequeños y revisar los logs generados por el sistema.
+
+## Optimización de la Inclusión del Feed Rate (F...) en G-code
+
+A partir de la versión 2025, la lógica de generación de G-code implementa una optimización específica para la inclusión del feed rate (`F...`) en los comandos `G1`:
+
+- **Primer G1 de cada trazo:** El feed rate se incluye explícitamente en el primer comando `G1` de cada trazo (secuencia de movimientos continuos).
+- **Cambio de feed rate:** Si el valor del feed rate cambia (por ejemplo, por ajuste automático en curvas), se vuelve a incluir en el siguiente `G1`.
+- **Cambio de modo:** Tras un comando `G0` (movimiento rápido) o un cambio de herramienta, el feed rate se vuelve a especificar en el primer `G1`.
+- **Evitar repeticiones:** Si el valor del feed rate no cambia, no se repite en líneas consecutivas.
+
+### Justificación técnica
+- **Compatibilidad:** Algunos controladores CNC solo reconocen el feed rate cuando se especifica en el primer `G1` de una secuencia o tras un cambio de modo.
+- **Robustez:** Minimiza errores por omisión de feed rate y reduce redundancia en el archivo G-code.
+- **Eficiencia:** Archivos más pequeños y fáciles de depurar.
+
+### Ejemplo de G-code generado
+```gcode
+G0 X0 Y0
+M3 S1000
+G1 X10 Y0 F1000   ; Primer G1 incluye feed rate
+G1 X20 Y0          ; No repite F si no cambia
+G1 X30 Y10 F800    ; Cambia el feed rate, se incluye
+G1 X40 Y10         ; No repite F
+M5
+G0 X0 Y0
+```
+
+### Implementación
+- La lógica reside en el helper de construcción de G-code (`GCodeBuilderHelper.build`).
+- Se almacena el último feed rate utilizado y se compara en cada comando `G1`.
+- El pipeline de generación asegura que los puntos y trazos se procesen correctamente para aplicar esta lógica.
+- Los tests de integración y unitarios validan que el feed rate solo aparece donde corresponde.
+
+> Para detalles de la arquitectura y el flujo, ver también la documentación en `README.md` y `docs/architecture.md`.

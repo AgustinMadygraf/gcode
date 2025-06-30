@@ -38,6 +38,4 @@ class PathSampler(PathSamplerPort):
             n = max(1, int(math.ceil(seg_len / self.step)))
             for t in np.linspace(0, 1, n + 1):
                 z = seg.point(t)
-                #                if self.logger:
-                #                    self.logger.debug(f"Sampled point: ({z.real:.3f}, {z.imag:.3f})")
                 yield Point(z.real, z.imag)

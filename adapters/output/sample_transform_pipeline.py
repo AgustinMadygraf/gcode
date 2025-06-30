@@ -14,7 +14,9 @@ class SampleTransformPipeline:
 
     def process(self, paths: List[Any]) -> List[List[Point]]:
         result = []
-        for p in paths:
+        for idx, p in enumerate(paths):
+            if not hasattr(p, '__iter__') or isinstance(p, (str, bytes)):
+                raise TypeError(f"[ERROR] Path {idx} no es iterable: {type(p)}. Se esperaba una lista de segmentos.")
             points = []
             for pt in self.path_sampler.sample(p):
                 x, y = self.transform_manager.apply(pt.x, pt.y)

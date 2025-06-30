@@ -363,3 +363,30 @@ Esto garantiza archivos más pequeños, recorridos más eficientes y menor desga
 Esto asegura que los logs de usuario siempre muestran el archivo/línea del llamador real, y los de sistema muestran el entrypoint.
 
 > **Nota:** En entornos sin TTY (pipes/redirección), la barra de progreso imprime líneas de avance tipo "Progreso: XX%" para mayor accesibilidad y seguimiento en logs.
+
+## Optimización del Feed Rate en G-code (2025+)
+
+A partir de la versión 2025, la generación de G-code implementa una optimización avanzada del feed rate (`F...`):
+
+- El feed rate solo se incluye en el **primer comando G1** de cada trazo (secuencia de movimientos continuos).
+- Si el valor del feed rate cambia (por ejemplo, por ajuste automático en curvas), se vuelve a incluir en el siguiente `G1`.
+- Tras un cambio de modo (por ejemplo, después de un `G0` o cambio de herramienta), el feed rate se vuelve a especificar en el primer `G1`.
+- Si el valor no cambia, no se repite en líneas consecutivas.
+
+Esto maximiza la compatibilidad con controladores CNC y plotters, y genera archivos G-code más limpios y robustos.
+
+**Ejemplo:**
+```gcode
+G0 X0 Y0
+M3 S1000
+G1 X10 Y0 F1000   ; Primer G1 incluye feed rate
+G1 X20 Y0          ; No repite F si no cambia
+G1 X30 Y10 F800    ; Cambia el feed rate, se incluye
+G1 X40 Y10         ; No repite F
+M5
+G0 X0 Y0
+```
+
+La lógica es automática y no requiere intervención del usuario. Si usas velocidad variable en curvas, el sistema ajusta el feed rate solo donde corresponde.
+
+> Para detalles técnicos, consulta la sección de optimización en [docs/optimization_plan.md](docs/optimization_plan.md).

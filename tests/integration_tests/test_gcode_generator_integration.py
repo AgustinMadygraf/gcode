@@ -21,11 +21,11 @@ class TestGCodeGeneratorIntegration(unittest.TestCase):
             paths = [[seg]]
             svg_attr = {"viewBox": "0 0 10 10", "width": "10"}
             generator = GCodeGeneratorAdapter(
-                path_sampler=PathSampler(5),
+                path_sampler=PathSampler(1),
                 feed=1000,
                 cmd_down="M3 S1000",
                 cmd_up="M5",
-                step_mm=5,
+                step_mm=1,
                 dwell_ms=100,
                 max_height_mm=10,
                 logger=None,

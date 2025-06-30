@@ -41,30 +41,29 @@ class DummySegment:
     una representación mínima de un segmento de línea o curva.
     """
     def __init__(self, start=(0,0), end=(1,1)):
-        self.start = start
-        self.end = end
+        self.start = complex(start[0], start[1])
+        self.end = complex(end[0], end[1])
+        self.start_point = self.start
+        self.end_point = self.end
         
     def point(self, t):
         """
         Devuelve un punto en el segmento para el valor t (entre 0 y 1).
         """
         if t == 0:
-            return complex(*self.start)
+            return self.start
         elif t == 1:
-            return complex(*self.end)
+            return self.end
         else:
-            # Interpolación lineal
-            x = self.start[0] + t * (self.end[0] - self.start[0])
-            y = self.start[1] + t * (self.end[1] - self.start[1])
+            x = self.start.real + t * (self.end.real - self.start.real)
+            y = self.start.imag + t * (self.end.imag - self.start.imag)
             return complex(x, y)
             
     def length(self):
         """
         Calcula la longitud del segmento basada en los puntos de inicio y fin.
         """
-        x0, y0 = self.start
-        x1, y1 = self.end
-        return ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+        return abs(self.end - self.start)
 
 
 class CustomMockSegment(MockSegment):

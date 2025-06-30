@@ -139,6 +139,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         return dist
 
     def generate(self, paths, svg_attr: Dict[str, Any]) -> List[str]:
+        gcode = []  # Valor por defecto para evitar UnboundLocalError
         # Log orden y distancia antes de optimizar
         if self.logger:
             self.optimization_logger.log_paths_order(paths, self._path_id, "DEBUG_PATHS_ORDER_ORIG")
@@ -165,23 +166,30 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
             use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
             self.optimization_logger.log_config_flags(remove_border, use_relative_moves)
-            all_points = self.sample_transform_pipeline(optimized_paths, scale)
-            gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
-            # Compresión configurable
-            compression_service = GcodeCompressionFactory.get_compression_service(self.config, logger=self.logger)
-            if compression_service:
-                from domain.compression_config import CompressionConfig
-                compression_config = CompressionConfig()
-                gcode, _ = compression_service.compress(gcode, compression_config)
-            if self.logger:
-                self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
-                self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
-            if remove_border:
-                detector = GCodeBorderRectangleDetector()
-                border_filter = GCodeBorderFilter(detector)
-                gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
-                if isinstance(gcode, str):
-                    gcode = gcode.split('\n')
+        # --- Mover la generación de G-code fuera del if self.logger ---
+        bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
+        scale = ScaleManager.viewbox_scale(svg_attr)
+        scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
+        scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
+        remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
+        use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
+        all_points = self.sample_transform_pipeline(optimized_paths, scale)
+        gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+        # Compresión configurable
+        compression_service = GcodeCompressionFactory.get_compression_service(self.config, logger=self.logger)
+        if compression_service:
+            from domain.compression_config import CompressionConfig
+            compression_config = CompressionConfig()
+            gcode, _ = compression_service.compress(gcode, compression_config)
+        if self.logger:
+            self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
+            self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
+        if remove_border:
+            detector = GCodeBorderRectangleDetector()
+            border_filter = GCodeBorderFilter(detector)
+            gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
+            if isinstance(gcode, str):
+                gcode = gcode.split('\n')
         return gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:

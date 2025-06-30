@@ -22,11 +22,11 @@ class TestGCodeCMDUP(unittest.TestCase):
             paths = [[seg1], [seg2]]  # Dos trazos separados
             svg_attr = {"viewBox": "0 0 20 10", "width": "20"}
             generator = GCodeGeneratorAdapter(
-                path_sampler=PathSampler(5),
+                path_sampler=PathSampler(1),
                 feed=1000,
                 cmd_down="M3 S1000",
                 cmd_up="M5",
-                step_mm=5,
+                step_mm=1,
                 dwell_ms=100,
                 max_height_mm=10,
                 logger=None,
@@ -34,6 +34,7 @@ class TestGCodeCMDUP(unittest.TestCase):
                 optimizer=OptimizationChain(),  # Inyectar la cadena de optimización
                 config=DummyConfig(tmpdir)  # Mock config
             )
+            print(f"[DEBUG] paths: {paths}")  # Print temporal para inspección
             gcode_service = GCodeGenerationService(generator)
             gcode = gcode_service.generate(paths, svg_attr)
             # Debe haber al menos dos ocurrencias de CMD_UP (M5) separando los trazos
@@ -50,6 +51,29 @@ class TestGCodeCMDUP(unittest.TestCase):
                     next_line.startswith("M3"),
                     f"Línea inesperada tras M5: {next_line}"
                 )
+
+    def test_path_sampler_direct(self):
+        from adapters.input.path_sampler import PathSampler
+        from tests.mocks.mock_geometry import DummySegment
+        sampler = PathSampler(1)
+        seg = DummySegment(start=(0,0), end=(5,0))
+        points = list(sampler.sample([seg]))
+        print(f"[DEBUG] Puntos generados por PathSampler: {points}")
+        self.assertGreaterEqual(len(points), 2)
+
+    def test_sample_transform_pipeline_direct(self):
+        from adapters.input.path_sampler import PathSampler
+        from adapters.output.sample_transform_pipeline import SampleTransformPipeline
+        from tests.mocks.mock_geometry import DummySegment
+        from infrastructure.transform_manager import TransformManager
+        from tests.mocks.mock_strategy import MockStrategy
+        sampler = PathSampler(1)
+        transform_manager = TransformManager([MockStrategy()])
+        pipeline = SampleTransformPipeline(sampler, transform_manager, 1.0)
+        seg = DummySegment(start=(0,0), end=(5,0))
+        points_list = pipeline.process([[seg]])
+        print(f"[DEBUG] Puntos generados por pipeline: {points_list}")
+        self.assertGreaterEqual(len(points_list[0]), 2)
 
 if __name__ == "__main__":
     unittest.main()
