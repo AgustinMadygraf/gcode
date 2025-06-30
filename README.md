@@ -70,6 +70,19 @@ python run.py
 - `REMOVE_SVG_BORDER` (bool): Si es `true`, intenta eliminar el marco/borde exterior del SVG si coincide exactamente con el `viewBox`.
 - `BORDER_DETECTION_TOLERANCE` (float): Tolerancia relativa (por defecto 0.05) usada para comparar los márgenes del path con el `viewBox`. Un valor menor hace la detección más estricta; un valor mayor la hace más laxa. Si tienes rectángulos internos que no deben eliminarse, ajusta este valor para evitar falsos positivos.
 
+## Parámetros de área y superficie
+
+Desde la versión 2025, la configuración de dimensiones máximas y área de escritura se realiza mediante los siguientes campos en `infrastructure/config/config.json`:
+
+- `PLOTTER_MAX_AREA_MM` (list[float, float]): Área máxima física de la plotter, en milímetros. Ejemplo: `[300.0, 200.0]` (ancho x alto).
+- `TARGET_WRITE_AREA_MM` (list[float, float]): Área objetivo de superficie a escribir, en milímetros. Ejemplo: `[210.0, 148.0]` (ancho x alto, útil para centrar o escalar a tamaño A5, A4, etc).
+
+> **Nota:** El campo `MAX_HEIGHT_MM` ha sido eliminado y reemplazado por `PLOTTER_MAX_AREA_MM` para mayor flexibilidad y claridad.
+
+La aplicación valida automáticamente estos valores y, si son inválidos, utiliza los valores por defecto definidos en `config_default.json`.
+
+---
+
 ## Avanzado: Velocidad variable en curvas
 
 Desde la versión 2025, el sistema ajusta automáticamente la velocidad (feed rate) en curvas para mejorar la calidad de línea y reducir el desgaste de la lapicera:

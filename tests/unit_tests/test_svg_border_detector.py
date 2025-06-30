@@ -66,8 +66,8 @@ class TestSvgBorderDetector(unittest.TestCase):
         )
         svg_attr = {"viewBox": "0 0 100 100"}
         # Tolerancia muy estricta
-        detector = SvgBorderDetector(tolerance=0.00001)
         logger = InfraFactory.get_logger()
+        detector = SvgBorderDetector(tolerance=0.00001, logger=logger)
         self.assertTrue(detector.matches_svg_bounds(rect, svg_attr))
         # Rectángulo desplazado apenas fuera de tolerancia
         rect2 = Path(

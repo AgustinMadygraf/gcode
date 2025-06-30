@@ -24,6 +24,7 @@ class Config:
                 self._data.update(user_data)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"[Config] Error loading config.json: {e}. Using empty config.")
+        self._validate_config()
 
     def __getitem__(self, key):
         return self._data[key]
@@ -112,6 +113,16 @@ class Config:
         """Velocidad específica para fibrón (usualmente más lenta que lapicera)"""
         return self._data.get("MARKER_FEED_RATE", self.feed * 0.7)  # 70% de la velocidad normal
 
+    @property
+    def plotter_max_area_mm(self):
+        """Devuelve el área máxima de la plotter [ancho_mm, alto_mm] como lista de dos floats."""
+        return self._data.get("PLOTTER_MAX_AREA_MM", [300.0, 200.0])
+
+    @property
+    def target_write_area_mm(self):
+        """Devuelve el área objetivo de escritura [ancho_mm, alto_mm] como lista de dos floats."""
+        return self._data.get("TARGET_WRITE_AREA_MM", [210.0, 148.0])
+
     def get_gcode_output_dir(self):
         "Compatibilidad: Devuelve el directorio de salida de GCODE."
         return self.gcode_output_dir
@@ -131,3 +142,34 @@ class Config:
     def get_mirror_vertical(self):
         "Compatibilidad: Devuelve si se debe aplicar la inversión vertical."
         return self.mirror_vertical
+
+    def _validate_area(self, value, key, default):
+        """Valida que value sea una lista de dos floats positivos. Si no, retorna default y loguea warning."""
+        if not (isinstance(value, list) and len(value) == 2 and all(isinstance(x, (int, float)) and x > 0 for x in value)):
+            print(f"[Config] Valor inválido para '{key}', usando valor por defecto: {default}")
+            return default
+        return value
+
+    def _validate_config(self):
+        """Valida y corrige los campos críticos de la configuración usando los valores por defecto si es necesario."""
+        # Cargar defaults
+        default_path = Path(__file__).parent / "config_default.json"
+        with open(default_path, encoding="utf-8") as f:
+            defaults = json.load(f)
+        # Validar áreas
+        self._data["PLOTTER_MAX_AREA_MM"] = self._validate_area(
+            self._data.get("PLOTTER_MAX_AREA_MM", defaults["PLOTTER_MAX_AREA_MM"]),
+            "PLOTTER_MAX_AREA_MM",
+            defaults["PLOTTER_MAX_AREA_MM"]
+        )
+        self._data["TARGET_WRITE_AREA_MM"] = self._validate_area(
+            self._data.get("TARGET_WRITE_AREA_MM", defaults["TARGET_WRITE_AREA_MM"]),
+            "TARGET_WRITE_AREA_MM",
+            defaults["TARGET_WRITE_AREA_MM"]
+        )
+        # El área objetivo no debe exceder el área máxima
+        t = self._data["TARGET_WRITE_AREA_MM"]
+        m = self._data["PLOTTER_MAX_AREA_MM"]
+        if t[0] > m[0] or t[1] > m[1]:
+            print(f"[Config] TARGET_WRITE_AREA_MM excede PLOTTER_MAX_AREA_MM, usando valor por defecto: {defaults['TARGET_WRITE_AREA_MM']}")
+            self._data["TARGET_WRITE_AREA_MM"] = defaults["TARGET_WRITE_AREA_MM"]

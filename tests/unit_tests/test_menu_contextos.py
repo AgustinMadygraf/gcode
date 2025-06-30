@@ -1,10 +1,13 @@
 import types
 import pytest
 from application.orchestrator import ApplicationOrchestrator
+from infrastructure.i18n.i18n_service import I18nService
+from cli.i18n import MESSAGES
 
 class DummyPresenter:
     def __init__(self):
         self.messages = []
+        self.i18n = I18nService(MESSAGES, default_lang="es")
     def print(self, msg, color=None):
         self.messages.append((msg, color))
     def print_option(self, msg):

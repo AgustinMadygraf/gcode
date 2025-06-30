@@ -1,5 +1,5 @@
 {
-    "_PATH":  "infrastructure/config/config.json",
+  "_PATH":  "infrastructure/config/config.json",
   "SVG_INPUT_DIR": "data/svg_input",
   "GCODE_OUTPUT_DIR": "data/gcode_output",
   "FEED": 4000,
@@ -7,15 +7,17 @@
   "CMD_UP": "M5; sube lapicera",
   "STEP_MM": 0.3,
   "DWELL_MS": 350,
-  "MAX_HEIGHT_MM": 250,
   "REMOVE_BORDER_RECTANGLE": true,
   "COMPRESSION": {
     "ENABLED": true,
-    "ARC_TOLERANCE_MM": 0.1,
+    "ARC_TOLERANCE_MM": 0.2,
     "USE_RELATIVE_MOVES": true,
-    "MIN_POINTS_FOR_ARC": 3
+    "MIN_POINTS_FOR_ARC": 3,
+    "MIN_ARC_ANGLE_DEG": 2
   },
   "MIRROR_VERTICAL": true,
   "CURVATURE_ADJUSTMENT_FACTOR": 0.25,
-  "MINIMUM_FEED_FACTOR": 0.5
+  "MINIMUM_FEED_FACTOR": 0.45,
+  "PLOTTER_MAX_AREA_MM": [300.0, 200.0],
+  "TARGET_WRITE_AREA_MM": [210.0, 148.0]
 }

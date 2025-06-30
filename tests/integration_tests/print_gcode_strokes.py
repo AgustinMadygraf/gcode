@@ -18,13 +18,15 @@ def print_gcode_for_multiple_strokes():
     seg2 = DummySegment(5, (10,0), (15,0))
     paths = [[seg1], [seg2]]  # Dos trazos separados
     svg_attr = {"viewBox": "0 0 20 10", "width": "20"}
+    # Definir plotter_max_area_mm localmente (simula config)
+    plotter_max_area_mm = [180.0, 250.0]
     generator = GCodeGeneratorAdapter(
         feed=1000,
         cmd_down="M3 S1000",
         cmd_up="M5",
         step_mm=5,
         dwell_ms=100,
-        max_height_mm=10,
+        max_height_mm=plotter_max_area_mm[1],
         logger=None,
         transform_strategies=[DummyStrategy()],
         optimizer=OptimizationChain()  # Inyectar la cadena de optimización

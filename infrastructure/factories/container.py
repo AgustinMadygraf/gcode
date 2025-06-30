@@ -41,8 +41,8 @@ class Container:
         self.cmd_up = self.config.cmd_up
         self.step_mm = self.config.step_mm
         self.dwell_ms = self.config.dwell_ms
-        self.max_height_mm = self.config.max_height_mm
-        self.max_width_mm = getattr(self.config, 'max_width_mm', 180.0)
+        self.max_height_mm = self.config.plotter_max_area_mm[1]
+        self.max_width_mm = self.config.plotter_max_area_mm[0]
 
     @property
     def logger(self) -> LoggerPort:

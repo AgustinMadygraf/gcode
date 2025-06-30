@@ -23,7 +23,7 @@ GEN_KWARGS = dict(
     cmd_up=config.cmd_up,
     step_mm=config.step_mm,
     dwell_ms=config.dwell_ms,
-    max_height_mm=config.max_height_mm,
+    max_height_mm=config.plotter_max_area_mm[1],
     optimizer=OptimizationChain()
 )
 
