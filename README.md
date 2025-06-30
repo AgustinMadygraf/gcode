@@ -35,6 +35,8 @@ pip install svgpathtools numpy
 >  0. Salir
 > Estas opciones son fijas salvo que se extienda la aplicación mediante plugins o desarrollo avanzado.
 
+**Desde la versión 2025, el modo interactivo permite realizar varias operaciones consecutivas sin necesidad de reiniciar la aplicación. Puedes convertir, optimizar o procesar varios archivos en una misma sesión, y salir cuando lo desees eligiendo la opción "0" o escribiendo "salir" en el menú.**
+
 1. Coloca tus archivos `.svg` en la carpeta que desees (por defecto `data/svg_input/`).
 2. Desde la raíz del proyecto, ejecuta:
 
