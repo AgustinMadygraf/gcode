@@ -60,9 +60,9 @@ from cli.utils.cli_event_manager import CliEventManager
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
-    def __init__(self, args=None, logger=None):
+    def __init__(self, args=None, logger=None, config_path=None):
         file_selector: FileSelectorPort = SvgFileSelectorAdapter(logger)
-        self.container = Container(file_selector=file_selector, logger=logger)
+        self.container = Container(file_selector=file_selector, logger=logger, config_path=config_path)
         self.filename_service: FilenameServicePort = self.container.filename_gen
         self.config = self.container.config
         self.config_port = self.container.config_port

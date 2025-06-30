@@ -4,8 +4,19 @@ Módulo para gestionar argumentos de línea de comandos para simple_svg2gcode.
 import argparse
 from pathlib import Path
 from cli.i18n import get_message
+import json
+from infrastructure.config.config import Config
 
 def create_parser() -> argparse.ArgumentParser:
+    # Cargar presets desde config
+    config = Config()
+    presets = config.get("SURFACE_PRESETS", {})
+    preset_names = list(presets.keys())
+    preset_help = (
+        get_message('ARG_SURFACE_PRESET') +
+        "\nPresets disponibles: " + ', '.join(preset_names)
+        if preset_names else get_message('ARG_SURFACE_PRESET')
+    )
     parser = argparse.ArgumentParser(
         description=get_message('ARGPARSE_DESCRIPTION'),
         formatter_class=argparse.RawDescriptionHelpFormatter
@@ -29,5 +40,10 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dev", "--debug", action="store_true",
         help=get_message('ARG_DEV')
+    )
+    parser.add_argument(
+        "--surface-preset",
+        type=str,
+        help=preset_help
     )
     return parser

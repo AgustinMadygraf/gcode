@@ -25,6 +25,14 @@ class ApplicationOrchestrator:
     def get_operation(self, op_id):
         return self.operations.get(op_id)
 
+    def configure_write_area(self):
+        """Permite al usuario seleccionar un preset de superficie o ingresar dimensiones personalizadas."""
+        presets = self.config.get("SURFACE_PRESETS", {})
+        plotter_max_area = self.config.plotter_max_area_mm
+        dims, preset_name = self.presenter.prompt_surface_preset(presets, plotter_max_area)
+        self.config._data["TARGET_WRITE_AREA_MM"] = dims
+        self.presenter.print_success(f"Área de escritura configurada: {dims[0]}x{dims[1]} mm (preset: {preset_name})")
+
     # Métodos de UI requeridos por estrategias de modo
     def select_operation_mode(self):
         # Adaptación de menú según contexto avanzado
@@ -73,6 +81,7 @@ class ApplicationOrchestrator:
             self.presenter.print(self.presenter.i18n.get('MENU_MAIN_TITLE'), color='bold')
             self.presenter.print_option(self.presenter.i18n.get('MENU_OPTION_CONVERT'))
             self.presenter.print_option(self.presenter.i18n.get('MENU_OPTION_OPTIMIZE'))
+            self.presenter.print_option('3) Configurar área de escritura')
             try:
                 user_input = self.presenter.input(self.presenter.i18n.get('PROMPT_SELECT_OPTION'))
                 if user_input.strip().lower() in exit_keywords:
@@ -81,7 +90,10 @@ class ApplicationOrchestrator:
                 choice = int(user_input)
                 if choice in [1, 2]:
                     return choice
-                self.presenter.print(self.presenter.i18n.get('WARN_INVALID_SELECTION'), color='yellow')
+                elif choice == 3:
+                    self.configure_write_area()
+                else:
+                    self.presenter.print(self.presenter.i18n.get('WARN_INVALID_SELECTION'), color='yellow')
             except ValueError:
                 self.presenter.print(self.presenter.i18n.get('WARN_INVALID_NUMBER'), color='yellow')
             except KeyboardInterrupt:

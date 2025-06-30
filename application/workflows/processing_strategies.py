@@ -11,6 +11,27 @@ class ProcessingStrategy(ABC):
 
 class SvgProcessingStrategy(ProcessingStrategy):
     def process(self, workflow, args, input_data, temp_path, output_path, optimize, rescale):
+        # --- Soporte para surface-preset en modo batch ---
+        surface_preset = getattr(args, 'surface_preset', None)
+        if surface_preset:
+            presets = workflow.config.get("SURFACE_PRESETS", {})
+            plotter_max_area = workflow.config.plotter_max_area_mm
+            if surface_preset in presets:
+                dims = presets[surface_preset]
+                # Validar contra área máxima
+                if dims[0] > plotter_max_area[0] or dims[1] > plotter_max_area[1]:
+                    # Por defecto: escalar
+                    scale_w = plotter_max_area[0] / dims[0]
+                    scale_h = plotter_max_area[1] / dims[1]
+                    scale = min(scale_w, scale_h)
+                    dims = [round(dims[0]*scale, 2), round(dims[1]*scale, 2)]
+                    workflow.presenter.print(f"[WARN] Área objetivo del preset '{surface_preset}' excedía el área máxima. Escalado automático a {dims[0]}x{dims[1]} mm.", color='yellow')
+                workflow.config._data["TARGET_WRITE_AREA_MM"] = dims
+                workflow.presenter.print(f"[INFO] Área de escritura configurada por preset: {dims[0]}x{dims[1]} mm ({surface_preset})", color='green')
+            else:
+                available = ', '.join(presets.keys())
+                workflow.presenter.print(f"[ERROR] El preset '{surface_preset}' no existe. Disponibles: {available}", color='red')
+                return 2
         svg_loader_factory = workflow.container.get_svg_loader
         workflow.presenter.print("processing_start", color='blue')
         if input_data is not None:

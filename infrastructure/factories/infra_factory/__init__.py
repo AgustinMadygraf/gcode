@@ -12,8 +12,10 @@ class LoggerConfigAdapter(LoggerConfigPort):
 
 class InfraFactory:
     @staticmethod
-    def create_config(config_path="infrastructure/config/config.json"):
-        return Config(Path(config_path))
+    def create_config(config_path=None):
+        if config_path:
+            return Config(Path(config_path))
+        return Config(Path("infrastructure/config/config.json"))
 
     @staticmethod
     def get_logger(use_color=True, level='INFO', stream=None, show_file_line=False):

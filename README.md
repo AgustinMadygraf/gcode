@@ -403,3 +403,36 @@ G0 X0 Y0
 La lógica es automática y no requiere intervención del usuario. Si usas velocidad variable en curvas, el sistema ajusta el feed rate solo donde corresponde.
 
 > Para detalles técnicos, consulta la sección de optimización en [docs/optimization_plan.md](docs/optimization_plan.md).
+
+## Selección de superficie de escritura (presets)
+
+Puedes definir y seleccionar superficies de escritura predefinidas (presets) en el archivo `config.json` bajo la clave `SURFACE_PRESETS`.
+
+- Ejemplo de presets:
+  ```json
+  "SURFACE_PRESETS": {
+    "A4_PORTRAIT": [210.0, 297.0],
+    "A4_LANDSCAPE": [297.0, 210.0],
+    "A5_PORTRAIT": [148.0, 210.0],
+    "A5_LANDSCAPE": [210.0, 148.0]
+  }
+  ```
+
+### Modo interactivo
+- En el menú principal, elige la opción "Configurar área de escritura" para seleccionar un preset o ingresar dimensiones personalizadas.
+- Si el área elegida excede el área máxima de la plotter, puedes optar por escalarla automáticamente o recortar el dibujo.
+
+### Modo batch/no-interactive
+- Usa el argumento `--surface-preset NOMBRE` para seleccionar un preset desde la línea de comandos.
+- Si el preset excede el área máxima, se escala automáticamente y se notifica por consola.
+- Si el preset no existe, se muestra un error y se listan los disponibles.
+
+### Validación y prioridad
+- La selección de preset sobrescribe el valor de `TARGET_WRITE_AREA_MM`.
+- Si se ingresa un valor manual y un preset, el último valor seleccionado tiene prioridad.
+- Siempre se valida que el área objetivo no exceda el área máxima de la plotter.
+
+### Ayuda CLI
+- La ayuda (`--help`) lista automáticamente los nombres de presets disponibles.
+
+---

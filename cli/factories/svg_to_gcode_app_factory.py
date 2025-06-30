@@ -7,4 +7,5 @@ def create_svg_to_gcode_app(args=None, logger=None):
     """
     Construye y retorna una instancia de SvgToGcodeApp con todas las dependencias configuradas.
     """
-    return SvgToGcodeApp(args, logger=logger)
+    config_path = getattr(args, 'config', None) if args else None
+    return SvgToGcodeApp(args, logger=logger, config_path=config_path)

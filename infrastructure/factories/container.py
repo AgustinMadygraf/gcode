@@ -21,8 +21,8 @@ from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 
 class Container:
-    def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None, logger: LoggerPort = None):
-        self.config = InfraFactory.create_config()
+    def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None, logger: LoggerPort = None, config_path=None):
+        self.config = InfraFactory.create_config(config_path) if config_path else InfraFactory.create_config()
         self.config_port: ConfigPort = AdapterFactory.create_config_adapter(self.config)
         self._logger = logger
         self._selector = file_selector  # Inyectado desde el exterior

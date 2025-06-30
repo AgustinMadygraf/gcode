@@ -17,13 +17,22 @@ class Config:
             except (PermissionError, OSError) as e:
                 print(f"[Config] Error copying default config: {e}. Using defaults.")
         self._data = {}
+        # Primero cargar los defaults
+        if default_path.exists():
+            try:
+                with open(default_path, encoding="utf-8") as f:
+                    defaults = json.load(f)
+                self._data.update(defaults)
+            except Exception as e:
+                print(f"[Config] Error loading config_default.json: {e}. Using empty defaults.")
+        # Luego sobreescribir con el config del usuario si existe
         if config_path.exists():
             try:
                 with open(config_path, encoding="utf-8") as f:
                     user_data = json.load(f)
                 self._data.update(user_data)
             except (json.JSONDecodeError, IOError) as e:
-                print(f"[Config] Error loading config.json: {e}. Using empty config.")
+                print(f"[Config] Error loading config.json: {e}. Using defaults only.")
         self._validate_config()
 
     def __getitem__(self, key):
