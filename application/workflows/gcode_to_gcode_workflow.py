@@ -53,9 +53,9 @@ class GcodeToGcodeWorkflow:
         elif operation_choice == 2:
             # Obtener altura objetivo (usar configuración o solicitar al usuario)
             target_height = None
-            use_config = self.presenter.input("\n¿Usar altura máxima de configuración (250mm)? [S/n]: ").strip().lower()
+            use_config = self.presenter.input("\n¿Usar área máxima de la plotter ({max_height}mm de alto)? [S/n]: ").strip().lower()
             if use_config != 'n':
-                target_height = self.config.max_height_mm
+                target_height = self.config.plotter_max_area_mm[1]
                 msg = self.presenter.i18n.get("RESCALE_USING_MAX", height=target_height)
                 self.presenter.print(msg, color='blue')
             else:

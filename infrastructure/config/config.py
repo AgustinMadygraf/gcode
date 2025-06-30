@@ -7,7 +7,12 @@ import shutil
 from pathlib import Path
 
 class Config:
-    " Clase para cargar la configuración desde un archivo JSON. "
+    """
+    Clase para cargar la configuración desde un archivo JSON.
+    - Usa PLOTTER_MAX_AREA_MM para definir el área máxima de la plotter (ancho, alto).
+    - El campo MAX_HEIGHT_MM está deprecado y no debe usarse.
+    - Todos los métodos y validaciones usan la nueva convención.
+    """
     def __init__(self, config_path: Path = Path(__file__).parent / "config.json"):
         default_path = Path(__file__).parent / "config_default.json"
         # Si no existe config.json, crear uno a partir de config_default.json
@@ -76,11 +81,6 @@ class Config:
     def dwell_ms(self):
         "Devuelve el tiempo de espera en ms (DWELL_MS)."
         return self._data["DWELL_MS"]
-
-    @property
-    def max_height_mm(self):
-        "Devuelve la altura máxima en mm (MAX_HEIGHT_MM)."
-        return self._data["MAX_HEIGHT_MM"]
 
     @property
     def remove_svg_border(self):

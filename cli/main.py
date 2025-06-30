@@ -73,7 +73,7 @@ class SvgToGcodeApp:
         self.cmd_up = self.container.cmd_up
         self.step_mm = self.container.step_mm
         self.dwell_ms = self.container.dwell_ms
-        self.max_height_mm = self.container.max_height_mm
+        self.max_height_mm = self.container.config.plotter_max_area_mm[1]
         self.max_width_mm = self.container.max_width_mm
         self.args = args
         self.interactive_mode = True if args is None else not getattr(args, 'no_interactive', False)

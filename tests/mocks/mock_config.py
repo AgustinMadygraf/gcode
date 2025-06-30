@@ -30,9 +30,6 @@ class DummyConfig:
     @property
     def plotter_max_area_mm(self):
         return [180.0, 250.0]
-    @property
-    def max_height_mm(self):
-        return self.plotter_max_area_mm[1]
     
     def get_gcode_output_dir(self):
         """Devuelve el directorio configurado para salida de archivos G-code"""

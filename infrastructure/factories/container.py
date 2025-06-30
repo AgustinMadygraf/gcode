@@ -142,7 +142,7 @@ class Container:
             cmd_up=self.cmd_up,
             step_mm=self.step_mm,
             dwell_ms=self.dwell_ms,
-            max_height_mm=self.max_height_mm,
+            max_height_mm=self.config.plotter_max_area_mm[1],
             max_width_mm=self.max_width_mm,
             config=self.config_port,
             logger=self.logger,

@@ -60,8 +60,8 @@ class GcodeRescaleUseCase:
         }
 
     def _get_max_height_from_config(self) -> float:
-        if self.config and hasattr(self.config, 'max_height_mm'):
-            return getattr(self.config, 'max_height_mm', 250.0)
+        if self.config and hasattr(self.config, 'plotter_max_area_mm'):
+            return self.config.plotter_max_area_mm[1]
         return 250.0
 
     def _analyze_dimensions(self, gcode_lines: List[str]) -> Dict[str, float]:

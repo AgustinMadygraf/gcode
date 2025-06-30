@@ -28,7 +28,7 @@ class TestGCodeCMDUP(unittest.TestCase):
                 cmd_up="M5",
                 step_mm=1,
                 dwell_ms=100,
-                max_height_mm=10,
+                max_height_mm=DummyConfig(tmpdir).plotter_max_area_mm[1],
                 logger=None,
                 transform_strategies=[MockStrategy()],
                 optimizer=OptimizationChain(),  # Inyectar la cadena de optimización
