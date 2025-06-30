@@ -25,9 +25,31 @@ from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
+from adapters.output.gcode_optimization_logger import GcodeOptimizationLogger
+from adapters.output.path_gcode_generator import PathGcodeGenerator
+from adapters.output.gcode_compression_factory import GcodeCompressionFactory
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
-    """Adapter for G-code generation from SVG paths, implementing the domain port."""
+    """
+    Adapter for G-code generation from SVG paths, implementing the domain port.
+
+    Dependencias inyectadas (puertos):
+    - path_sampler: PathSamplerPort
+    - feed_rate_strategy: FeedRateStrategy
+    - config: ConfigPort
+    - logger: LoggerPort
+    - transform_strategies: List[PathTransformStrategyPort]
+    - optimizer: GcodeOptimizationChainPort
+    - transform_manager: TransformManagerPort
+    - i18n: objeto de internacionalización (debe implementar .get(key, **kwargs))
+
+    Contratos esperados:
+    - Todos los puertos deben implementar los métodos definidos en sus interfaces.
+    - Las estrategias de transformación deben ser instancias de PathTransformStrategyPort.
+    - El logger debe implementar debug(msg: str) y opcionalmente info/warning/error.
+    - El config debe exponer flags como 'curvature_adjustment_factor', 'minimum_feed_factor', 'disable_gcode_compression', etc.
+    - El i18n debe proveer mensajes localizables vía get(key, **kwargs).
+    """
     def __init__(
         self,
         *,
@@ -74,6 +96,14 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         )
         self.curvature_feed_calculator = CurvatureFeedCalculator(self.feed_rate_strategy)
         self.i18n = i18n
+        self.optimization_logger = GcodeOptimizationLogger(self.logger, self.i18n)
+        self.path_gcode_generator = PathGcodeGenerator(
+            self.path_sampler,
+            self.transform_manager,
+            self.feed_rate_strategy,
+            self.cmd_down,
+            self.cmd_up
+        )
 
     def calculate_curvature_factor(self, p1, p2, p3, base_feed_rate):
         """
@@ -111,14 +141,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
     def generate(self, paths, svg_attr: Dict[str, Any]) -> List[str]:
         # Log orden y distancia antes de optimizar
         if self.logger:
-            original_ids = [self._path_id(p, i) for i, p in enumerate(paths)]
-            self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_ORIG", list=f"{original_ids[:20]}{'...' if len(original_ids) > 20 else ''}"))
-            self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
+            self.optimization_logger.log_paths_order(paths, self._path_id, "DEBUG_PATHS_ORDER_ORIG")
+            self.optimization_logger.log_total_distance(self._total_travel_distance(paths), "DEBUG_TOTAL_DIST_ORIG")
         from cli.progress_bar import print_progress_bar
         optimizer = TrajectoryOptimizer()
         def progress_callback(current, total):
             if total > 5:
-                # Solo actualizar si cambia el porcentaje
                 percent = int((current / float(total)) * 100) if total else 100
                 if not hasattr(progress_callback, '_last_percent') or percent != progress_callback._last_percent:
                     print_progress_bar(current, total, prefix=self.i18n.get('OPTIMIZING_PATHS'), suffix='', length=40, lang=getattr(self.i18n, 'default_lang', 'es'))
@@ -127,27 +155,24 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                     print()  # salto de línea final
         optimized_paths = optimizer.optimize_order(paths, progress_callback=progress_callback)
         if self.logger:
-            opt_ids = [self._path_id(p, i) for i, p in enumerate(optimized_paths)]
-            self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_OPT", list=f"{opt_ids[:20]}{'...' if len(opt_ids) > 20 else ''}"))
-            self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_OPT", dist=f"{self._total_travel_distance(optimized_paths):.2f}"))
+            self.optimization_logger.log_paths_order(optimized_paths, self._path_id, "DEBUG_PATHS_ORDER_OPT")
+            self.optimization_logger.log_total_distance(self._total_travel_distance(optimized_paths), "DEBUG_TOTAL_DIST_OPT")
             bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
-            xmin, xmax, ymin, ymax = bbox
             scale = ScaleManager.viewbox_scale(svg_attr)
             scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
             scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
-            self.logger.debug(self.i18n.get("DEBUG_BOUNDING_BOX", xmin=f"{bbox[0]:.3f}", xmax=f"{bbox[1]:.3f}", ymin=f"{bbox[2]:.3f}", ymax=f"{bbox[3]:.3f}"))
-            self.logger.debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
+            self.optimization_logger.log_bbox_and_scale(bbox, scale)
             remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
             use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
-            self.logger.debug(self.i18n.get("DEBUG_RELATIVE_MOVES", enabled=use_relative_moves))
+            self.optimization_logger.log_config_flags(remove_border, use_relative_moves)
             all_points = self.sample_transform_pipeline(optimized_paths, scale)
             gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
-            # Compresión inteligente de G-code SIEMPRE activa
-            compression_service = create_gcode_compression_service(logger=self.logger)
-            # Configuración por defecto, puede ser extendida para leer de self.config
-            from domain.compression_config import CompressionConfig
-            compression_config = CompressionConfig()
-            gcode, _ = compression_service.compress(gcode, compression_config)
+            # Compresión configurable
+            compression_service = GcodeCompressionFactory.get_compression_service(self.config, logger=self.logger)
+            if compression_service:
+                from domain.compression_config import CompressionConfig
+                compression_config = CompressionConfig()
+                gcode, _ = compression_service.compress(gcode, compression_config)
             if self.logger:
                 self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
                 self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
@@ -164,31 +189,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         return pipeline.process(paths)
 
     def generate_path_gcode(self, path, feed, context=None):
-        context = context or {}
-        tool_type = context.get("tool_type", "pen")
-        double_pass = context.get("double_pass", False)
-        # Ajustar velocidad según la herramienta usando FeedRateStrategy
-        feed = self.feed_rate_strategy.adjust_feed(tool_type=tool_type)
-        # Generar puntos para el path
-        points = []
-        for pt in self.path_sampler.sample(path):
-            x, y = self.transform_manager.apply(pt.x, pt.y)
-            points.append(Point(x, y))
-        gcode_lines = self._generate_single_path(points, feed)
-        # Si es lapicera y doble pasada, agregar el trazo inverso
-        if tool_type == "pen" and double_pass:
-            reverse_points = list(reversed(points))
-            gcode_lines += self._generate_single_path(reverse_points, feed)
-        return gcode_lines
+        return self.path_gcode_generator.generate(path, context)
 
     def _generate_single_path(self, points, feed):
-        # Implementación simplificada para generar G-code de un solo path
-        builder = GCodeCommandBuilder()
-        if not points:
-            return []
-        builder.move_to(points[0].x, points[0].y, rapid=True)
-        builder.tool_down(self.cmd_down)
-        for pt in points[1:]:
-            builder.move_to(pt.x, pt.y, feed=feed, rapid=False)
-        builder.tool_up(self.cmd_up)
-        return builder.to_gcode_lines_with_metrics()[0] if hasattr(builder, 'to_gcode_lines_with_metrics') else builder.to_gcode_lines()
+        # Deprecated: ahora se usa PathGcodeGenerator
+        return self.path_gcode_generator._generate_single_path(points, feed)
