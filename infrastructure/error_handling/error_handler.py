@@ -63,7 +63,7 @@ class ErrorHandler:
         context = context or {}
         return {
             "error": "Error interno",
-            "message": "Se ha producido un error inesperado",
+            "message": "\nSe ha producido un error inesperado",
             "context": context
         }
     

@@ -113,6 +113,7 @@ MESSAGES = {
         'WARN_NO_FILES_FOUND': "No se encontraron archivos SVG ni GCODE disponibles.",
         'INFO_TECHNICAL_LOGS_HEADER': "--- [LOGS TÉCNICOS] ---",
         'OPTIMIZING_PATHS': "Optimizando trayectorias...",
+        'DEBUG_REMOVE_BORDER': "Eliminación de borde activada: {enabled}",
         # ...agregar más mensajes según se centralicen...
     },
     'en': {
