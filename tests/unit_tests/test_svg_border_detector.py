@@ -4,6 +4,7 @@ Tests para SvgBorderDetector
 import unittest
 from domain.filters.svg_border_detector import SvgBorderDetector
 from svgpathtools import Line, Path
+from infrastructure.factories.infra_factory import InfraFactory
 
 class TestSvgBorderDetector(unittest.TestCase):
     def test_detect_rectangle(self):
@@ -14,7 +15,8 @@ class TestSvgBorderDetector(unittest.TestCase):
             Line(10+10j, 0+10j),
             Line(0+10j, 0+0j)
         )
-        detector = SvgBorderDetector()
+        logger = InfraFactory.get_logger()
+        detector = SvgBorderDetector(logger=logger)
         self.assertTrue(detector.is_rectangle(rect))
 
     def test_non_rectangle(self):
@@ -24,7 +26,8 @@ class TestSvgBorderDetector(unittest.TestCase):
             Line(10+0j, 5+10j),
             Line(5+10j, 0+0j)
         )
-        detector = SvgBorderDetector()
+        logger = InfraFactory.get_logger()
+        detector = SvgBorderDetector(logger=logger)
         self.assertFalse(detector.is_rectangle(triangle))
 
     def test_match_viewbox(self):
@@ -36,7 +39,8 @@ class TestSvgBorderDetector(unittest.TestCase):
             Line(0+100j, 0+0j)
         )
         svg_attr = {"viewBox": "0 0 100 100"}
-        detector = SvgBorderDetector()
+        logger = InfraFactory.get_logger()
+        detector = SvgBorderDetector(logger=logger)
         self.assertTrue(detector.matches_svg_bounds(rect, svg_attr))
 
     def test_different_from_viewbox(self):
@@ -48,7 +52,8 @@ class TestSvgBorderDetector(unittest.TestCase):
             Line(20+80j, 20+20j)
         )
         svg_attr = {"viewBox": "0 0 100 100"}
-        detector = SvgBorderDetector()
+        logger = InfraFactory.get_logger()
+        detector = SvgBorderDetector(logger=logger)
         self.assertFalse(detector.matches_svg_bounds(rect, svg_attr))
 
     def test_tolerance_edge_case(self):
@@ -62,6 +67,7 @@ class TestSvgBorderDetector(unittest.TestCase):
         svg_attr = {"viewBox": "0 0 100 100"}
         # Tolerancia muy estricta
         detector = SvgBorderDetector(tolerance=0.00001)
+        logger = InfraFactory.get_logger()
         self.assertTrue(detector.matches_svg_bounds(rect, svg_attr))
         # Rectángulo desplazado apenas fuera de tolerancia
         rect2 = Path(
@@ -81,7 +87,8 @@ class TestSvgBorderDetector(unittest.TestCase):
             Line(10+90j, 10+10j)
         )
         svg_attr = {"viewBox": "0 0 100 100"}
-        detector = SvgBorderDetector()
+        logger = InfraFactory.get_logger()
+        detector = SvgBorderDetector(logger=logger)
         self.assertFalse(detector.matches_svg_bounds(rect, svg_attr))
 
 if __name__ == "__main__":

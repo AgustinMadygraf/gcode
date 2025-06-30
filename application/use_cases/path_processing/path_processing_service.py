@@ -6,6 +6,7 @@ filtrado y transformaciones.
 from typing import List, Any, Callable
 from svgpathtools import Path as SvgPath
 from domain.services.path_filter_service import PathFilter
+from infrastructure.factories.infra_factory import InfraFactory
 
 class PathProcessingService:
     """ Servicio de aplicación para procesar paths SVG: 
@@ -15,8 +16,11 @@ class PathProcessingService:
                  extra_filters: list[Callable[[Any], bool]] = None,
                  transform_strategies: list = None,
                  remove_svg_border: bool = True,
-                 border_tolerance: float = 0.05):
-        self.path_filter = PathFilter(min_length, extra_filters, remove_svg_border, border_tolerance)
+                 border_tolerance: float = 0.05,
+                 logger=None):
+        if logger is None:
+            logger = InfraFactory.get_logger(show_file_line=True)
+        self.path_filter = PathFilter(min_length, extra_filters, remove_svg_border, border_tolerance, logger=logger)
         self.transform_strategies = transform_strategies or []
 
     def split_path_into_continuous_subpaths(self, path, tol=1e-6) -> List[SvgPath]:

@@ -158,6 +158,30 @@ Esto permite depuración precisa y reporte de errores reproducibles.
 - No activar `--dev` por defecto en producción ni en CI.
 - Documentar el uso de logs con archivo:línea en reportes de bugs.
 
+## Inyección de logger en dominio y aplicación
+
+Para asegurar la trazabilidad y desacoplamiento, el logger nunca se instancia directamente en el dominio. En su lugar, se inyecta desde infraestructura usando la factory global:
+
+```python
+from infrastructure.factories.infra_factory import InfraFactory
+logger = InfraFactory.get_logger(name="app.path_processing", level="DEBUG", show_file_line=True)
+path_filter = PathFilter(logger=logger)
+svg_border_detector = SvgBorderDetector(logger=logger)
+```
+
+- Todos los servicios de dominio que requieren logging deben aceptar un parámetro `logger` en su constructor.
+- La configuración global del logger (nivel, colores, formato, archivo:línea) se define en la infraestructura y se propaga a todos los componentes.
+- El dominio nunca debe importar ni depender de `logging` ni de infraestructura, solo aceptar el logger como argumento.
+
+### Ejemplo de logs de dominio en consola
+
+```
+[INFO domain/filters/svg_border_detector.py:42] Path es un rectángulo cerrado
+[DEBUG domain/services/path_filter_service.py:27] Path 0: descartado por longitud (0.0000)
+```
+
+Este patrón permite testear y mockear el logger en pruebas, y asegura que todos los logs sigan el formato global.
+
 ## Notas y Recomendaciones
 - Mantener la documentación de modelos e invariantes en `docs/domain_models.md`.
 - Documentar cambios relevantes en `docs/CHANGELOG.md`.

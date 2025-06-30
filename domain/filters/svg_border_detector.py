@@ -12,17 +12,18 @@ class SvgBorderDetector:
     Si todos los bordes del path están dentro de la tolerancia respecto al viewBox, se considera borde.
     """
     
-    def __init__(self, tolerance: float = 0.05, logger: logging.Logger = None):
+    def __init__(self, tolerance: float = 0.05, logger=None):
         """
         Inicializa el detector con una tolerancia para comparar dimensiones.
         Args:
             tolerance: Proporción (0-1) de variación permitida al comparar dimensiones respecto al tamaño del viewBox.
+            logger: Logger inyectado. Debe ser un objeto compatible con logging.Logger.
         """
         self.tolerance = tolerance
-        self.logger = logging.getLogger("svg_border")
-        if not self.logger:
-            raise RuntimeError("Logger no inicializado en SvgBorderDetector. Usar siempre el constructor.")
-        
+        if logger is None:
+            raise RuntimeError("Logger debe ser inyectado en SvgBorderDetector. Usar siempre el constructor con logger explícito.")
+        self.logger = logger
+    
     def is_rectangle(self, path) -> bool:
         """Determina si un path forma un rectángulo cerrado."""
         if len(path) != 4:  # Un rectángulo típicamente tiene 4 segmentos
@@ -96,11 +97,8 @@ class SvgBorderDetector:
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        # Restaurar el logger si se deserializa
-        if self.logger is None:
-            self.logger = logging.getLogger("svg_border")
-            if not self.logger:
-                raise RuntimeError("Logger no inicializado en SvgBorderDetector. Usar siempre el constructor.")
+        # No restaurar el logger automáticamente; debe ser reinyectado tras deserializar
+        self.logger = None
 
     def __delattr__(self, name):
         if name == 'logger':

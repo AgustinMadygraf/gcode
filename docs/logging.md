@@ -44,6 +44,28 @@ from infrastructure.factories.infra_factory import InfraFactory
 logger = InfraFactory.get_logger(use_color=False, level='DEBUG', show_file_line=True)
 ```
 
+## Inyección de logger en dominio
+
+- El dominio nunca debe crear loggers internos ni depender de `logging`.
+- Siempre se debe inyectar el logger desde infraestructura usando `InfraFactory.get_logger()`.
+- Ejemplo de uso en tests y servicios:
+
+```python
+from infrastructure.factories.infra_factory import InfraFactory
+logger = InfraFactory.get_logger(name="test.svg_border_detector", level="DEBUG")
+detector = SvgBorderDetector(logger=logger)
+```
+
+- La configuración global (nivel, colores, formato) se propaga a todos los loggers inyectados.
+- Esto permite capturar y testear los logs de dominio en pruebas unitarias.
+
+## Ejemplo de logs de dominio
+
+```
+[DEBUG domain/filters/svg_border_detector.py:27] No es rectángulo: segmentos=3
+[INFO domain/services/path_filter_service.py:42] Total de paths eliminados como borde SVG: 1
+```
+
 ## Recomendaciones
 - No activar `--dev` por defecto en producción ni en CI.
 - Documentar el uso de logs con archivo:línea en reportes de bugs.

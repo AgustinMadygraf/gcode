@@ -1,8 +1,8 @@
 __pycache__/
-docs_aux/todo.md
 infrastructure/config/config.json
 data/svg_input/*
 !data/svg_input/test_lines.svg
 data/gcode_output/*
 !data/gcode_output/sample_compacted.gcode
 docs/00-Prompt-for-ProjectAnalysis.md
+todo.txt

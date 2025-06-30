@@ -1,6 +1,7 @@
 import unittest
 from svgpathtools import Path, Line
 from domain.services.path_filter_service import PathFilter
+from infrastructure.factories.infra_factory import InfraFactory
 
 class TestPathFilter(unittest.TestCase):
     def test_removes_border_but_keeps_internal_rectangle(self):
@@ -13,7 +14,8 @@ class TestPathFilter(unittest.TestCase):
         svg_attr = {"viewBox": "0 0 100 100"}
         
         # Crear filtro que SÍ elimina el borde
-        path_filter = PathFilter(remove_svg_border=True, border_tolerance=0.05)
+        logger = InfraFactory.get_logger()
+        path_filter = PathFilter(remove_svg_border=True, border_tolerance=0.05, logger=logger)
         
         filtered_paths = path_filter.filter_nontrivial(paths, svg_attr)
         
