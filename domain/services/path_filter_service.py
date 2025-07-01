@@ -23,37 +23,29 @@ class PathFilter(PathFilterPort):
             total_length = sum(seg.length() for seg in p)
             msg = f"Path {_i}: longitud total={total_length:.4f}, segmentos={len(p)}"
             self.logger.debug(msg)
-            print(msg)
             if total_length <= self.min_length:
                 msg = f"Path {_i}: descartado por longitud ({total_length:.4f})"
                 self.logger.debug(msg)
-                print(msg)
                 continue
             if not all(f(p) for f in self.extra_filters):
                 msg = f"Path {_i}: descartado por filtro extra"
                 self.logger.debug(msg)
-                print(msg)
                 continue
             if self.remove_svg_border and svg_attr:
                 msg = f"Path {_i}: evaluando como posible borde (segmentos={len(p)})"
                 self.logger.debug(msg)
-                print(msg)
                 borde = self.border_detector.matches_svg_bounds(p, svg_attr)
                 msg = f"Path {_i}: matches_svg_bounds={borde}"
                 self.logger.debug(msg)
-                print(msg)
                 if borde:
                     msg = f"Path {_i}: eliminado como borde SVG (rectángulo coincide con viewBox)"
                     self.logger.info(msg)
-                    print(msg)
                     removed += 1
                     continue
                 else:
                     msg = f"Path {_i}: NO eliminado como borde SVG"
                     self.logger.debug(msg)
-                    print(msg)
             filtered.append(p)
         msg = f"Total de paths eliminados como borde SVG: {removed}"
         self.logger.info(msg)
-        print(msg)
         return filtered

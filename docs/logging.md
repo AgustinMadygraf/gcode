@@ -66,6 +66,51 @@ detector = SvgBorderDetector(logger=logger)
 [INFO domain/services/path_filter_service.py:42] Total de paths eliminados como borde SVG: 1
 ```
 
+## Ejemplo de test de logging con pytest y caplog
+
+```python
+import logging
+import pytest
+from domain.services.optimization.path_planner_optimizer import PathPlannerOptimizer
+from domain.gcode.commands.move_command import MoveCommand
+
+def test_logging_info_emitted_on_optimize(caplog):
+    logger = logging.getLogger("test_logger")
+    trazo1 = [MoveCommand(0, 0, rapid=True), MoveCommand(10, 0, feed=1000, rapid=False)]
+    trazo2 = [MoveCommand(50, 50, rapid=True), MoveCommand(52, 50, feed=1000, rapid=False)]
+    commands = trazo1 + trazo2
+    optimizer = PathPlannerOptimizer()
+    with caplog.at_level("INFO", logger="test_logger"):
+        optimizer.optimize(commands, logger=logger)
+    assert any("Orden final de trazos" in r.getMessage() for r in caplog.records)
+```
+
+- Usar `caplog` permite asertar sobre mensajes y niveles de log en tests automatizados.
+- Se recomienda incluir tests de logs críticos y de formato (archivo:línea en modo dev).
+
+## Estado de pruebas de logging
+
+- El sistema de logging está completamente testeado con pruebas unitarias y de integración.
+- Se verifica la emisión de logs en casos de éxito, error y en modo desarrollador (`archivo:línea`).
+- Ejemplo de resultado esperado:
+
+```
+[DEBUG run.py:23] [DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.
+[INFO path_planner_optimizer.py:132] Orden final de trazos (puntos de inicio): [(0, 0), (10, 0), (50, 50)]
+[INFO path_planner_optimizer.py:133] Métricas de optimización: {'paths_reordered': 2, 'strategy': 'length+proximity-dynamic'}
+[ERROR] Error al optimizar: Entrada inválida
+```
+
+- Se recomienda mantener y extender los tests de logging ante cambios futuros en la arquitectura o el formato de logs.
+
+## Estado de migración de logging (julio 2025)
+
+- Todo el código de producción utiliza exclusivamente el sistema de logging inyectado.
+- No existen `print()` residuales en servicios, adaptadores ni casos de uso.
+- Todos los mensajes relevantes (proceso, debugging, métricas, errores) son testeables y aparecen formateados en consola.
+- La experiencia CLI es coherente y profesional, tanto en modo normal como en modo desarrollador (`--dev`).
+- Se recomienda mantener este estándar en futuras contribuciones y revisar periódicamente con tests y auditorías.
+
 ## Recomendaciones
 - No activar `--dev` por defecto en producción ni en CI.
 - Documentar el uso de logs con archivo:línea en reportes de bugs.

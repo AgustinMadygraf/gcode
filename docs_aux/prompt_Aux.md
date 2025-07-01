@@ -48,7 +48,7 @@ Sí, realiza la tarea que mencionas
 ```
 ¿Que dudas tenés sobre la implementación exitosa de esta mejora?
 Intenta responder las dudas.
-Si no tenés dudas, procederemos a implementar la mejora.
+Si no tenés dudas, procederemos a elaborar el Listado de Tareas para Hacer.
 Si  tenés dudas sin resolver, primero intentaremos resolver las dudas
 ```
 

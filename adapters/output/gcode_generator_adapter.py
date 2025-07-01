@@ -153,7 +153,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                     print_progress_bar(current, total, prefix=self.i18n.get('OPTIMIZING_PATHS'), suffix='', length=40, lang=getattr(self.i18n, 'default_lang', 'es'))
                     progress_callback._last_percent = percent
                 if current == total:
-                    print()  # salto de línea final
+                    if self.logger:
+                        self.logger.debug("Optimización de paths finalizada (barra de progreso completada)")
         optimized_paths = optimizer.optimize_order(paths, progress_callback=progress_callback)
         if self.logger:
             self.optimization_logger.log_paths_order(optimized_paths, self._path_id, "DEBUG_PATHS_ORDER_OPT")
