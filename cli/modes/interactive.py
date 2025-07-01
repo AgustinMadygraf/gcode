@@ -23,7 +23,7 @@ class InteractiveModeStrategy(ModeStrategy):
                 if not result.get('success', False):
                     error_info = result.get('message', app.i18n.get('ERROR_GENERIC'))
                     error_type = result.get('error', 'Error')
-                    app.presenter.print(f"[{error_type.upper()}] {error_info}", color='red')
+                    app.presenter.print(f"\n[{error_type.upper()}] {error_info}", color='red')
             else:
                 app.presenter.print(app.i18n.get("ERROR_INVALID_SELECTION"), color='yellow')
         return 0
