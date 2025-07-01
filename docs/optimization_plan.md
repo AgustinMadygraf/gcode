@@ -120,7 +120,18 @@ La arquitectura actual sigue los principios de Clean Architecture con las siguie
 
 ## 6. Detalle de la Optimización de Trayectorias (Continuidad)
 
-Para minimizar movimientos en vacío y mejorar la continuidad del trazado, se requiere modificar dos componentes clave:
+A partir de la versión 2025, el reordenamiento de trazos en la etapa de salida GCODE utiliza un algoritmo combinado:
+
+- **Prioridad dinámica:** Al inicio, se priorizan los trazos más extensos (mayor longitud total). A medida que se procesan trazos, el algoritmo incrementa el peso de la cercanía (minimizar movimientos rápidos entre el final de un trazo y el inicio del siguiente).
+- **Función de puntuación:**
+  
+  score = α * (longitud_normalizada) - β * (distancia_al_final_del_anterior_normalizada)
+
+  Donde α y β son pesos dinámicos que evolucionan durante el proceso.
+- **Preservación de bloques:** Los bloques de inicialización y finalización fuera de los trazos se mantienen en su lugar original.
+- **Logging:** En modo desarrollador, se reporta el orden final de los trazos y métricas relevantes en los logs.
+
+Esto permite recorridos más eficientes y adaptativos, mejorando la calidad y el tiempo de ejecución sin intervención manual.
 
 ### a) `adapters/output/gcode_generator_adapter.py`
 - **Motivo:** Integrar la optimización de trayectorias en el pipeline de generación de G-code.

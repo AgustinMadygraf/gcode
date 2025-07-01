@@ -18,100 +18,119 @@ class PathPlannerOptimizer(GcodeOptimizationPort):
         """
         self.min_distance = min_distance
         
-    def optimize(self, commands: List[BaseCommand], tolerance: float = None) -> Tuple[List[BaseCommand], Dict[str, Any]]:
+    def optimize(self, commands: List[BaseCommand], tolerance: float = None, logger=None) -> Tuple[List[BaseCommand], Dict[str, Any]]:
         """
-        Reordena los grupos de comandos (trazos) para minimizar movimientos rápidos.
-        Args:
-            commands: Lista de comandos BaseCommand a optimizar
-            tolerance: No utilizado en este optimizador
-        Returns:
-            Tupla con (lista de comandos optimizados, métricas de optimización)
+        Reordena los grupos de comandos (trazos) para priorizar primero los más extensos y luego la cercanía, con pesos dinámicos.
+        Preserva bloques de inicialización y finalización fuera de los trazos.
+        Si se pasa un logger, imprime el orden final y métricas.
         """
-        # Detectar grupos de comandos (trazos)
+        # 1. Detectar bloques fuera de los trazos (antes y después)
         path_groups = []
         current_group = []
         last_pos = None
-        
-        # 1. Identificar grupos de comandos (trazos separados por G0)
-        for cmd in commands:
+        in_trazo = False
+        # Identificar primer bloque (inicialización)
+        i = 0
+        while i < len(commands):
+            cmd = commands[i]
             if isinstance(cmd, MoveCommand) and getattr(cmd, 'rapid', False):
-                if current_group:  # Si tenemos un grupo en construcción
-                    path_groups.append(current_group)
-                    current_group = [cmd]  # Iniciar nuevo grupo con el G0
+                break
+            current_group.append(cmd)
+            i += 1
+        bloques_fuera_inicio = current_group.copy()
+        current_group = []
+        # Ahora procesar los trazos y el bloque final
+        bloques_trazos = []
+        while i < len(commands):
+            cmd = commands[i]
+            if isinstance(cmd, MoveCommand) and getattr(cmd, 'rapid', False):
+                if current_group:
+                    bloques_trazos.append(current_group)
+                    current_group = [cmd]
                 else:
                     current_group.append(cmd)
-                last_pos = (cmd.x, cmd.y)
             else:
                 current_group.append(cmd)
-                if isinstance(cmd, MoveCommand):
-                    last_pos = (cmd.x, cmd.y)
-                    
-        # Añadir el último grupo si existe
+            i += 1
         if current_group:
-            path_groups.append(current_group)
-            
-        # Si tenemos menos de 2 grupos, no hay optimización posible
-        if len(path_groups) < 3:  # Necesitamos al menos inicio + 2 trazos para optimizar
+            bloques_trazos.append(current_group)
+        # Si hay solo uno, no hay trazos para reordenar
+        if len(bloques_trazos) < 2:
             return commands, {"paths_reordered": 0, "distance_saved": 0}
-            
-        # 2. El primer grupo siempre es el inicio, no se reordena
-        optimized_groups = [path_groups[0]]
-        remaining_groups = path_groups[1:]
-        
-        # 3. Encontrar la posición final del último comando de movimiento en el grupo inicial
-        last_pos = self._find_last_position(optimized_groups[0])
-        
-        # 4. Algoritmo greedy: siempre elegir el grupo más cercano
-        total_distance_original = 0
-        total_distance_optimized = 0
-        
-        # Calcular la distancia original (no optimizada)
-        orig_last_pos = self._find_last_position(path_groups[0])
-        for i in range(1, len(path_groups)):
-            start_pos = self._find_first_position(path_groups[i])
-            if start_pos and orig_last_pos:
-                total_distance_original += self._distance(orig_last_pos, start_pos)
-            orig_last_pos = self._find_last_position(path_groups[i])
-        
-        # Optimizar el orden de los grupos
-        while remaining_groups:
-            closest_idx = -1
-            min_dist = float('inf')
-            
-            # Encontrar el grupo más cercano
-            for i, group in enumerate(remaining_groups):
-                start_pos = self._find_first_position(group)
-                if start_pos and last_pos:
-                    dist = self._distance(last_pos, start_pos)
-                    if dist < min_dist:
-                        min_dist = dist
-                        closest_idx = i
-            
-            # Si encontramos un grupo cercano, añadirlo a la secuencia optimizada
-            if closest_idx >= 0:
-                next_group = remaining_groups.pop(closest_idx)
-                optimized_groups.append(next_group)
-                total_distance_optimized += min_dist
-                last_pos = self._find_last_position(next_group)
-            else:
-                # Si no hay grupos válidos, simplemente añadir el resto en orden
-                optimized_groups.extend(remaining_groups)
+        # Detectar si hay bloque final fuera de trazos
+        bloques_fuera_final = []
+        # Buscar desde el final hacia atrás hasta el último MoveCommand rapid
+        for j in range(len(bloques_trazos[-1]) - 1, -1, -1):
+            cmd = bloques_trazos[-1][j]
+            if isinstance(cmd, MoveCommand) and getattr(cmd, 'rapid', False):
+                if j < len(bloques_trazos[-1]) - 1:
+                    bloques_fuera_final = bloques_trazos[-1][j+1:]
+                    bloques_trazos[-1] = bloques_trazos[-1][:j+1]
                 break
-        
-        # 5. Reconstruir la secuencia completa de comandos
+        # 2. Calcular longitud de cada trazo (solo movimientos G1 dentro del grupo)
+        def group_length(group):
+            length = 0.0
+            prev = None
+            for cmd in group:
+                if isinstance(cmd, MoveCommand) and not getattr(cmd, 'rapid', False):
+                    if prev is not None:
+                        length += self._distance((prev.x, prev.y), (cmd.x, cmd.y))
+                    prev = cmd
+            return length
+        group_lengths = [group_length(g) for g in bloques_trazos]
+        max_length = max(group_lengths) or 1.0
+        class Stroke:
+            def __init__(self, group, idx, length):
+                self.group = group
+                self.idx = idx
+                self.length = length
+                self.length_norm = length / max_length
+                self.start = self._find_first_position(group)
+                self.end = self._find_last_position(group)
+            def _find_first_position(self, group):
+                for cmd in group:
+                    if isinstance(cmd, MoveCommand):
+                        return (cmd.x, cmd.y)
+                return None
+            def _find_last_position(self, group):
+                last_pos = None
+                for cmd in group:
+                    if isinstance(cmd, MoveCommand):
+                        last_pos = (cmd.x, cmd.y)
+                return last_pos
+        # Primer trazo no se reordena, ni el último si es solo bloque final
+        strokes = [Stroke(g, i, l) for i, (g, l) in enumerate(zip(bloques_trazos, group_lengths))]
+        ordered = [strokes[0]]
+        remaining = strokes[1:]
+        last_pos = ordered[0].end
+        N = len(strokes) - 1
+        for k in range(1, N+1):
+            alpha = 1 - (k / (N+1))
+            beta = k / (N+1)
+            dists = [self._distance(last_pos, s.start) for s in remaining]
+            max_dist = max(dists) or 1.0
+            for s, d in zip(remaining, dists):
+                s.dist_norm = d / max_dist
+            def score(s):
+                return alpha * s.length_norm - beta * s.dist_norm
+            next_stroke = max(remaining, key=score)
+            ordered.append(next_stroke)
+            remaining.remove(next_stroke)
+            last_pos = next_stroke.end
+        # Reconstruir comandos: inicio + trazos reordenados + final
         optimized_commands = []
-        for group in optimized_groups:
-            optimized_commands.extend(group)
-        
-        # 6. Calcular métricas
-        distance_saved = total_distance_original - total_distance_optimized
+        optimized_commands.extend(bloques_fuera_inicio)
+        for s in ordered:
+            optimized_commands.extend(s.group)
+        optimized_commands.extend(bloques_fuera_final)
         metrics = {
-            "paths_reordered": len(path_groups) - 1,  # Todos excepto el primero
-            "distance_saved": round(distance_saved, 2),
-            "original_distance": round(total_distance_original, 2),
-            "optimized_distance": round(total_distance_optimized, 2)
+            "paths_reordered": len(bloques_trazos) - 1,
+            "strategy": "length+proximity-dynamic",
         }
-        
+        if logger:
+            orden = [s.start for s in ordered]
+            logger.info(f"Orden final de trazos (puntos de inicio): {orden}")
+            logger.info(f"Métricas de optimización: {metrics}")
         return optimized_commands, metrics
     
     def _find_first_position(self, group: List[BaseCommand]) -> Tuple[float, float]:

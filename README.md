@@ -346,11 +346,13 @@ python run.py --no-color --input ejemplo.svg --output salida.gcode
 
 A partir de la versión 2025, la optimización de trayectorias y la compresión inteligente de comandos G-code están **siempre activas**. No es necesario usar flags ni opciones especiales: todos los archivos generados pasan automáticamente por un proceso de optimización y compresión que incluye:
 
-- Reordenamiento global de trayectorias para minimizar movimientos en vacío.
+- Reordenamiento global de trayectorias usando un algoritmo combinado: primero se priorizan los trazos más extensos y, a medida que avanza el proceso, se prioriza la cercanía entre trazos (pesos dinámicos).
 - Compresión avanzada de comandos (reducción de redundancias, uso de arcos y líneas optimizadas, alternancia entre modos absoluto/relativo si es seguro).
 - Minimización de movimientos no productivos.
 
 Esto garantiza archivos más pequeños, recorridos más eficientes y menor desgaste mecánico, sin intervención manual.
+
+> En modo desarrollador, el sistema reporta el orden final de los trazos y métricas de optimización en los logs.
 
 > Si necesitas desactivar la optimización por motivos de debugging avanzado, consulta la documentación técnica para opciones internas.
 
