@@ -139,7 +139,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         gcode = []  # Valor por defecto para evitar UnboundLocalError
         # Log orden y distancia antes de optimizar
         self.optimization_logger.log_paths_order(paths, self._path_id, "DEBUG_PATHS_ORDER_ORIG")
-        self.optimization_logger.log_total_distance(self._total_travel_distance(paths), "DEBUG_TOTAL_DIST_ORIG")
+        self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
         from cli.progress_bar import print_progress_bar
         optimizer = TrajectoryOptimizer()
         def progress_callback(current, total):
@@ -152,7 +152,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                     self.logger.debug("Optimización de paths finalizada (barra de progreso completada)")
         optimized_paths = optimizer.optimize_order(paths, progress_callback=progress_callback)
         self.optimization_logger.log_paths_order(optimized_paths, self._path_id, "DEBUG_PATHS_ORDER_OPT")
-        self.optimization_logger.log_total_distance(self._total_travel_distance(optimized_paths), "DEBUG_TOTAL_DIST_OPT")
+        self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_OPT", dist=f"{self._total_travel_distance(optimized_paths):.2f}"))
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
 
         
