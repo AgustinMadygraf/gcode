@@ -154,19 +154,27 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self.optimization_logger.log_paths_order(optimized_paths, self._path_id, "DEBUG_PATHS_ORDER_OPT")
         self.optimization_logger.log_total_distance(self._total_travel_distance(optimized_paths), "DEBUG_TOTAL_DIST_OPT")
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
+
+        
         scale = ScaleManager.viewbox_scale(svg_attr)
         scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
         scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
-        self.optimization_logger.log_bbox_and_scale(bbox, scale)
+
+        xmin, xmax, ymin, ymax = bbox
+        self.logger.debug(self.i18n.get("DEBUG_BOUNDING_BOX", xmin=f"{xmin:.3f}", xmax=f"{xmax:.3f}", ymin=f"{ymin:.3f}", ymax=f"{ymax:.3f}"))
+        self.logger.debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
+
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
+        self.logger.debug(self.i18n.get("DEBUG_REMOVE_BORDER", enabled=remove_border))
+
         use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
-        self.optimization_logger.log_config_flags(remove_border, use_relative_moves)
+        self.logger.debug(self.i18n.get("DEBUG_RELATIVE_MOVES", enabled=use_relative_moves))
+
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
         scale = ScaleManager.viewbox_scale(svg_attr)
         scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
         scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
-        use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
         all_points = self.sample_transform_pipeline(optimized_paths, scale)
         gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
         # Compresión configurable

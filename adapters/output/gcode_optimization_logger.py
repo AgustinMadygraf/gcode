@@ -25,9 +25,3 @@ class GcodeOptimizationLogger:
         xmin, xmax, ymin, ymax = bbox
         self.logger.debug(self.i18n.get("DEBUG_BOUNDING_BOX", xmin=f"{xmin:.3f}", xmax=f"{xmax:.3f}", ymin=f"{ymin:.3f}", ymax=f"{ymax:.3f}"))
         self.logger.debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
-
-    def log_config_flags(self, remove_border, use_relative_moves):
-        if not self.logger:
-            return
-        self.logger.debug(self.i18n.get("DEBUG_RELATIVE_MOVES", enabled=use_relative_moves))
-        self.logger.debug(self.i18n.get("DEBUG_REMOVE_BORDER", enabled=remove_border))
