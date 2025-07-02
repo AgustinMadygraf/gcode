@@ -58,8 +58,8 @@ class ConsoleLogger:
         prefix = LEVEL_PREFIXES.get(level, '[INFO]')
         color = LEVEL_COLORS.get(level, '') if self.use_color else ''
         reset = AnsiColor.RESET if self.use_color and color else ''
-        # Añadir archivo:línea si es INFO y show_file_line está activo
-        if (level == 'INFO' and self.show_file_line) or (level == 'DEBUG' and self.show_file_line):
+        # Añadir archivo:línea si es INFO, DEBUG o WARNING y show_file_line está activo
+        if level in ('INFO', 'DEBUG', 'WARNING') and self.show_file_line:
             import os
             stack = inspect.stack()
             idx = stacklevel

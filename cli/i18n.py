@@ -473,6 +473,11 @@ MESSAGES = {
         'en': "G-code file selected: {filename}",
         'zh': "已选择 G-code 文件：{filename}",
     },
+    'WARN_INVALID_OPTION': {
+        'es': "Opción inválida. Intente nuevamente.",
+        'en': "Invalid option. Try again.",
+        'zh': "⚠ 无效选项，请重试",
+    },
 }
 
 def get_message(key, lang='es', **kwargs):
