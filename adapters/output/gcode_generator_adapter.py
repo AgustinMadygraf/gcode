@@ -8,11 +8,9 @@ from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.ports.transform_manager_port import TransformManagerPort
 from domain.geometry.scale_manager import ScaleManager
-from domain.gcode.gcode_command_builder import GCodeCommandBuilder
 from domain.gcode.gcode_border_rectangle_detector import GCodeBorderRectangleDetector
 from domain.gcode.gcode_border_filter import GCodeBorderFilter
 from domain.ports.gcode_optimization_chain_port import GcodeOptimizationChainPort
-from domain.gcode.commands.arc_command import RelativeMoveCommand
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
@@ -24,7 +22,6 @@ from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
-from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 from adapters.output.gcode_optimization_logger import GcodeOptimizationLogger
 from adapters.output.path_gcode_generator import PathGcodeGenerator
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
@@ -141,9 +138,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
     def generate(self, paths, svg_attr: Dict[str, Any]) -> List[str]:
         gcode = []  # Valor por defecto para evitar UnboundLocalError
         # Log orden y distancia antes de optimizar
-        if self.logger:
-            self.optimization_logger.log_paths_order(paths, self._path_id, "DEBUG_PATHS_ORDER_ORIG")
-            self.optimization_logger.log_total_distance(self._total_travel_distance(paths), "DEBUG_TOTAL_DIST_ORIG")
+        self.optimization_logger.log_paths_order(paths, self._path_id, "DEBUG_PATHS_ORDER_ORIG")
+        self.optimization_logger.log_total_distance(self._total_travel_distance(paths), "DEBUG_TOTAL_DIST_ORIG")
         from cli.progress_bar import print_progress_bar
         optimizer = TrajectoryOptimizer()
         def progress_callback(current, total):
@@ -153,21 +149,18 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                     print_progress_bar(current, total, prefix=self.i18n.get('OPTIMIZING_PATHS'), suffix='', length=40, lang=getattr(self.i18n, 'default_lang', 'es'))
                     progress_callback._last_percent = percent
                 if current == total:
-                    if self.logger:
-                        self.logger.debug("Optimización de paths finalizada (barra de progreso completada)")
+                    self.logger.debug("Optimización de paths finalizada (barra de progreso completada)")
         optimized_paths = optimizer.optimize_order(paths, progress_callback=progress_callback)
-        if self.logger:
-            self.optimization_logger.log_paths_order(optimized_paths, self._path_id, "DEBUG_PATHS_ORDER_OPT")
-            self.optimization_logger.log_total_distance(self._total_travel_distance(optimized_paths), "DEBUG_TOTAL_DIST_OPT")
-            bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
-            scale = ScaleManager.viewbox_scale(svg_attr)
-            scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
-            scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
-            self.optimization_logger.log_bbox_and_scale(bbox, scale)
-            remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
-            use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
-            self.optimization_logger.log_config_flags(remove_border, use_relative_moves)
-        # --- Mover la generación de G-code fuera del if self.logger ---
+        self.optimization_logger.log_paths_order(optimized_paths, self._path_id, "DEBUG_PATHS_ORDER_OPT")
+        self.optimization_logger.log_total_distance(self._total_travel_distance(optimized_paths), "DEBUG_TOTAL_DIST_OPT")
+        bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
+        scale = ScaleManager.viewbox_scale(svg_attr)
+        scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
+        scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
+        self.optimization_logger.log_bbox_and_scale(bbox, scale)
+        remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
+        use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
+        self.optimization_logger.log_config_flags(remove_border, use_relative_moves)
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
         scale = ScaleManager.viewbox_scale(svg_attr)
         scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
@@ -182,9 +175,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             from domain.compression_config import CompressionConfig
             compression_config = CompressionConfig()
             gcode, _ = compression_service.compress(gcode, compression_config)
-        if self.logger:
-            self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
-            self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
+        self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
+        self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
         if remove_border:
             detector = GCodeBorderRectangleDetector()
             border_filter = GCodeBorderFilter(detector)
