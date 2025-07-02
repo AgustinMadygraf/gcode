@@ -97,9 +97,8 @@ class SvgToGcodeWorkflow:
         with gcode_file.open("w", encoding="utf-8") as f:
             f.write("\n".join(gcode_lines))
         # Separador visual antes de logs técnicos si modo dev
-        if hasattr(self.container, 'logger') and getattr(self.container.logger, 'level', None) == 10:  # logging.DEBUG == 10
-            self.presenter.print("\n--- [LOGS TÉCNICOS] ---\n", color='yellow')
         self.container.logger.info(self.presenter.i18n.get("INFO_GCODE_WRITTEN", filename=gcode_file_str))
         self.container.event_bus.publish('gcode_generated', {'svg_file': svg_file_str, 'gcode_file': gcode_file_str})
         self.presenter.print_success(self.presenter.i18n.get("INFO_GCODE_SUCCESS", filename=gcode_file_str))
+        print("\n")
         return True
