@@ -2,6 +2,8 @@
 Path: adapters/output/gcode_generator_adapter.py
 Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 """
+
+import time
 from typing import List, Optional, Any, Dict
 from domain.entities.point import Point
 from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
@@ -25,6 +27,7 @@ from adapters.output.gcode_generation_config_helper import GcodeGenerationConfig
 from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
 from adapters.output.path_gcode_generator import PathGcodeGenerator
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
+from tqdm import tqdm
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """
@@ -135,6 +138,16 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         return dist
 
     def generate(self, paths, svg_attr: Dict[str, Any]) -> List[str]:
+        t_start = time.time()
+        # Loguear inicio del proceso de generación de G-code
+        self.logger.info(self.i18n.get("INFO_START_GCODE_GEN", count=len(paths), file=svg_attr.get("filename", "N/A")))
+
+        # Validaciones de configuración
+        if self.step_mm <= 0:
+            self.logger.warning(self.i18n.get("WARN_STEP_MM_INVALID", value=self.step_mm))
+        if not self.path_sampler:
+            self.logger.error(self.i18n.get("ERR_MISSING_PATH_SAMPLER"))
+            raise ValueError("PathSamplerPort is required")
         gcode = []  # Valor por defecto para evitar UnboundLocalError
         # Log orden y distancia antes de optimizar
         ids = [self._path_id(p, i) for i, p in enumerate(paths)]
@@ -142,25 +155,47 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
         from cli.progress_bar import print_progress_bar
         optimizer = TrajectoryOptimizer()
+        # Loguear inicio de optimización
+        self.logger.info(self.i18n.get("INFO_OPTIMIZING_PATHS"))
+        # Barra de progreso con tqdm para optimización
+        use_tqdm = True
+        pbar = None
         def progress_callback(current, total):
-            if total > 5:
+            nonlocal pbar
+            if use_tqdm:
+                if pbar is None and total > 0:
+                    from tqdm import tqdm
+                    pbar = tqdm(total=total, desc=self.i18n.get('OPTIMIZING_PATHS'), ncols=60)
+                if pbar is not None:
+                    pbar.n = current
+                    pbar.refresh()
+                    if current == total:
+                        pbar.n = total
+                        pbar.refresh()
+                        pbar.close()
+                        pbar = None
+            else:
                 percent = int((current / float(total)) * 100) if total else 100
-                if not hasattr(progress_callback, '_last_percent') or percent != progress_callback._last_percent:
-                    print_progress_bar(current, total, prefix=self.i18n.get('OPTIMIZING_PATHS'), suffix='', length=40, lang=getattr(self.i18n, 'default_lang', 'es'))
-                    progress_callback._last_percent = percent
-                if current == total:
-                    self.logger.debug("Optimización de paths finalizada (barra de progreso completada)")
+                print(f"Progreso: {percent}%")
+        # Usar barra de progreso con tqdm
         optimized_paths = optimizer.optimize_order(paths, progress_callback=progress_callback)
+        if pbar is not None and not pbar.disable:
+            pbar.close()
+        # Loguear si la optimización no tuvo efecto
+        if not optimized_paths or optimized_paths == paths:
+            self.logger.warning(self.i18n.get("WARN_NO_OPTIMIZATION"))
         ids = [self._path_id(p, i) for i, p in enumerate(paths)]
         self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_OPT", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
 
         self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_OPT", dist=f"{self._total_travel_distance(optimized_paths):.2f}"))
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
 
-        
-        scale = ScaleManager.viewbox_scale(svg_attr)
+        scale_original = ScaleManager.viewbox_scale(svg_attr)
+        scale = scale_original
         scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
         scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
+        if scale < scale_original:
+            self.logger.warning(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
 
         xmin, xmax, ymin, ymax = bbox
         self.logger.debug(self.i18n.get("DEBUG_BOUNDING_BOX", xmin=f"{xmin:.3f}", xmax=f"{xmax:.3f}", ymin=f"{ymin:.3f}", ymax=f"{ymax:.3f}"))
@@ -178,21 +213,35 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
         all_points = self.sample_transform_pipeline(optimized_paths, scale)
-        gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+        try:
+            gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+        except Exception:
+            self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
+            raise
+        self.logger.info(self.i18n.get("INFO_GCODE_LINES_PRECOMP", count=len(gcode)))
         # Compresión configurable
         compression_service = GcodeCompressionFactory.get_compression_service(self.config, logger=self.logger)
         if compression_service:
             from domain.compression_config import CompressionConfig
             compression_config = CompressionConfig()
+            orig_len = len(gcode)
             gcode, _ = compression_service.compress(gcode, compression_config)
+            reduction = 100 * (1 - len(gcode) / orig_len) if orig_len else 0
+            self.logger.info(self.i18n.get("INFO_COMPRESSION", reduction=f"{reduction:.1f}%"))
         self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
         self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
         if remove_border:
             detector = GCodeBorderRectangleDetector()
             border_filter = GCodeBorderFilter(detector)
+            # Detectar borde antes de filtrar
+            border_found = detector.detect_border_pattern(gcode if isinstance(gcode, str) else '\n'.join(gcode))
+            if not border_found:
+                self.logger.warning(self.i18n.get("WARN_BORDER_NOT_FOUND"))
             gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
             if isinstance(gcode, str):
                 gcode = gcode.split('\n')
+        elapsed_ms = int((time.time() - t_start) * 1000)
+        self.logger.info(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
         return gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:

@@ -1,4 +1,5 @@
 """
+Path: adapters/output/logger_adapter.py
 Logger adapter for Clean Architecture.
 Implements LoggerPort using Python's standard logging.
 """

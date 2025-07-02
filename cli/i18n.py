@@ -111,10 +111,10 @@ MESSAGES = {
         'INFO_OPTIONS': "Opciones:",
         'INFO_DIRECT_EXECUTION': "Ejecución directa: usando archivos especificados por argumentos.",
         'WARN_NO_FILES_FOUND': "No se encontraron archivos SVG ni GCODE disponibles.",
-        'INFO_TECHNICAL_LOGS_HEADER': "--- [LOGS TÉCNICOS] ---",
         'OPTIMIZING_PATHS': "Optimizando trayectorias...",
         'DEBUG_REMOVE_BORDER': "Eliminación de borde activada: {enabled}",
-        # ...agregar más mensajes según se centralicen...
+        'WARN_SCALE_REDUCED': "Scale was reduced to {scale:.3f} to fit physical limits.",
+        'WARN_BORDER_NOT_FOUND': "Border removal requested but no border was detected.",
     },
     'en': {
         'DEBUG_DEV_MODE_ON': "[DEV] Developer mode active: DEBUG logging and extended stacktrace.",
@@ -221,8 +221,10 @@ MESSAGES = {
         'INFO_OPTIONS': "Options:",
         'INFO_DIRECT_EXECUTION': "Direct execution: using files specified by arguments.",
         'WARN_NO_FILES_FOUND': "No SVG or GCODE files available.",
-        'INFO_TECHNICAL_LOGS_HEADER': "--- [TECHNICAL LOGS] ---",
         'OPTIMIZING_PATHS': "Optimizing paths...",
+        'DEBUG_REMOVE_BORDER': "Eliminación de borde activada: {enabled}",
+        'WARN_SCALE_REDUCED': "La escala fue reducida a {scale:.3f} para respetar límites físicos.",
+        'WARN_BORDER_NOT_FOUND': "Se solicitó eliminar borde pero no se detectó ninguno.",
     },
     'zh': {
         'DEBUG_DEV_MODE_ON': "[DEV] 开发者模式已激活：DEBUG 日志和扩展堆栈跟踪",
@@ -312,6 +314,8 @@ MESSAGES = {
         'ARG_NO_INTERACTIVE': "非交互模式运行",
         'ARG_NO_COLOR': "禁用彩色输出",
         'ARG_LANG': "界面语言 (es, en, zh)",
+        'WARN_SCALE_REDUCED': "为适应物理限制，缩放比例已降至 {scale:.3f}。",
+        'WARN_BORDER_NOT_FOUND': "请求去除边框，但未检测到任何边框。",
     }
 }
 
