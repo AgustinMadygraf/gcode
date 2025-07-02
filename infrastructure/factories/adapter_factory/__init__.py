@@ -1,4 +1,5 @@
 """
+Path: infrastructure/factories/adapter_factory/__init__.py
 Factory para adaptadores (input/output) de la capa de Interface Adapters.
 """
 from adapters.input.config_adapter import ConfigAdapter

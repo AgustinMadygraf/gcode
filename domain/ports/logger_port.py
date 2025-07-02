@@ -1,4 +1,5 @@
 """
+Path: domain/ports/logger_port.py
 Puerto de logger para Clean Architecture.
 Define la interfaz mínima para logging desacoplado.
 """

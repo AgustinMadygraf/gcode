@@ -1,4 +1,5 @@
 """
+Path: infrastructure/factories/container.py
 Contenedor simple de dependencias para Clean Architecture.
 Refactorizado: delega la creación de dependencias a factories por capa.
 """

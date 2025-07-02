@@ -1,4 +1,5 @@
 """
+Path: adapters/output/gcode_generator_adapter.py
 Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 """
 from typing import List, Optional, Any, Dict

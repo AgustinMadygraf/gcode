@@ -1,4 +1,5 @@
 """
+Path: domain/ports/gcode_generator_port.py
 Puerto GcodeGeneratorPort: interfaz para generación de G-code en el dominio.
 """
 from abc import ABC, abstractmethod
