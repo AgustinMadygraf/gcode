@@ -13,7 +13,7 @@ class CliPresenter:
 
     def print(self, message, color=None):
         # Si es clave i18n, traducir
-        if message in self.i18n._messages.get(self.i18n._default_lang, {}):
+        if message in self.i18n._messages:
             message = self.i18n.get(message)
         if self.color_service and color:
             message = self.color_service.colorize(message, color)
