@@ -3,13 +3,11 @@ CliPresenter: Maneja toda la interacción de entrada/salida con el usuario en la
 Permite inyectar dependencias como i18n y manejo de colores.
 """
 
-from infrastructure.logger import logger
-
 class CliPresenter:
     def __init__(self, i18n=None, color_service=None, logger_instance=None):
         self.i18n = i18n
         self.color_service = color_service
-        self.logger = logger_instance or logger
+        self.logger = logger_instance
 
     def print(self, message, color=None):
         # Si es clave i18n, traducir

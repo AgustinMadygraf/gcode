@@ -37,6 +37,27 @@ FileNotFoundError: ...
 - El flag `--dev` activa nivel `DEBUG`, stacktrace extendido y archivo:línea en logs.
 - Se recomienda evitar el uso del logger global y siempre inyectar el logger contextual.
 
+## Ejemplo recomendado de creación de logger
+
+```python
+from infrastructure.factories.logger_factory import LoggerFactory
+logger = LoggerFactory.create_logger(
+    context_name="my_component",
+    use_color=True,
+    level="DEBUG",
+    show_file_line=True
+)
+```
+
+## Prohibido
+
+- No usar `from infrastructure.logger import logger`.
+- No crear loggers ad-hoc fuera de la factory.
+
+## Referencia
+
+- Ver también: `docs/logger_integration.md` para una guía paso a paso y ejemplos de integración.
+
 ## Ejemplo avanzado
 
 ```python

@@ -9,6 +9,7 @@ from cli.argument_parser import create_parser
 from cli.factories.svg_to_gcode_app_factory import create_svg_to_gcode_app
 from application.exceptions import AppError, InputValidationError, ProcessingError, OutputGenerationError
 from infrastructure.factories.infra_factory import InfraFactory
+from infrastructure.factories.dependency_container import DependencyContainer
 from infrastructure.logger import logger
 
 def main():
@@ -19,11 +20,18 @@ def main():
     log_level = 'DEBUG' if getattr(args, 'dev', False) else 'INFO'
     show_file_line = getattr(args, 'dev', False)
     logger = InfraFactory.get_logger(use_color=use_color, level=log_level, show_file_line=show_file_line)
+    container = DependencyContainer(logger=logger)
+    logger.info("Iniciando aplicación SVG2GCODE")
+    # Ejemplo de advertencia por argumento obsoleto
+    if hasattr(args, 'foo') and getattr(args, 'foo', None) is not None:
+        logger.warning("El argumento '--foo' está obsoleto y será ignorado.")
     if getattr(args, 'dev', False):
-        logger.debug("[DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.")
-    app = create_svg_to_gcode_app(args, logger=logger)
+        logger.debug("Modo desarrollador activo: logging DEBUG y stacktrace extendido.")
+    app = create_svg_to_gcode_app(args, container=container)
     try:
-        return app.run()
+        result = app.run()
+        logger.info("Ejecución finalizada correctamente")
+        return result
     except InputValidationError as e:
         logger.error(f"Validación de entrada: {e}")
         return 2

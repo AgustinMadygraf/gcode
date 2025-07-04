@@ -1,4 +1,5 @@
 """
+Path: domain/services/path_filter_service.py
 Implementación concreta de PathFilterPort para filtrado de paths SVG.
 """
 from typing import List, Any, Callable
