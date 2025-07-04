@@ -16,10 +16,16 @@ class ApplicationOrchestrator:
         self.operations = operations
         self.mode_strategy = mode_strategy
         self.args = args
+        self.logger = getattr(container, 'logger', None)
 
     def run(self):
+        if self.logger:
+            self.logger.info("[Orchestrator] Iniciando ejecución del modo de operación")
         # Delegar la ejecución al modo de operación (interactivo/no-interactivo)
-        return self.mode_strategy.run(self)
+        result = self.mode_strategy.run(self)
+        if self.logger:
+            self.logger.info("[Orchestrator] Ejecución finalizada")
+        return result
 
     # Métodos para exponer operaciones a la UI (pueden expandirse según necesidades)
     def get_operation(self, op_id):
@@ -32,17 +38,24 @@ class ApplicationOrchestrator:
         dims, preset_name = self.presenter.prompt_surface_preset(presets, plotter_max_area)
         self.config._data["TARGET_WRITE_AREA_MM"] = dims
         self.presenter.print_success(f"Área de escritura configurada: {dims[0]}x{dims[1]} mm (preset: {preset_name})")
+        if self.logger:
+            self.logger.info(f"[Orchestrator] Área de escritura configurada: {dims[0]}x{dims[1]} mm (preset: {preset_name})")
 
     # Métodos de UI requeridos por estrategias de modo
     def select_operation_mode(self):
-        # Adaptación de menú según contexto avanzado
         args = self.args
         exit_keywords = {'salir', 'exit', 'quit'}
+        if self.logger:
+            self.logger.info("[Orchestrator] Selección de modo de operación iniciada")
         # 1. Si modo batch/no-interactive, omitir menú
         if args and getattr(args, 'no_interactive', False):
-            return None  # El modo ya se maneja en la estrategia
+            if self.logger:
+                self.logger.info("[Orchestrator] Modo no interactivo detectado, omitiendo menú")
+            return None
         # 2. Si hay input/output por argumento, saltar selección de archivos
         if args and getattr(args, 'input', None) and getattr(args, 'output', None):
+            if self.logger:
+                self.logger.info("[Orchestrator] Ejecución directa por argumentos input/output")
             self.presenter.print(self.presenter.i18n.get('INFO_DIRECT_EXECUTION'), color='cyan')
             return 1 if str(args.input).lower().endswith('.svg') else 2
         # 3. Si no hay archivos SVG/GCODE disponibles, menú reducido
@@ -60,6 +73,8 @@ class ApplicationOrchestrator:
         except Exception:
             pass
         if not svg_files and not gcode_files:
+            if self.logger:
+                self.logger.warning("[Orchestrator] No se encontraron archivos SVG ni GCODE disponibles")
             self.presenter.print(self.presenter.i18n.get('WARN_NO_FILES_FOUND'), color='yellow')
             self.presenter.print(self.presenter.i18n.get('INFO_OPTIONS'), color='bold')
             self.presenter.print_option('1) Cambiar carpeta de entrada')
@@ -68,11 +83,17 @@ class ApplicationOrchestrator:
                 user_input = self.presenter.input(self.presenter.i18n.get('PROMPT_SELECT_OPTION'))
                 if user_input.strip() in {'0', 'salir', 'exit', 'quit'}:
                     self.presenter.print(self.presenter.i18n.get('INFO_EXIT'), color='yellow')
+                    if self.logger:
+                        self.logger.info("[Orchestrator] Usuario eligió salir desde menú reducido")
                     exit(0)
                 elif user_input.strip() == '1':
                     self.presenter.print(self.presenter.i18n.get('WARN_NOT_IMPLEMENTED'), color='yellow')
+                    if self.logger:
+                        self.logger.warning("[Orchestrator] Opción 'cambiar carpeta de entrada' no implementada")
                 else:
                     self.presenter.print(self.presenter.i18n.get('WARN_INVALID_OPTION'), color='yellow')
+                    if self.logger:
+                        self.logger.warning("[Orchestrator] Opción inválida seleccionada en menú reducido")
         # 4. Menú clásico por defecto
         if hasattr(self.presenter, 'select_operation_mode'):
             return self.presenter.select_operation_mode()
@@ -86,18 +107,28 @@ class ApplicationOrchestrator:
                 user_input = self.presenter.input(self.presenter.i18n.get('PROMPT_SELECT_OPTION'))
                 if user_input.strip().lower() in exit_keywords:
                     self.presenter.print(self.presenter.i18n.get('INFO_EXIT'), color='yellow')
+                    if self.logger:
+                        self.logger.info("[Orchestrator] Usuario eligió salir desde menú principal")
                     exit(0)
                 choice = int(user_input)
                 if choice in [1, 2]:
+                    if self.logger:
+                        self.logger.info(f"[Orchestrator] Usuario seleccionó operación {choice}")
                     return choice
                 elif choice == 3:
                     self.configure_write_area()
                 else:
                     self.presenter.print(self.presenter.i18n.get('WARN_INVALID_SELECTION'), color='yellow')
+                    if self.logger:
+                        self.logger.warning("[Orchestrator] Selección inválida en menú principal")
             except ValueError:
                 self.presenter.print(self.presenter.i18n.get('WARN_INVALID_NUMBER'), color='yellow')
+                if self.logger:
+                    self.logger.warning("[Orchestrator] Valor no numérico ingresado en menú principal")
             except KeyboardInterrupt:
                 self.presenter.print(self.presenter.i18n.get('INFO_EXIT_INTERRUPT'), color='yellow')
+                if self.logger:
+                    self.logger.info("[Orchestrator] Usuario interrumpió la aplicación (Ctrl+C)")
                 exit(0)
 
     def _get_context_info(self):

@@ -31,13 +31,23 @@ class SvgFileSelectorAdapter(FileSelectorPort):
 
     def _load_config(self):
         """Carga la configuración desde el archivo JSON."""
-        with open(self.CONFIG_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(self.CONFIG_PATH, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            self.logger.debug(f"Configuración cargada desde {self.CONFIG_PATH}: {config}")
+            return config
+        except Exception as e:
+            self.logger.error(f"Error al cargar configuración: {e}")
+            return {}
 
     def _save_config(self, config):
         """Guarda la configuración en el archivo JSON."""
-        with open(self.CONFIG_PATH, 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
+        try:
+            with open(self.CONFIG_PATH, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            self.logger.debug(f"Configuración guardada en {self.CONFIG_PATH}: {config}")
+        except Exception as e:
+            self.logger.error(f"Error al guardar configuración: {e}")
 
     def select_svg_file(self, initial_dir: Optional[str] = None) -> Optional[str]:
         """
@@ -47,7 +57,9 @@ class SvgFileSelectorAdapter(FileSelectorPort):
         config = self._load_config()
         svg_input_dir = initial_dir or config.get('SVG_INPUT_DIR', './data/svg_input')
         while True:
+            self.logger.debug(f"Buscando SVGs en: {svg_input_dir}")
             svg_files = _find_svg_files_recursively(svg_input_dir)
+            self.logger.debug(f"SVGs encontrados: {svg_files}")
             if svg_files:
                 self.logger.info(self.i18n.get("INFO_SVG_FILES_FOUND"))
                 for idx, file in enumerate(svg_files, 1):
@@ -72,6 +84,7 @@ class SvgFileSelectorAdapter(FileSelectorPort):
                 opt = input(self.i18n.get("PROMPT_SELECT_OPTION")).strip()
                 if opt == '1':
                     new_dir = input(self.i18n.get("PROMPT_NEW_SVG_DIR")).strip()
+                    self.logger.debug(f"Intentando cambiar directorio a: {new_dir}")
                     if os.path.isdir(new_dir):
                         svg_input_dir = new_dir
                         config['SVG_INPUT_DIR'] = new_dir

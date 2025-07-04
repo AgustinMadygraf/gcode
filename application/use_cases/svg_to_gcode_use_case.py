@@ -20,21 +20,44 @@ class SvgToGcodeUseCase:
         self.filename_service = filename_service
 
     def execute(self, svg_file: Path, transform_strategies: List[Any] = None, context: dict = None):
-        self.logger.info(f"Carga de SVG: {svg_file}")
-        svg_loader = self.svg_loader_factory(svg_file)
-        paths = svg_loader.get_paths()
-        svg_attr = svg_loader.get_attributes()
-        self.logger.info(f"Paths extraídos: {len(paths)}")
+        self.logger.info(f"[SVG2GCODE] Iniciando carga de SVG: {svg_file}")
+        try:
+            svg_loader = self.svg_loader_factory(svg_file)
+            paths = svg_loader.get_paths()
+            svg_attr = svg_loader.get_attributes()
+            self.logger.debug(f"Atributos SVG: {svg_attr}")
+            self.logger.info(f"Paths extraídos: {len(paths)}")
+        except Exception as e:
+            self.logger.error(f"Error al cargar SVG o extraer paths: {e}", exc_info=True)
+            raise
         # Procesamiento de paths
-        processed_paths = self.path_processing_service.process(paths, svg_attr)
-        self.logger.info(f"Paths útiles tras procesamiento: {len(processed_paths)}")
+        try:
+            processed_paths = self.path_processing_service.process(paths, svg_attr)
+            self.logger.info(f"Paths útiles tras procesamiento: {len(processed_paths)}")
+            if not processed_paths:
+                self.logger.warning(f"No se encontraron paths útiles tras el procesamiento para {svg_file}")
+        except Exception as e:
+            self.logger.error(f"Error en el procesamiento de paths: {e}", exc_info=True)
+            raise
         # Generación de G-code
-        gcode_lines = self.gcode_generation_service.generate(processed_paths, svg_attr, context=context)
-        self.logger.info(f"G-code generado con {len(gcode_lines)} líneas")
+        try:
+            self.logger.debug(f"Contexto para generación de G-code: {context}")
+            gcode_lines = self.gcode_generation_service.generate(processed_paths, svg_attr, context=context)
+            self.logger.info(f"G-code generado con {len(gcode_lines)} líneas")
+        except Exception as e:
+            self.logger.error(f"Error en la generación de G-code: {e}", exc_info=True)
+            raise
         # Compresión de G-code
-        compression_result = self.gcode_compression_use_case.execute(gcode_lines)
-        compressed_gcode = compression_result.get('compressed_gcode', gcode_lines)
-        self.logger.info(f"Compresión: original={compression_result.get('original_size', 0)}, comprimido={compression_result.get('compressed_size', 0)}, ratio={100 * (1 - compression_result.get('compression_ratio', 1)):.2f}%")
+        try:
+            compression_result = self.gcode_compression_use_case.execute(gcode_lines)
+            compressed_gcode = compression_result.get('compressed_gcode', gcode_lines)
+            ratio = compression_result.get('compression_ratio', 1)
+            self.logger.info(f"Compresión: original={compression_result.get('original_size', 0)}, comprimido={compression_result.get('compressed_size', 0)}, ratio={100 * (1 - ratio):.2f}%")
+            if ratio > 0.95:
+                self.logger.warning(f"La compresión fue poco efectiva (ratio={ratio:.2f}) para {svg_file}")
+        except Exception as e:
+            self.logger.error(f"Error en la compresión de G-code: {e}", exc_info=True)
+            raise
         return {
             'svg_file': svg_file,
             'svg_attr': svg_attr,

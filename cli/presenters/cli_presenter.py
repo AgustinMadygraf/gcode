@@ -9,13 +9,32 @@ class CliPresenter:
         self.color_service = color_service
         self.logger = logger_instance
 
-    def print(self, message, color=None):
+    def print(self, message, color=None, level=None):
         # Si es clave i18n, traducir
         if message in self.i18n._messages:
             message = self.i18n.get(message)
         if self.color_service and color:
             message = self.color_service.colorize(message, color)
-        self.logger.info(message, stacklevel=3)
+        # Permitir especificar el nivel, o inferirlo por prefijo o color
+        log_level = level
+        if log_level is None:
+            # Inferir por color o prefijo
+            if color in ("red", "danger", "error") or (isinstance(message, str) and message.lower().startswith("error")):
+                log_level = "error"
+            elif color in ("yellow", "warning", "warn") or (isinstance(message, str) and message.lower().startswith("warn")):
+                log_level = "warning"
+            elif color in ("blue", "debug") or (isinstance(message, str) and message.lower().startswith("debug")):
+                log_level = "debug"
+            else:
+                log_level = "info"
+        if log_level == "error":
+            self.logger.error(message, stacklevel=3)
+        elif log_level == "warning":
+            self.logger.warning(message, stacklevel=3)
+        elif log_level == "debug":
+            self.logger.debug(message, stacklevel=3)
+        else:
+            self.logger.info(message, stacklevel=3)
 
     def input(self, prompt, color=None):
         if self.color_service and color:

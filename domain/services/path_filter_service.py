@@ -21,32 +21,47 @@ class PathFilter(PathFilterPort):
         filtered = []
         removed = 0
         for _i, p in enumerate(paths):
-            total_length = sum(seg.length() for seg in p)
-            msg = f"Path {_i}: longitud total={total_length:.4f}, segmentos={len(p)}"
-            self.logger.debug(msg)
-            if total_length <= self.min_length:
-                msg = f"Path {_i}: descartado por longitud ({total_length:.4f})"
+            try:
+                total_length = sum(seg.length() for seg in p)
+                msg = f"Path {_i}: longitud total={total_length:.4f}, segmentos={len(p)}"
                 self.logger.debug(msg)
-                continue
-            if not all(f(p) for f in self.extra_filters):
-                msg = f"Path {_i}: descartado por filtro extra"
-                self.logger.debug(msg)
-                continue
-            if self.remove_svg_border and svg_attr:
-                msg = f"Path {_i}: evaluando como posible borde (segmentos={len(p)})"
-                self.logger.debug(msg)
-                borde = self.border_detector.matches_svg_bounds(p, svg_attr)
-                msg = f"Path {_i}: matches_svg_bounds={borde}"
-                self.logger.debug(msg)
-                if borde:
-                    msg = f"Path {_i}: eliminado como borde SVG (rectángulo coincide con viewBox)"
-                    self.logger.info(msg)
-                    removed += 1
-                    continue
-                else:
-                    msg = f"Path {_i}: NO eliminado como borde SVG"
+                if total_length <= self.min_length:
+                    msg = f"Path {_i}: descartado por longitud ({total_length:.4f})"
                     self.logger.debug(msg)
-            filtered.append(p)
+                    continue
+                try:
+                    if not all(f(p) for f in self.extra_filters):
+                        msg = f"Path {_i}: descartado por filtro extra"
+                        self.logger.debug(msg)
+                        continue
+                except Exception as e:
+                    self.logger.error(f"Error en filtro extra para path {_i}: {e}", exc_info=True)
+                    continue
+                if self.remove_svg_border:
+                    if not svg_attr:
+                        self.logger.warning(f"No se proporcionaron atributos SVG para evaluar borde en path {_i}")
+                    else:
+                        msg = f"Path {_i}: evaluando como posible borde (segmentos={len(p)})"
+                        self.logger.debug(msg)
+                        try:
+                            borde = self.border_detector.matches_svg_bounds(p, svg_attr)
+                        except Exception as e:
+                            self.logger.error(f"Error al evaluar matches_svg_bounds en path {_i}: {e}", exc_info=True)
+                            continue
+                        msg = f"Path {_i}: matches_svg_bounds={borde}"
+                        self.logger.debug(msg)
+                        if borde:
+                            msg = f"Path {_i}: eliminado como borde SVG (rectángulo coincide con viewBox)"
+                            self.logger.info(msg)
+                            removed += 1
+                            continue
+                        else:
+                            msg = f"Path {_i}: NO eliminado como borde SVG"
+                            self.logger.debug(msg)
+                filtered.append(p)
+            except Exception as e:
+                self.logger.error(f"Error inesperado al filtrar path {_i}: {e}", exc_info=True)
+                continue
         msg = f"Total de paths eliminados como borde SVG: {removed}"
         self.logger.info(msg)
         return filtered

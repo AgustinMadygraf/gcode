@@ -98,10 +98,9 @@ class SvgBorderDetector:
                 vb_width = vb_xmax - vb_xmin
                 vb_height = vb_ymax - vb_ymin
                 msg = f"Usando width/height como viewBox: xmin={vb_xmin}, xmax={vb_xmax}, ymin={vb_ymin}, ymax={vb_ymax}"
-                self.logger.debug(msg)
-                print(msg)
+                self.logger.warning(msg)
             except Exception as e:
-                self.logger.debug("Descartado: no hay viewBox válido ni width/height")
+                self.logger.error("Descartado: no hay viewBox válido ni width/height")
                 return False
         x_match = (abs(path_xmin - vb_xmin) < self.tolerance * vb_width and 
                    abs(path_xmax - vb_xmax) < self.tolerance * vb_width)
@@ -120,9 +119,13 @@ class SvgBorderDetector:
             msg = f"No coincide en Y: |{path_ymin} - {vb_ymin}|={abs(path_ymin-vb_ymin):.3f}, |{path_ymax} - {vb_ymax}|={abs(path_ymax-vb_ymax):.3f} (tol={self.tolerance * vb_height:.3f})"
             self.logger.debug(msg)
         if x_match and y_match:
+            self.logger.info("Path identificado como borde del SVG")
             self.logger.debug("Path coincide con el marco del SVG (borde)")
             return True
         else:
+            # Si es rectángulo pero no coincide, advertir
+            if self.is_rectangle(path):
+                self.logger.warning("Rectángulo detectado pero no coincide con el borde del SVG (puede ser un marco interno o error de tolerancia)")
             self.logger.debug("Path NO coincide con el marco del SVG (no borde)")
             return False
     
