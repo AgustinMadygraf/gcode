@@ -6,3 +6,4 @@ data/gcode_output/*
 !data/gcode_output/sample_compacted.gcode
 docs/00-Prompt-for-ProjectAnalysis.md
 todo.txt
+vulture_report.txt
