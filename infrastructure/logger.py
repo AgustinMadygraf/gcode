@@ -42,12 +42,6 @@ class ConsoleLogger:
         self.level = self.LEVELS.get(level.upper(), 20)
         self.show_file_line = show_file_line
 
-    def set_level(self, level):
-        if isinstance(level, int):
-            self.level = level
-        else:
-            self.level = self.LEVELS.get(str(level).upper(), 20)
-
     def _should_log(self, level):
         lvl = self.LEVELS.get(level, 20)
         return lvl >= self.level or level in ('INPUT', 'OPTION')

@@ -104,12 +104,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.cmd_up
         )
 
-    def calculate_curvature_factor(self, p1, p2, p3, base_feed_rate):
-        """
-        DEPRECATED: Usar CurvatureFeedCalculator.adjust_feed en su lugar.
-        """
-        return self.curvature_feed_calculator.adjust_feed(p1, p2, p3)
-
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
         def feed_fn(prev_pt, curr_pt, next_pt, future_pt):
             # Usar CurvatureFeedCalculator para calcular el feed
@@ -247,9 +241,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:
         pipeline = SampleTransformPipeline(self.path_sampler, self.transform_manager, scale)
         return pipeline.process(paths)
-
-    def generate_path_gcode(self, path, feed, context=None):
-        return self.path_gcode_generator.generate(path, context)
 
     def _generate_single_path(self, points, feed):
         # Deprecated: ahora se usa PathGcodeGenerator

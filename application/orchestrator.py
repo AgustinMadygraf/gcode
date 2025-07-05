@@ -28,9 +28,6 @@ class ApplicationOrchestrator:
         return result
 
     # Métodos para exponer operaciones a la UI (pueden expandirse según necesidades)
-    def get_operation(self, op_id):
-        return self.operations.get(op_id)
-
     def configure_write_area(self):
         """Permite al usuario seleccionar un preset de superficie o ingresar dimensiones personalizadas."""
         presets = self.config.get("SURFACE_PRESETS", {})

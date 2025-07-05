@@ -33,50 +33,6 @@ class GeometryService:
         xmin, xmax, ymin, ymax = bbox
         return (xmin + xmax) / 2, (ymin + ymax) / 2
         
-    def _simplify_path_lines(self, path: Path) -> Path:
-        """
-        Simplifica un path combinando líneas colineales.
-        """
-        if len(path) <= 1:
-            return path
-            
-        new_segments = [path[0]]
-        
-        for i in range(1, len(path)):
-            prev_segment = new_segments[-1]
-            current_segment = path[i]
-            
-            if not (isinstance(prev_segment, Line) and isinstance(current_segment, Line)):
-                new_segments.append(current_segment)
-                continue
-                
-            # Verificamos colinealidad
-            prev_dir = prev_segment.end - prev_segment.start
-            curr_dir = current_segment.end - current_segment.start
-            
-            prev_mag = abs(prev_dir)
-            curr_mag = abs(curr_dir)
-            
-            # Evitar división por cero
-            if prev_mag < 1e-10 or curr_mag < 1e-10:
-                new_segments.append(current_segment)
-                continue
-                
-            # Normalizamos vectores
-            prev_dir_norm = prev_dir / prev_mag
-            curr_dir_norm = curr_dir / curr_mag
-            
-            # Producto vectorial para verificar paralelismo
-            cross_product = prev_dir_norm.real * curr_dir_norm.imag - prev_dir_norm.imag * curr_dir_norm.real
-            
-            if abs(cross_product) < 1e-6:  # Son colineales
-                # Reemplazamos los dos segmentos por uno solo
-                new_segments[-1] = Line(prev_segment.start, current_segment.end)
-            else:
-                new_segments.append(current_segment)
-                
-        return Path(*new_segments)
-    
     def _fit_ellipse(self, points: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float]:
         """
         Ajusta una elipse a un conjunto de puntos usando el algoritmo Direct Ellipse Fit.

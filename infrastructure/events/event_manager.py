@@ -12,10 +12,6 @@ class EventManager:
     def subscribe(self, event_type, handler):
         self._subscribers[event_type].append(handler)
 
-    def unsubscribe(self, event_type, handler):
-        if handler in self._subscribers[event_type]:
-            self._subscribers[event_type].remove(handler)
-
     def publish(self, event):
         for handler in self._subscribers[type(event)]:
             handler(event)

@@ -42,9 +42,6 @@ class SvgToGcodeWorkflow:
             self.presenter.print(self.presenter.i18n.get("error_no_svg"), color='red')
             return False
         self.presenter.print(self.presenter.i18n.get("INFO_PROCESSING_DONE"), color='green')
-        def dummy_process(_):
-            import time
-            time.sleep(0.01)
         if not paths or len(paths) == 0:
             logger.warning(f"El archivo SVG no contiene paths válidos: {svg_file_str}")
         if paths and len(paths) > 1:
