@@ -20,4 +20,4 @@ class FilenameServicePort(ABC):
         Returns:
             Path: Ruta completa al nuevo archivo a generar
         """
-        pass
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass

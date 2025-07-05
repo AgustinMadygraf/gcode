@@ -127,12 +127,13 @@ event_manager.subscribe(GcodeGeneratedEvent, handler_func)
 
 El sistema soporta la creación de loggers por contexto/app usando `InfraFactory.get_logger()`, permitiendo configurar nivel, color y destino de logs para cada ejecución.
 
-> **Advertencia:** El uso de un logger global único puede causar efectos colaterales en escenarios concurrentes, multi-entrypoint o cuando se extienden los flujos (por ejemplo, API, threads, plugins). Se recomienda siempre inyectar un logger contextual y evitar dependencias directas al logger global.
+> **Advertencia:** Ya NO existe ninguna instancia global de logger en el sistema. El uso de loggers debe ser siempre explícito y por inyección de dependencias. Cualquier intento de acceder a un logger global está prohibido y será considerado un error de arquitectura.
 
 **Recomendaciones:**
 - Usar siempre `InfraFactory.get_logger()` para obtener loggers configurados por contexto.
-- Inyectar el logger en presenters, contenedores y casos de uso.
+- Inyectar el logger en presenters, contenedores, casos de uso y cualquier componente que lo requiera.
 - Documentar y testear el comportamiento esperado en modo `--dev` y en flujos concurrentes.
+- Revisar periódicamente el código para asegurar que no se reintroducen instancias globales de logger.
 
 ## Logger, modo desarrollador y trazabilidad
 

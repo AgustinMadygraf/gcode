@@ -3,8 +3,17 @@ Workflow para SVG a GCODE.
 Orquesta el proceso de conversión, delegando a casos de uso y servicios.
 """
 from pathlib import Path
+from infrastructure.factories.domain_factory import DomainFactory
+from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
+from infrastructure.factories.adapter_factory import AdapterFactory
+from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
+from application.use_cases.path_processing.path_processing_service import PathProcessingService
+from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
+from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
+from domain.services.path_transform_strategies import MirrorVerticalStrategy
 
 class SvgToGcodeWorkflow:
+    " Workflow para convertir SVG a GCODE. "
     def __init__(self, container, presenter, filename_service, config):
         self.container = container
         self.presenter = presenter
@@ -12,6 +21,7 @@ class SvgToGcodeWorkflow:
         self.config = config
 
     def run(self, selector=None):
+        " Ejecuta el flujo de trabajo. "
         logger = self.container.logger
         logger.info("[SVG2GCODE] Workflow started.")
         # Si el selector no tiene i18n, se lo inyecta (retrocompatibilidad)
@@ -37,7 +47,7 @@ class SvgToGcodeWorkflow:
         try:
             paths = svg_loader_factory(svg_file).get_paths()
             logger.debug(f"Paths extraídos del SVG: {len(paths) if paths else 0}")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.error(f"Error al cargar paths del SVG: {e}")
             self.presenter.print(self.presenter.i18n.get("error_no_svg"), color='red')
             return False
@@ -47,41 +57,52 @@ class SvgToGcodeWorkflow:
         if paths and len(paths) > 1:
             self.presenter.print_progress(len(paths), len(paths), prefix=self.presenter.i18n.get("processing_paths"))
         try:
-            from infrastructure.factories.domain_factory import DomainFactory
-            bbox = DomainFactory.create_geometry_service()._calculate_bbox(paths)
+            geometry_service = DomainFactory.create_geometry_service()
+            if hasattr(geometry_service, "calculate_bbox"):
+                bbox = geometry_service.calculate_bbox(paths)
+            else:
+                logger.error("El servicio de geometría no tiene el método público 'calculate_bbox'.")
+                raise AttributeError("El servicio de geometría no tiene el método público 'calculate_bbox'.")
             logger.debug(f"BBox calculado: {bbox}")
         except (AttributeError, ValueError) as e:
             logger.warning(f"No se pudo calcular el bbox: {e}")
             bbox = (0, 0, 0, 0)
         try:
             _xmin, _xmax, _ymin, _ymax = bbox
-            _cx, cy = DomainFactory.create_geometry_service()._center(bbox)
+            geometry_service = DomainFactory.create_geometry_service()
+            if hasattr(geometry_service, "center"):
+                _cx, cy = geometry_service.center(bbox)
+            else:
+                logger.error("El servicio de geometría no tiene el método público 'center'.")
+                raise AttributeError("El servicio de geometría no tiene el método público 'center'.")
             logger.debug(f"Centro calculado: ({_cx}, {cy})")
-        except Exception as e:
+        except (AttributeError, ValueError, TypeError) as e:
             logger.warning(f"No se pudo calcular el centro del bbox: {e}")
             cy = 0
         transform_strategies = []
         if self.config.get_mirror_vertical():
-            from domain.services.path_transform_strategies import MirrorVerticalStrategy
             transform_strategies.append(MirrorVerticalStrategy(cy))
             logger.info("Estrategia de espejo vertical aplicada.")
-        from application.use_cases.path_processing.path_processing_service import PathProcessingService
         path_processor = PathProcessingService(
             min_length=1e-3,
             remove_svg_border=self.config.get_remove_svg_border(),
             border_tolerance=self.config.get_border_detection_tolerance()
         )
-        logger.debug(f"PathProcessor configurado: min_length=1e-3, remove_svg_border={self.config.get_remove_svg_border()}, border_tolerance={self.config.get_border_detection_tolerance()}")
-        generator = self.container.get_gcode_generator(transform_strategies=transform_strategies, i18n=self.presenter.i18n)
-        from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
+        logger.debug(
+            (
+                "PathProcessor configurado: min_length=1e-3, "
+                f"remove_svg_border={self.config.get_remove_svg_border()}, "
+                f"border_tolerance={self.config.get_border_detection_tolerance()}"
+            )
+        )
+        generator = self.container.get_gcode_generator(
+            transform_strategies=transform_strategies,
+            i18n=self.presenter.i18n
+        )
         gcode_service = GCodeGenerationService(generator)
-        from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
         compression_service = create_gcode_compression_service(logger=logger)
-        from infrastructure.factories.adapter_factory import AdapterFactory
         config_reader = AdapterFactory.create_config_adapter(self.config)
-        from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
         compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
-        from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
         svg_to_gcode_use_case = SvgToGcodeUseCase(
             svg_loader_factory=svg_loader_factory,
             path_processing_service=path_processor,
@@ -113,8 +134,8 @@ class SvgToGcodeWorkflow:
         }
         logger.info("Ejecutando caso de uso SvgToGcodeUseCase...")
         try:
-            result = svg_to_gcode_use_case.execute(svg_file, transform_strategies=transform_strategies, context=context)
-        except Exception as e:
+            result = svg_to_gcode_use_case.execute(svg_file, context=context)
+        except (OSError, ValueError) as e:
             logger.error(f"Error al ejecutar SvgToGcodeUseCase: {e}")
             self.presenter.print(self.presenter.i18n.get("error_no_svg"), color='red')
             return False
@@ -130,7 +151,7 @@ class SvgToGcodeWorkflow:
             with gcode_file.open("w", encoding="utf-8") as f:
                 f.write("\n".join(gcode_lines))
             logger.info(self.presenter.i18n.get("INFO_GCODE_WRITTEN", filename=gcode_file_str))
-        except Exception as e:
+        except (OSError, IOError) as e:
             logger.error(f"Error al escribir el archivo GCODE: {e}")
             self.presenter.print(self.presenter.i18n.get("error_no_svg"), color='red')
             return False
