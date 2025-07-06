@@ -5,6 +5,8 @@ Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 
 import time
 from typing import List, Optional, Any, Dict
+from tqdm import tqdm
+
 from domain.entities.point import Point
 from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
@@ -18,16 +20,17 @@ from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
 from domain.ports.transform_manager_port import NullTransformManager
+from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
+from domain.compression_config import CompressionConfig
+
 from infrastructure.transform_manager import TransformManager
 from adapters.output.feed_rate_strategy import FeedRateStrategy
 from adapters.output.sample_transform_pipeline import SampleTransformPipeline
 from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
-from domain.services.optimization.trajectory_optimizer import TrajectoryOptimizer
 from adapters.output.path_gcode_generator import PathGcodeGenerator
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
-from tqdm import tqdm
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """
@@ -65,7 +68,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         logger: LoggerPort = None,
         transform_strategies: Optional[List[PathTransformStrategyPort]] = None,
         optimizer: Optional[GcodeOptimizationChainPort] = None,
-        transform_manager: Optional[TransformManagerPort] = None,
+        _transform_manager: Optional[TransformManagerPort] = None,
         i18n=None
     ):
         self.feed = feed
@@ -105,8 +108,9 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         )
 
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
+        " Genera los comandos G-code a partir de los puntos muestreados y transformados"
         def feed_fn(prev_pt, curr_pt, next_pt, future_pt):
-            # Usar CurvatureFeedCalculator para calcular el feed
+            " Calcula el feed rate basado en la curvatura entre puntos"
             feed = self.curvature_feed_calculator.adjust_feed(prev_pt, curr_pt, next_pt)
             if future_pt is not None:
                 future_feed = self.curvature_feed_calculator.adjust_feed(curr_pt, next_pt, future_pt)
@@ -147,7 +151,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         ids = [self._path_id(p, i) for i, p in enumerate(paths)]
         self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_ORIG", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
         self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
-        from cli.progress_bar import print_progress_bar
         optimizer = TrajectoryOptimizer()
         # Loguear inicio de optimización
         self.logger.info(self.i18n.get("INFO_OPTIMIZING_PATHS"))
@@ -158,7 +161,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             nonlocal pbar
             if use_tqdm:
                 if pbar is None and total > 0:
-                    from tqdm import tqdm
                     pbar = tqdm(total=total, desc=self.i18n.get('OPTIMIZING_PATHS'), ncols=60)
                 if pbar is not None:
                     pbar.n = current
@@ -214,9 +216,11 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             raise
         self.logger.info(self.i18n.get("INFO_GCODE_LINES_PRECOMP", count=len(gcode)))
         # Compresión configurable
-        compression_service = GcodeCompressionFactory.get_compression_service(self.config, logger=self.logger)
+        compression_service = GcodeCompressionFactory.get_compression_service(
+            self.config,
+            logger=self.logger
+        )
         if compression_service:
-            from domain.compression_config import CompressionConfig
             compression_config = CompressionConfig()
             orig_len = len(gcode)
             gcode, _ = compression_service.compress(gcode, compression_config)
@@ -228,7 +232,13 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             detector = GCodeBorderRectangleDetector()
             border_filter = GCodeBorderFilter(detector)
             # Detectar borde antes de filtrar
-            border_found = detector.detect_border_pattern(gcode if isinstance(gcode, str) else '\n'.join(gcode))
+            gcode_str = (
+                gcode if isinstance(gcode, str)
+                else '\n'.join(gcode)
+            )
+            border_found = detector.detect_border_pattern(
+                gcode_str
+            )
             if not border_found:
                 self.logger.warning(self.i18n.get("WARN_BORDER_NOT_FOUND"))
             gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
@@ -239,9 +249,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         return gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:
+        " Aplica el pipeline de muestreo y transformación a los paths"
         pipeline = SampleTransformPipeline(self.path_sampler, self.transform_manager, scale)
         return pipeline.process(paths)
-
-    def _generate_single_path(self, points, feed):
-        # Deprecated: ahora se usa PathGcodeGenerator
-        return self.path_gcode_generator._generate_single_path(points, feed)

@@ -111,23 +111,13 @@ class SvgToGcodeWorkflow:
             logger=logger,
             filename_service=self.filename_service
         )
-        # --- Selección de herramienta ---
-        tool_type = self.presenter.prompt_selection(
-            self.presenter.i18n.get("PROMPT_SELECT_TOOL"),
-            options=[
-                self.presenter.i18n.get("OPTION_TOOL_PEN"),
-                self.presenter.i18n.get("OPTION_TOOL_MARKER")
-            ]
-        )
-        tool_type_str = "pen" if tool_type == 1 else "marker"
-        logger.info(f"Herramienta seleccionada: {tool_type_str}")
+        # --- Herramienta desde configuración ---
+        tool_type_str = self.config.tool_type if hasattr(self.config, 'tool_type') else 'pen'
+        logger.info(f"Herramienta configurada: {tool_type_str}")
         double_pass = False
         if tool_type_str == "pen":
-            double_pass = self.presenter.prompt_yes_no(
-                self.presenter.i18n.get("PROMPT_DOUBLE_PASS"),
-                default_yes=True
-            )
-            logger.debug(f"Doble pasada seleccionada: {double_pass}")
+            double_pass = getattr(self.config, 'pen_double_pass', False)
+            logger.debug(f"Doble pasada configurada: {double_pass}")
         context = {
             "tool_type": tool_type_str,
             "double_pass": double_pass

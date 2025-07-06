@@ -69,21 +69,8 @@ MESSAGES = {
         'en': "Processing completed",
         'zh': "处理完成",
     },
-    'OPTION_TOOL_PEN': {
-        'es': "[1] Lapicera (sólo contornos)",
-        'en': "[1] Pen (contours only)",
-        'zh': "[1] 钢笔 (仅轮廓)",
-    },
-    'OPTION_TOOL_MARKER': {
-        'es': "[2] Fibrón grueso (plenos/contornos)",
-        'en': "[2] Marker (fills/contours)",
-        'zh': "[2] 粗记号笔 (填充/轮廓)",
-    },
-    'PROMPT_SELECT_TOOL': {
-        'es': "Seleccione una opción:",
-        'en': "Select an option:",
-        'zh': "请选择工具类型：",
-    },
+    # Eliminados OPTION_TOOL_PEN, OPTION_TOOL_MARKER, PROMPT_SELECT_TOOL
+    # para evitar input interactivo de herramienta.
     'OPTION_YES': {
         'es': "[s] Sí",
         'en': "[y] Yes",
@@ -94,11 +81,7 @@ MESSAGES = {
         'en': "[n] No",
         'zh': "[N] 否",
     },
-    'PROMPT_DOUBLE_PASS': {
-        'es': "¿Desea realizar doble pasada en contornos? [S/n]:",
-        'en': "Double pass on contours? [Y/n]:",
-        'zh': "轮廓是否进行双遍绘制? [S/n]:",
-    },
+    # Eliminado PROMPT_DOUBLE_PASS para evitar input interactivo de doble pasada.
     'INFO_SVG_LOAD': {
         'es': "Carga de SVG: {filename}",
         'en': "SVG loaded: {filename}",
@@ -485,15 +468,15 @@ def get_message(key, lang='es', **kwargs):
     # Si la clave no existe, devolver la propia clave como fallback
     if key not in MESSAGES:
         return key
-    
+
     # Si el idioma no existe para esa clave, intentar con el idioma por defecto (es)
     message_template = MESSAGES[key].get(lang, MESSAGES[key].get('es', key))
-    
+
     # Aplicar formato si hay argumentos
     if kwargs:
         try:
             return message_template.format(**kwargs)
-        except Exception:
+        except (KeyError, ValueError, IndexError):
             return message_template
-    
+
     return message_template
