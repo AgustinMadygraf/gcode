@@ -155,5 +155,4 @@ class SvgToGcodeWorkflow:
             )
             logger.info(self.i18n.get("INFO_GCODE_SUCCESS", filename=gcode_file_str))
             logger.debug(self.i18n.get("info_workflow_completed"))
-            print("\n")
             return True

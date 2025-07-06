@@ -32,6 +32,10 @@ from adapters.output.gcode_generation_config_helper import GcodeGenerationConfig
 from adapters.output.path_gcode_generator import PathGcodeGenerator
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
 
+class DummyI18n:
+    def get(self, key, **_kwargs):
+        return key
+
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """
     Adapter for G-code generation from SVG paths, implementing the domain port.
@@ -98,7 +102,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             min_feed_factor=getattr(config, 'minimum_feed_factor', 0.4)
         )
         self.curvature_feed_calculator = CurvatureFeedCalculator(self.feed_rate_strategy)
-        self.i18n = i18n
+        self.i18n = i18n if i18n is not None else DummyI18n()
         # Asegura que config tenga i18n para la compresión
         if self.i18n and not hasattr(self.config, 'i18n'):
             setattr(self.config, 'i18n', self.i18n)

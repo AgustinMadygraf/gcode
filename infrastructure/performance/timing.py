@@ -33,6 +33,7 @@ class PerformanceTimer:
             msg = f"⏱️ Timing: {operation_name} completed in {elapsed:.3f}s"
             if level.upper() == "DEBUG":
                 logger.debug(msg)
+                print("\n")
             elif level.upper() == "INFO":
                 logger.info(msg)
 

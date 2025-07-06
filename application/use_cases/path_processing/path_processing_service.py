@@ -23,6 +23,8 @@ class PathProcessingService:
                  i18n=None):
         if logger is None:
             logger = InfraFactory.get_logger(show_file_line=True)
+        if i18n is None and hasattr(logger, 'i18n'):
+            i18n = getattr(logger, 'i18n', None)
         self.path_filter = PathFilter(min_length, extra_filters, remove_svg_border, border_tolerance, logger=logger, i18n=i18n)
         self.transform_strategies = transform_strategies or []
 

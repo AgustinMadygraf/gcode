@@ -6,6 +6,10 @@ from typing import List, Any, Callable
 from domain.ports.path_filter_port import PathFilterPort
 from domain.filters.svg_border_detector import SvgBorderDetector
 
+class DummyI18n:
+    def get(self, key, **_kwargs):
+        return key  # Devuelve la clave como mensaje por defecto
+
 class PathFilter(PathFilterPort):
     " Filtra paths SVG no triviales basándose en longitud y atributos SVG. "
     def __init__(self, min_length: float = 1e-3, extra_filters: List[Callable[[Any], bool]] = None,
@@ -16,7 +20,7 @@ class PathFilter(PathFilterPort):
         if logger is None:
             raise RuntimeError("Logger debe ser inyectado en PathFilter. Usar siempre el constructor con logger explícito.")
         self.logger = logger
-        self.i18n = i18n
+        self.i18n = i18n if i18n is not None else DummyI18n()
         self.border_detector = SvgBorderDetector(tolerance=border_tolerance, logger=logger) if remove_svg_border else None
 
     def filter_nontrivial(self, paths: List[Any], svg_attr: dict = None) -> List[Any]:
@@ -53,13 +57,12 @@ class PathFilter(PathFilterPort):
                                 exc_info=True
                             )
                             continue
-                        self.logger.debug(self.i18n.get('DEBUG_MATCHES_SVG_BOUNDS', idx=_i, borde=borde))
                         if borde:
                             self.logger.debug(self.i18n.get('DEBUG_PATH_REMOVED_BORDER', idx=_i))
                             removed += 1
                             continue
-                        else:
-                            self.logger.debug(self.i18n.get('DEBUG_PATH_NOT_REMOVED_BORDER', idx=_i))
+#                        else:
+#                            self.logger.debug(self.i18n.get('DEBUG_PATH_NOT_REMOVED_BORDER', idx=_i))
                 filtered.append(p)
             except (AttributeError, TypeError, ValueError) as e:
                 self.logger.error(self.i18n.get('ERROR_FILTER_PATH', idx=_i, error=str(e)), exc_info=True)

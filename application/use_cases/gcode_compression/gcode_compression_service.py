@@ -9,13 +9,17 @@ from domain.compression_metrics import CompressionMetrics
 from domain.compression_config import CompressionConfig
 from domain.services.validation.gcode_validator import GCodeValidator
 
+class DummyI18n:
+    def get(self, key, **_kwargs):
+        return key
+
 class GcodeCompressionService:
     """Servicio de aplicación para comprimir G-code con múltiples estrategias"""
 
     def __init__(self, compressors: List[GcodeCompressionPort], logger=None, i18n=None):
         self.compressors = compressors
         self.logger = logger
-        self.i18n = i18n
+        self.i18n = i18n if i18n is not None else DummyI18n()
 
     def compress(self, gcode_lines: List[str], config: CompressionConfig) -> Tuple[List[str], CompressionMetrics]:
         """Aplica compresión según la configuración proporcionada"""
