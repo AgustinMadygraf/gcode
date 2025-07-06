@@ -147,7 +147,7 @@ class ApplicationOrchestrator:
     def print_option(self, msg):
         " Imprime un mensaje de opción en el log. "
         if self.logger:
-            self.logger.info(f"[OPTION] {msg}")
+            self.logger.option(msg)
 
     def input_with_label(self, prompt):
         " Imprime un prompt de entrada con etiqueta. "

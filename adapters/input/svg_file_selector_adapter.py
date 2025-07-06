@@ -3,11 +3,10 @@ Adaptador CLI para la selección de archivos SVG.
 Implementa FileSelectorPort y permite al usuario elegir un archivo SVG desde la consola.
 Guarda y recupera la carpeta de entrada desde un archivo de configuración JSON.
 """
-from domain.ports.file_selector_port import FileSelectorPort
-from typing import Optional
 import os
 import json
-from pathlib import Path
+from typing import Optional
+from domain.ports.file_selector_port import FileSelectorPort
 
 def _find_svg_files_recursively(directory: str):
     """Busca archivos SVG de forma recursiva en el directorio dado."""
@@ -21,7 +20,8 @@ def _find_svg_files_recursively(directory: str):
 class SvgFileSelectorAdapter(FileSelectorPort):
     """
     Adaptador para la selección de archivos SVG desde la CLI.
-    Permite al usuario navegar y seleccionar archivos SVG, y actualiza la configuración de la carpeta de entrada.
+    Permite al usuario navegar y seleccionar archivos SVG,
+    y actualiza la configuración de la carpeta de entrada.
     """
     CONFIG_PATH = os.path.join(os.path.dirname(__file__), '../../infrastructure/config/config.json')
 
@@ -36,8 +36,14 @@ class SvgFileSelectorAdapter(FileSelectorPort):
                 config = json.load(f)
             self.logger.debug(f"Configuración cargada desde {self.CONFIG_PATH}: {config}")
             return config
-        except Exception as e:
-            self.logger.error(f"Error al cargar configuración: {e}")
+        except FileNotFoundError as e:
+            self.logger.error(f"Archivo de configuración no encontrado: {e}")
+            return {}
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error de decodificación JSON en la configuración: {e}")
+            return {}
+        except OSError as e:
+            self.logger.error(f"Error de E/S al cargar configuración: {e}")
             return {}
 
     def _save_config(self, config):
@@ -46,7 +52,7 @@ class SvgFileSelectorAdapter(FileSelectorPort):
             with open(self.CONFIG_PATH, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
             self.logger.debug(f"Configuración guardada en {self.CONFIG_PATH}: {config}")
-        except Exception as e:
+        except (OSError, json.JSONDecodeError) as e:
             self.logger.error(f"Error al guardar configuración: {e}")
 
     def select_svg_file(self, initial_dir: Optional[str] = None) -> Optional[str]:
