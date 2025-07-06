@@ -15,6 +15,6 @@ def test_create_logger_adapter():
     assert hasattr(logger, 'info')
 
 # def test_create_svg_loader():
-#     loader = AdapterFactory.create_svg_loader("dummy.svg")
+#     loader = AdapterFactory.create_svg_loader("data\svg_input\test_lines.svg")
 #     assert loader is not None
 #     assert hasattr(loader, 'get_paths')

@@ -15,7 +15,7 @@ class DummyLoader:
 
 class DummyPathProcessor:
     """Mock de procesador de rutas"""
-    def process(self, paths, _attrs):
+    def process(self, paths, _attrs, context=None): # pylint: disable=unused-argument
         return paths[:2]  # Simula filtrado
 
 class DummyGcodeGen:

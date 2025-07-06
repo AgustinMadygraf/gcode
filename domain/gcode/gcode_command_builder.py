@@ -33,13 +33,8 @@ class GCodeCommandBuilder:
     def build(self) -> List[BaseCommand]:
         return self.commands
 
-    def to_gcode_lines(self) -> List[str]:
-        cmds = self.commands
-        if self.optimizer:
-            cmds = self.optimizer.optimize(cmds)
-        return [cmd.to_gcode() for cmd in cmds]
-
     def to_gcode_lines_with_metrics(self):
+        " Genera las líneas G-code y métricas de optimización si se usa un optimizador. "
         cmds = self.commands
         metrics = {}
         if self.optimizer:

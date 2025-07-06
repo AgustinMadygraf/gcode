@@ -29,7 +29,6 @@ from adapters.output.sample_transform_pipeline import SampleTransformPipeline
 from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
-from adapters.output.path_gcode_generator import PathGcodeGenerator
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
 
 class DummyI18n:
@@ -112,13 +111,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         # Asegura que config tenga i18n para la compresión
         if self.i18n and not hasattr(self.config, 'i18n'):
             setattr(self.config, 'i18n', self.i18n)
-        self.path_gcode_generator = PathGcodeGenerator(
-            self.path_sampler,
-            self.transform_manager,
-            self.feed_rate_strategy,
-            self.cmd_down,
-            self.cmd_up
-        )
+        # End of __init__
 
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
         " Genera los comandos G-code a partir de los puntos muestreados y transformados"

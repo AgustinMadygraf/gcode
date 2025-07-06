@@ -143,10 +143,6 @@ class Config:
         "Compatibilidad: Devuelve el directorio de salida de GCODE."
         return self.gcode_output_dir
 
-    def get_svg_input_dir(self):
-        "Compatibilidad: Devuelve el directorio de entrada de SVG."
-        return self.svg_input_dir
-
     def get_remove_svg_border(self):
         "Compatibilidad: Devuelve si se debe eliminar el borde SVG."
         return self.remove_svg_border

@@ -2,22 +2,14 @@
 Workflow para el modo no interactivo de generación de G-code desde SVG.
 """
 
-from pathlib import Path
-import sys
-from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
-from application.use_cases.gcode_to_gcode_use_case import GcodeToGcodeUseCase
-from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase
-from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
-from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
-from application.use_cases.path_processing.path_processing_service import PathProcessingService
-from infrastructure.factories.adapter_factory import AdapterFactory
-from infrastructure.factories.domain_factory import DomainFactory
-from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
-from domain.services.path_transform_strategies import MirrorVerticalStrategy
 from application.workflows.input_handler import InputHandler
 from application.workflows.processing_strategies import SvgProcessingStrategy, GcodeProcessingStrategy
 
 class NonInteractiveSvgToGcodeWorkflow:
+    def write_gcode_file(self, gcode_lines, output_path):
+        """Método dummy para compatibilidad con flujos que lo requieran."""
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(gcode_lines))
     def __init__(self, container, presenter, filename_service, config,
                  svg_strategy=None, gcode_strategy=None, input_handler=None):
         self.container = container
@@ -28,10 +20,6 @@ class NonInteractiveSvgToGcodeWorkflow:
         self.svg_strategy = svg_strategy or SvgProcessingStrategy()
         self.gcode_strategy = gcode_strategy or GcodeProcessingStrategy()
         self.input_handler = input_handler or InputHandler(self.presenter)
-
-    def _write_gcode_file(self, gcode_file: Path, gcode_lines):
-        with gcode_file.open("w", encoding="utf-8") as f:
-            f.write("\n".join(gcode_lines))
 
     def run(self, args):
         input_type, input_data, temp_path = self.input_handler.read(args)

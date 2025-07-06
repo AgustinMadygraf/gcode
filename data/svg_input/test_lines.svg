@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 100 100">
-  <!-- Tres líneas horizontales -->
-  <line x1="0" y1="20" x2="100" y2="20" stroke="black" stroke-width="1" />
-  <line x1="0" y1="50" x2="100" y2="50" stroke="black" stroke-width="1" />
-  <line x1="0" y1="80" x2="100" y2="80" stroke="black" stroke-width="1" />
-
-  <!-- Dos líneas verticales -->
-  <line x1="30" y1="0" x2="30" y2="100" stroke="black" stroke-width="1" />
-  <line x1="70" y1="0" x2="70" y2="100" stroke="black" stroke-width="1" />
+<svg xmlns="http://www.w3.org/2000/svg" width="1000mm" height="1000mm" viewBox="0 0 1000 1000">
+  <g>
+    <path d="M 100,100 L 900,100 900,900 100,900 Z" fill="none" stroke="black" stroke-width="1"/>
+    <path d="M 200,200 C 300,100 700,100 800,200 S 900,400 800,600 Q 600,800 400,800 T 200,200 Z" fill="none" stroke="black" stroke-width="1"/>
+    <circle cx="500" cy="500" r="200" fill="none" stroke="black" stroke-width="1"/>
+  </g>
 </svg>

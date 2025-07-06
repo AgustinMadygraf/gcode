@@ -28,7 +28,18 @@ class SvgProcessingStrategy(ProcessingStrategy):
                     scale = min(scale_w, scale_h)
                     dims = [round(dims[0]*scale, 2), round(dims[1]*scale, 2)]
                     workflow.presenter.print(f"[WARN] Área objetivo del preset '{surface_preset}' excedía el área máxima. Escalado automático a {dims[0]}x{dims[1]} mm.", color='yellow')
-                workflow.config.set("TARGET_WRITE_AREA_MM", dims)
+                # Set TARGET_WRITE_AREA_MM in config, compatible with both UserConfig and other config types
+                if hasattr(workflow.config, 'set') and callable(getattr(workflow.config, 'set')):
+                    workflow.config.set("TARGET_WRITE_AREA_MM", dims)
+                else:
+                    try:
+                        # Try attribute assignment or dict-like assignment
+                        if hasattr(workflow.config, '__setitem__'):
+                            workflow.config["TARGET_WRITE_AREA_MM"] = dims
+                        else:
+                            setattr(workflow.config, "TARGET_WRITE_AREA_MM", dims)
+                    except (AttributeError, TypeError) as e:
+                        workflow.presenter.print(f"[ERROR] No se pudo asignar TARGET_WRITE_AREA_MM en config: {e}", color='red')
                 workflow.presenter.print(f"[INFO] Área de escritura configurada por preset: {dims[0]}x{dims[1]} mm ({surface_preset})", color='green')
             else:
                 available = ', '.join(presets.keys())
@@ -88,6 +99,9 @@ class SvgProcessingStrategy(ProcessingStrategy):
             sys.stdout.write("\n".join(gcode_lines) + "\n")
             return 0
         else:
+            # Asegura que output_path sea un string o Path, no una lista
+            if isinstance(output_path, list):
+                output_path = output_path[0]
             workflow.write_gcode_file(Path(output_path), gcode_lines)
             out_file = output_path
             workflow.presenter.print("processing_complete", color='green')
