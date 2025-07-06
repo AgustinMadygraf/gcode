@@ -4,6 +4,11 @@ Organizado por etiqueta → idioma → valor para mejor mantenibilidad.
 """
 
 MESSAGES = {
+    'STARTING_MSG': {
+        'es': "Iniciando la aplicación SVG2GCODE...",
+        'en': "Starting SVG2GCODE application...",
+        'zh': "正在启动 SVG2GCODE 应用程序...",
+    },
     'DEBUG_DEV_MODE_ON': {
         'es': "[DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.",
         'en': "[DEV] Developer mode active: DEBUG logging and extended stacktrace.",

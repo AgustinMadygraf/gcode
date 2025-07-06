@@ -194,7 +194,15 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.logger.warning(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
 
         xmin, xmax, ymin, ymax = bbox
-        self.logger.debug(self.i18n.get("DEBUG_BOUNDING_BOX", xmin=f"{xmin:.3f}", xmax=f"{xmax:.3f}", ymin=f"{ymin:.3f}", ymax=f"{ymax:.3f}"))
+        self.logger.debug(
+            self.i18n.get(
+                "DEBUG_BOUNDING_BOX",
+                xmin=f"{xmin:.3f}",
+                xmax=f"{xmax:.3f}",
+                ymin=f"{ymin:.3f}",
+                ymax=f"{ymax:.3f}"
+            )
+        )
         self.logger.debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
 
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
