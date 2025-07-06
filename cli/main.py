@@ -88,7 +88,6 @@ class SvgToGcodeApp:
         # --- Orquestador ---
         self.orchestrator = ApplicationOrchestrator(
             container=self.container,
-            presenter=self.presenter,
             services={
                 'filename_service': self.filename_service,
                 'config': self.config,
@@ -101,6 +100,7 @@ class SvgToGcodeApp:
                 'operations': self.operations
             },
             mode_strategy=self.mode_strategy,
+            i18n=self.i18n,
             args=args
         )
 
