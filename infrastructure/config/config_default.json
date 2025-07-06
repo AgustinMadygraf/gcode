@@ -3,6 +3,7 @@
   "SVG_INPUT_DIR": "data/svg_input",
   "GCODE_OUTPUT_DIR": "data/gcode_output",
   "FEED": 4000,
+  "GENERATE_REFERENCE_MARKS": true,
   "CMD_DOWN": "M3 S255; baja lapicera",
   "CMD_UP": "M5; sube lapicera",
   "STEP_MM": 0.3,
@@ -20,11 +21,12 @@
   "MINIMUM_FEED_FACTOR": 0.45,
   "PLOTTER_MAX_AREA_MM": [300.0, 200.0],
   "TARGET_WRITE_AREA_MM": [210.0, 148.0],
-  "TOOL_DIAMETER": 0.4,
   "SURFACE_PRESETS": {
     "A4_PORTRAIT": [210.0, 297.0],
     "A4_LANDSCAPE": [297.0, 210.0],
     "A5_PORTRAIT": [148.0, 210.0],
     "A5_LANDSCAPE": [210.0, 148.0]
-  }
+  },
+  "TOOL_DIAMETER": 0.0,
+  "COMPENSATION_TYPE": "none"
 }

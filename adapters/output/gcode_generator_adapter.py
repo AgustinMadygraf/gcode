@@ -30,6 +30,7 @@ from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
+from infrastructure.adapters.reference_marks_generator import ReferenceMarksGenerator
 
 class DummyI18n:
     def get(self, key, **_kwargs):
@@ -56,7 +57,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
     - El config debe exponer flags como 'curvature_adjustment_factor', 'minimum_feed_factor', 'disable_gcode_compression', etc.
     - El i18n debe proveer mensajes localizables vía get(key, **kwargs).
     """
-    DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
+    DEBUG_ENABLED = True
 
     def _debug(self, msg, *args, **kwargs):
         if self.DEBUG_ENABLED and self.logger:
@@ -158,6 +159,13 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.logger.error(self.i18n.get("ERR_MISSING_PATH_SAMPLER"))
             raise ValueError("PathSamplerPort is required")
         gcode = []  # Valor por defecto para evitar UnboundLocalError
+        # --- INICIO: Incorporar marcas de referencia ---
+        ref_marks_gcode = ReferenceMarksGenerator.generate(
+            logger=self.logger,
+            width=self.max_width_mm,
+            height=self.max_height_mm
+        )
+        # --- FIN: Incorporar marcas de referencia ---
         # Log orden y distancia antes de optimizar
         ids = [self._path_id(p, i) for i, p in enumerate(paths)]
         self._debug(self.i18n.get("DEBUG_PATHS_ORDER_ORIG", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
@@ -263,6 +271,28 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 gcode = gcode.split('\n')
         elapsed_ms = int((time.time() - t_start) * 1000)
         self._debug(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
+        # --- INICIO: Incorporar marcas de referencia ---
+        ref_marks_gcode = ReferenceMarksGenerator.generate(
+            logger=self.logger,
+            width=self.max_width_mm,
+            height=self.max_height_mm
+        )
+        # Evitar duplicación de encabezados (G21, G90, cmd_up)
+        encabezados = {"G21", "G90", self.cmd_up}
+        if isinstance(gcode, list):
+            # Filtrar encabezados duplicados solo al inicio del bloque principal
+            while gcode and gcode[0].strip() in encabezados:
+                gcode.pop(0)
+            gcode = ref_marks_gcode.split('\n') + gcode
+        else:
+            # Si es string, convertir a lista, filtrar y volver a unir
+            gcode_lines = gcode.split('\n') if isinstance(gcode, str) else []
+            while gcode_lines and gcode_lines[0].strip() in encabezados:
+                gcode_lines.pop(0)
+            gcode = ref_marks_gcode + '\n' + '\n'.join(gcode_lines)
+        if self.logger:
+            self.logger.info("[REF_MARKS] Marcas de referencia incorporadas al inicio del G-code (sin duplicar encabezados).")
+        # --- FIN: Incorporar marcas de referencia ---
         return gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:
