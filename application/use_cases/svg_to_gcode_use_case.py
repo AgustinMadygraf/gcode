@@ -32,7 +32,7 @@ class SvgToGcodeUseCase:
             " Orquesta la conversión de SVG a "
             "G-code. "
         )
-        self.logger.info(f"[SVG2GCODE] Iniciando carga de SVG: {svg_file}")
+        self.logger.info(f"Iniciando carga de SVG: {svg_file}")
         _, paths, svg_attr = self._load_svg(svg_file)
         processed_paths = self._process_paths(paths, svg_attr, svg_file)
         gcode_lines = self._generate_gcode(processed_paths, svg_attr, context)

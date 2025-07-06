@@ -10,9 +10,9 @@ MESSAGES = {
         'zh': "正在启动 SVG2GCODE 应用程序...",
     },
     'DEBUG_DEV_MODE_ON': {
-        'es': "[DEV] Modo desarrollador activo: logging DEBUG y stacktrace extendido.",
-        'en': "[DEV] Developer mode active: DEBUG logging and extended stacktrace.",
-        'zh': "[DEV] 开发者模式已激活：DEBUG 日志和扩展堆栈跟踪",
+        'es': "Modo desarrollador activo: logging DEBUG y stacktrace extendido.",
+        'en': "Developer mode active: DEBUG logging and extended stacktrace.",
+        'zh': "开发者模式已激活：DEBUG 日志和扩展堆栈跟踪",
     },
     'MENU_MAIN_TITLE': {
         'es': "Menú Principal",
@@ -28,6 +28,10 @@ MESSAGES = {
         'es': "2. Optimizar archivo G-code existente",
         'en': "2. Optimize existing G-code file",
         'zh': "2. 优化现有 G代码文件",
+    },
+    'MENU_OPTION_CONFIGURE_AREA': {
+        'es': '3. Configurar área de escritura',
+        'en': '3. Configure write area'
     },
     'INFO_SVG_FILES_FOUND': {
         'es': "Archivos SVG encontrados:",
@@ -465,6 +469,34 @@ MESSAGES = {
         'es': "Opción inválida. Intente nuevamente.",
         'en': "Invalid option. Try again.",
         'zh': "⚠ 无效选项，请重试",
+    },
+    'DEBUG_SELECTING_MODE': {
+        'es': 'Selección de modo de operación iniciada',
+        'en': 'Operation mode selection started'
+    },
+    'DEBUG_USER_SELECTED_OP': {
+        'es': 'Usuario seleccionó operación {choice}',
+        'en': 'User selected operation {choice}'
+    },
+    'INFO_GCODE_LINES_PRECOMP': {
+        'es': 'Líneas de G-code precomputadas: {count}',
+        'en': 'Precomputed G-code lines: {count}'
+    },
+    'INFO_START_GCODE_GEN': {
+        'es': 'Iniciando generación de G-code...',
+        'en': 'Starting G-code generation...'
+    },
+    'INFO_OPTIMIZING_PATHS': {
+        'es': 'Optimizando trayectorias...',
+        'en': 'Optimizing paths...'
+    },
+    'INFO_COMPRESSION': {
+        'es': 'Comenzando compresión de G-code...',
+        'en': 'Starting G-code compression...'
+    },
+    'INFO_GCODE_READY': {
+        'es': 'G-code listo para guardar.',
+        'en': 'G-code ready to save.'
     },
 }
 

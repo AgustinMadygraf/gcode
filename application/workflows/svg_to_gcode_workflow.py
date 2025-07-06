@@ -23,7 +23,7 @@ class SvgToGcodeWorkflow:
     def run(self, selector=None):
         " Ejecuta el flujo de trabajo. "
         logger = self.container.logger
-        logger.info("[SVG2GCODE] Workflow started.")
+        logger.info("Workflow started.")
         # Si el selector no tiene i18n, se lo inyecta (retrocompatibilidad)
         if selector and getattr(selector, 'i18n', None) is None:
             logger.debug("Selector sin i18n, inyectando desde presenter.")
@@ -148,6 +148,6 @@ class SvgToGcodeWorkflow:
         # Separador visual antes de logs técnicos si modo dev
         self.container.event_bus.publish('gcode_generated', {'svg_file': svg_file_str, 'gcode_file': gcode_file_str})
         self.presenter.print_success(self.presenter.i18n.get("INFO_GCODE_SUCCESS", filename=gcode_file_str))
-        logger.info("[SVG2GCODE] Workflow finalizado correctamente.")
+        logger.info("Workflow finalizado correctamente.")
         print("\n")
         return True

@@ -16,7 +16,7 @@ class GcodeCompressionService:
     def compress(self, gcode_lines: List[str], config: CompressionConfig) -> Tuple[List[str], CompressionMetrics]:
         """Aplica compresión según la configuración proporcionada"""
         if self.logger:
-            self.logger.info(f"[GCODE-COMPRESSION] Inicio de compresión. Líneas originales: {len(gcode_lines)}. Config: enabled={config.enabled}, tolerancia={getattr(config, 'geometric_tolerance', None)}")
+            self.logger.info(f"Inicio de compresión. Líneas originales: {len(gcode_lines)}. Config: enabled={config.enabled}, tolerancia={getattr(config, 'geometric_tolerance', None)}")
         # Validar integridad G-code antes de procesar
         valido, error = GCodeValidator.validate(gcode_lines)
         if not valido:
@@ -64,5 +64,5 @@ class GcodeCompressionService:
                 self.logger.warning(f"Compresión poco efectiva: solo {reduction*100:.2f}% de reducción.")
 
         if self.logger:
-            self.logger.info(f"[GCODE-COMPRESSION] Fin de compresión. Líneas finales: {metrics.compressed_lines}")
+            self.logger.info(f"Fin de compresión. Líneas finales: {metrics.compressed_lines}")
         return compressed, metrics
