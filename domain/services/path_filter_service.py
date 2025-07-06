@@ -11,6 +11,7 @@ class DummyI18n:
         return key  # Devuelve la clave como mensaje por defecto
 
 class PathFilter(PathFilterPort):
+    DEBUG_ENABLED = False  # Controla si se muestran logs debug
     " Filtra paths SVG no triviales basándose en longitud y atributos SVG. "
     def __init__(self, min_length: float = 1e-3, extra_filters: List[Callable[[Any], bool]] = None,
                  remove_svg_border: bool = True, border_tolerance: float = 0.05, logger=None, i18n=None):
@@ -23,49 +24,41 @@ class PathFilter(PathFilterPort):
         self.i18n = i18n if i18n is not None else DummyI18n()
         self.border_detector = SvgBorderDetector(tolerance=border_tolerance, logger=logger) if remove_svg_border else None
 
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED:
+            self.logger.debug(msg, *args, **kwargs)
+
     def filter_nontrivial(self, paths: List[Any], svg_attr: dict = None) -> List[Any]:
         filtered = []
         removed = 0
         for _i, p in enumerate(paths):
             try:
                 total_length = sum(seg.length() for seg in p)
-                #self.logger.debug(self.i18n.get('DEBUG_PATH_LENGTH', idx=_i, length=total_length, segments=len(p)))
+                # self._debug(self.i18n.get('DEBUG_PATH_LENGTH', idx=_i, length=total_length, segments=len(p)))
                 if total_length <= self.min_length:
-                    self.logger.debug(self.i18n.get('DEBUG_PATH_DISCARDED_LENGTH', idx=_i, length=total_length))
+                    self._debug(self.i18n.get('DEBUG_PATH_DISCARDED_LENGTH', idx=_i, length=total_length))
                     continue
                 try:
                     if not all(f(p) for f in self.extra_filters):
-                        self.logger.debug(self.i18n.get('DEBUG_PATH_DISCARDED_EXTRA_FILTER', idx=_i))
+                        self._debug(self.i18n.get('DEBUG_PATH_DISCARDED_EXTRA_FILTER', idx=_i))
                         continue
                 except (TypeError, ValueError) as e:
                     self.logger.error(self.i18n.get('ERROR_EXTRA_FILTER', idx=_i, error=str(e)), exc_info=True)
                     continue
                 if self.remove_svg_border:
                     if not svg_attr:
-                        self.logger.warning(self.i18n.get('WARN_NO_SVG_ATTR', idx=_i))
-                    else:
-                        #self.logger.debug(self.i18n.get('DEBUG_EVALUATING_BORDER', idx=_i, segments=len(p)))
-                        try:
-                            borde = self.border_detector.matches_svg_bounds(p, svg_attr)
-                        except (TypeError, ValueError) as e:
-                            self.logger.error(
-                                self.i18n.get(
-                                    'ERROR_MATCHES_SVG_BOUNDS',
-                                    idx=_i,
-                                    error=str(e)
-                                ),
-                                exc_info=True
-                            )
-                            continue
-                        if borde:
-                            self.logger.debug(self.i18n.get('DEBUG_PATH_REMOVED_BORDER', idx=_i))
-                            removed += 1
-                            continue
-#                        else:
-#                            self.logger.debug(self.i18n.get('DEBUG_PATH_NOT_REMOVED_BORDER', idx=_i))
+                        self._debug(self.i18n.get('DEBUG_MATCHES_SVG_BOUNDS', idx=_i, borde=None))
+                        self._debug(self.i18n.get('DEBUG_PATH_NOT_REMOVED_BORDER', idx=_i))
+                        filtered.append(p)
+                        continue
+                    borde = self.border_detector.matches_svg_bounds(p, svg_attr)
+                    self._debug(self.i18n.get('DEBUG_MATCHES_SVG_BOUNDS', idx=_i, borde=borde))
+                    if borde:
+                        removed += 1
+                        continue
+                    self._debug(self.i18n.get('DEBUG_PATH_NOT_REMOVED_BORDER', idx=_i))
                 filtered.append(p)
-            except (AttributeError, TypeError, ValueError) as e:
+            except (AttributeError, KeyError, TypeError, ValueError) as e:
                 self.logger.error(self.i18n.get('ERROR_FILTER_PATH', idx=_i, error=str(e)), exc_info=True)
-                continue
-        self.logger.debug(self.i18n.get('DEBUG_TOTAL_PATHS_REMOVED', removed=removed))
+        self._debug(self.i18n.get('DEBUG_TOTAL_PATHS_REMOVED', removed=removed))
         return filtered

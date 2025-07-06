@@ -16,6 +16,12 @@ class DummyI18n:
 class GcodeCompressionService:
     """Servicio de aplicación para comprimir G-code con múltiples estrategias"""
 
+    DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
+
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
     def __init__(self, compressors: List[GcodeCompressionPort], logger=None, i18n=None):
         self.compressors = compressors
         self.logger = logger
@@ -23,8 +29,7 @@ class GcodeCompressionService:
 
     def compress(self, gcode_lines: List[str], config: CompressionConfig) -> Tuple[List[str], CompressionMetrics]:
         """Aplica compresión según la configuración proporcionada"""
-        if self.logger:
-            self.logger.debug(f"{self.i18n.get('INFO_COMPRESSION', default='Inicio de compresión.')} Líneas originales: {len(gcode_lines)}. Config: enabled={config.enabled}, tolerancia={getattr(config, 'geometric_tolerance', None)}")
+        self._debug(f"{self.i18n.get('INFO_COMPRESSION', default='Inicio de compresión.')} Líneas originales: {len(gcode_lines)}. Config: enabled={config.enabled}, tolerancia={getattr(config, 'geometric_tolerance', None)}")
         # Validar integridad G-code antes de procesar
         valido, error = GCodeValidator.validate(gcode_lines)
         if not valido:
@@ -54,23 +59,20 @@ class GcodeCompressionService:
         )
 
         for compressor in self.compressors:
-            if self.logger:
-                self.logger.debug(self.i18n.get('INFO_COMPRESSION', default=f"Ejecutando compresor: {compressor.__class__.__name__}"))
+            self._debug(self.i18n.get('INFO_COMPRESSION', default=f"Ejecutando compresor: {compressor.__class__.__name__}"))
             compressed, comp_metrics = compressor.compress(compressed, config.geometric_tolerance)
             metrics.compressed_lines = comp_metrics.compressed_lines
             metrics.arcs_created += comp_metrics.arcs_created
             metrics.relative_moves += comp_metrics.relative_moves
             metrics.redundancies_removed += comp_metrics.redundancies_removed
-            if self.logger:
-                self.logger.debug(self.i18n.get('INFO_COMPRESSION_SUMMARY', orig=metrics.original_lines, comp=metrics.compressed_lines, ratio=comp_metrics.percentage_saved))
-                self.logger.debug(f"Métricas: {comp_metrics}")
+            self._debug(self.i18n.get('INFO_COMPRESSION_SUMMARY', orig=metrics.original_lines, comp=metrics.compressed_lines, ratio=comp_metrics.percentage_saved))
+            self._debug(f"Métricas: {comp_metrics}")
 
         # Advertir si la compresión fue poco efectiva
         if self.logger and metrics.original_lines > 0:
             reduction = 1 - (metrics.compressed_lines / metrics.original_lines)
             if reduction < 0.05:
-                self.logger.debug(self.i18n.get('WARN_COMPRESSION_LOW', ratio=reduction*100, filename=''))
+                self._debug(self.i18n.get('WARN_COMPRESSION_LOW', ratio=reduction*100, filename=''))
 
-        if self.logger:
-            self.logger.debug(self.i18n.get('INFO_COMPRESSION_SUMMARY', orig=metrics.original_lines, comp=metrics.compressed_lines, ratio=(1 - metrics.compressed_lines / metrics.original_lines) * 100))
+        self._debug(self.i18n.get('INFO_COMPRESSION_SUMMARY', orig=metrics.original_lines, comp=metrics.compressed_lines, ratio=(1 - metrics.compressed_lines / metrics.original_lines) * 100))
         return compressed, metrics

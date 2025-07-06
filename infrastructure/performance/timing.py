@@ -9,7 +9,13 @@ import contextlib
 from typing import Callable
 
 class PerformanceTimer:
-    """Utilidad para medir y loguear tiempos de ejecución en modo desarrollador."""
+    " Utilidad para medir y loguear tiempos de ejecución en modo desarrollador. "
+    DEBUG_ENABLED = False
+    
+    @classmethod
+    def _debug(cls, logger, msg):
+        if cls.DEBUG_ENABLED and logger:
+            logger.debug(msg)
 
     @staticmethod
     @contextlib.contextmanager
@@ -22,7 +28,7 @@ class PerformanceTimer:
             skip_if_not_dev: Solo mide si está activo el modo dev
         """
         dev_mode = getattr(logger, 'show_file_line', False) or getattr(logger, 'dev_mode', False)
-        if not dev_mode and skip_if_not_dev:
+        if not dev_mode and skip_if_not_dev and not PerformanceTimer.DEBUG_ENABLED:
             yield
             return
         start = time.perf_counter()
@@ -31,7 +37,9 @@ class PerformanceTimer:
         finally:
             elapsed = time.perf_counter() - start
             msg = f"⏱️ Timing: {operation_name} completed in {elapsed:.3f}s"
-            if level.upper() == "DEBUG":
+            if PerformanceTimer.DEBUG_ENABLED:
+                PerformanceTimer._debug(logger, msg)
+            elif level.upper() == "DEBUG":
                 logger.debug(msg)
                 print("\n")
             elif level.upper() == "INFO":
@@ -52,14 +60,16 @@ class PerformanceTimer:
                     return func(self, *args, **kwargs)
                 logger = getattr(self, 'logger', None) or kwargs.get('logger', None)
                 dev_mode = getattr(logger, 'show_file_line', False) or getattr(logger, 'dev_mode', False)
-                if not logger or (not dev_mode and skip_if_not_dev):
+                if not logger or (not dev_mode and skip_if_not_dev and not PerformanceTimer.DEBUG_ENABLED):
                     return func(self, *args, **kwargs)
                 name = f"{self.__class__.__name__}.{func.__name__}"
                 start = time.perf_counter()
                 result = func(self, *args, **kwargs)
                 elapsed = time.perf_counter() - start
                 msg = f"⏱️ Timing: {name} completed in {elapsed:.3f}s"
-                if level.upper() == "DEBUG":
+                if PerformanceTimer.DEBUG_ENABLED:
+                    PerformanceTimer._debug(logger, msg)
+                elif level.upper() == "DEBUG":
                     logger.debug(msg)
                 elif level.upper() == "INFO":
                     logger.info(msg)

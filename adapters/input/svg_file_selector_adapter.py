@@ -25,6 +25,12 @@ class SvgFileSelectorAdapter(FileSelectorPort):
     """
     CONFIG_PATH = os.path.join(os.path.dirname(__file__), '../../infrastructure/config/config.json')
 
+    DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
+
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
     def __init__(self, logger, i18n=None):
         self.logger = logger
         self.i18n = i18n
@@ -34,7 +40,7 @@ class SvgFileSelectorAdapter(FileSelectorPort):
         try:
             with open(self.CONFIG_PATH, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-            self.logger.debug(self.i18n.get('DEBUG_CONFIG_LOADED', path=self.CONFIG_PATH, config=config))
+            self._debug(self.i18n.get('DEBUG_CONFIG_LOADED', path=self.CONFIG_PATH, config=config))
             return config
         except FileNotFoundError as e:
             self.logger.error(self.i18n.get('ERROR_CONFIG_NOT_FOUND', error=str(e)))
@@ -51,7 +57,7 @@ class SvgFileSelectorAdapter(FileSelectorPort):
         try:
             with open(self.CONFIG_PATH, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
-            self.logger.debug(self.i18n.get('DEBUG_CONFIG_SAVED', path=self.CONFIG_PATH, config=config))
+            self._debug(self.i18n.get('DEBUG_CONFIG_SAVED', path=self.CONFIG_PATH, config=config))
         except (OSError, json.JSONDecodeError) as e:
             self.logger.error(self.i18n.get('ERROR_SAVE_CONFIG', error=str(e)))
 
@@ -63,9 +69,9 @@ class SvgFileSelectorAdapter(FileSelectorPort):
         config = self._load_config()
         svg_input_dir = initial_dir or config.get('SVG_INPUT_DIR', './data/svg_input')
         while True:
-            self.logger.debug(self.i18n.get('DEBUG_SEARCHING_SVGS', dir=svg_input_dir))
+            self._debug(self.i18n.get('DEBUG_SEARCHING_SVGS', dir=svg_input_dir))
             svg_files = _find_svg_files_recursively(svg_input_dir)
-            self.logger.debug(self.i18n.get('DEBUG_SVGS_FOUND', files=svg_files))
+            self._debug(self.i18n.get('DEBUG_SVGS_FOUND', files=svg_files))
             if svg_files:
                 self.logger.info(self.i18n.get("INFO_SVG_FILES_FOUND"))
                 for idx, file in enumerate(svg_files, 1):
@@ -91,7 +97,7 @@ class SvgFileSelectorAdapter(FileSelectorPort):
                 opt = input(self.i18n.get("PROMPT_SELECT_OPTION")).strip()
                 if opt == '1':
                     new_dir = input(self.i18n.get('PROMPT_NEW_SVG_DIR')).strip()
-                    self.logger.debug(self.i18n.get('DEBUG_CHANGING_DIR', dir=new_dir))
+                    self._debug(self.i18n.get('DEBUG_CHANGING_DIR', dir=new_dir))
                     if os.path.isdir(new_dir):
                         svg_input_dir = new_dir
                         config['SVG_INPUT_DIR'] = new_dir

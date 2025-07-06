@@ -8,6 +8,12 @@ from adapters.input.svg_file_selector_adapter import _find_svg_files_recursively
 
 class ApplicationOrchestrator:
     " Orquestador principal de la aplicación SVG2GCODE. "
+    DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
+
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
     def __init__(
         self,
         container,
@@ -56,8 +62,7 @@ class ApplicationOrchestrator:
         " Selecciona el modo de operación (interactivo/no-interactivo). "
         args = self.args
         exit_keywords = {'salir', 'exit', 'quit'}
-        if self.logger:
-            self.logger.debug(self.i18n.get('DEBUG_SELECTING_MODE'))
+        self._debug(self.i18n.get('DEBUG_SELECTING_MODE'))
         if args and getattr(args, 'no_interactive', False):
             if self.logger:
                 self.logger.info(self.i18n.get('INFO_NON_INTERACTIVE_MODE'))
@@ -120,8 +125,7 @@ class ApplicationOrchestrator:
                     exit(0)
                 choice = int(user_input)
                 if choice in [1, 2]:
-                    if self.logger:
-                        self.logger.debug(self.i18n.get('DEBUG_USER_SELECTED_OP', choice=choice))
+                    self._debug(self.i18n.get('DEBUG_USER_SELECTED_OP', choice=choice))
                     return choice
                 elif choice == 3:
                     self.configure_write_area()

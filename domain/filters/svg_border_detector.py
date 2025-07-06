@@ -5,6 +5,7 @@ import math
 from typing import Dict
 
 class SvgBorderDetector:
+    DEBUG_ENABLED = False  # Controla si se muestran logs debug
     """
     Detecta si un path representa el marco rectangular de un SVG.
     La detección compara los márgenes del path con el viewBox usando una tolerancia relativa configurable.
@@ -22,17 +23,21 @@ class SvgBorderDetector:
             raise RuntimeError("Logger debe ser inyectado en SvgBorderDetector. Usar siempre el constructor con logger explícito.")
         self.logger = logger
 
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED:
+            self.logger.debug(msg, *args, **kwargs)
+
     def is_rectangle(self, path) -> bool:
         """Determina si un path forma un rectángulo cerrado."""
         if len(path) != 4:  # Un rectángulo típicamente tiene 4 segmentos
             msg = f"No es rectángulo: segmentos={len(path)}"
-            self.logger.debug(msg)
+            self._debug(msg)
             return False
 
         # Verificar si es cerrado (primer punto = último punto)
         if abs(path[0].start - path[-1].end) > 1e-6:
             msg = "No es rectángulo: no está cerrado"
-            self.logger.debug(msg)
+            self._debug(msg)
             return False
 
         # Verificar si tiene 4 ángulos cercanos a 90 grados
@@ -46,15 +51,15 @@ class SvgBorderDetector:
             mag2 = math.sqrt(dir2.real**2 + dir2.imag**2)
             if mag1 == 0 or mag2 == 0:
                 msg = f"No es rectángulo: segmento {i} de longitud cero"
-                self.logger.debug(msg)
+                self._debug(msg)
                 return False
             cos_angle = dot / (mag1 * mag2)
             if abs(cos_angle) > 0.1:  # Permitimos pequeña desviación
                 msg = f"No es rectángulo: ángulo {i} no es 90° (cos={cos_angle:.3f})"
-                self.logger.debug(msg)
+                self._debug(msg)
                 return False
         msg = "Path es un rectángulo cerrado"
-        self.logger.debug(msg)
+        self._debug(msg)
         return True
 
     def matches_svg_bounds(self, path, svg_attr: Dict) -> bool:
@@ -66,9 +71,9 @@ class SvgBorderDetector:
         Returns:
             True si el path coincide con el marco del SVG, False en caso contrario.
         """
-        self.logger.debug(f"[matches_svg_bounds] Llamado con path de {len(path)} segmentos y svg_attr={svg_attr}")
+        self._debug(f"[matches_svg_bounds] Llamado con path de {len(path)} segmentos y svg_attr={svg_attr}")
         if not self.is_rectangle(path):
-            self.logger.debug("Descartado: no es rectángulo")
+            self._debug("Descartado: no es rectángulo")
             return False
         points = [seg.start for seg in path] + [path[-1].end]
         x_coords = [p.real for p in points]
@@ -84,7 +89,7 @@ class SvgBorderDetector:
                 vb_xmax, vb_ymax = vb_x + vb_width, vb_y + vb_height
             else:
                 msg = f"viewBox no tiene 4 valores: {vb}"
-                self.logger.debug(msg)
+                self._debug(msg)
                 return False
         else:
             # Si no hay viewBox, intentar con width/height
@@ -96,7 +101,7 @@ class SvgBorderDetector:
                 vb_width = vb_xmax - vb_xmin
                 vb_height = vb_ymax - vb_ymin
                 msg = f"Usando width/height como viewBox: xmin={vb_xmin}, xmax={vb_xmax}, ymin={vb_ymin}, ymax={vb_ymax}"
-                self.logger.debug(msg)
+                self._debug(msg)
             except (ValueError, TypeError):
                 self.logger.error("Descartado: no hay viewBox válido ni width/height")
                 return False
@@ -107,9 +112,9 @@ class SvgBorderDetector:
         msg1 = f"Comparando path: xmin={path_xmin:.3f}, xmax={path_xmax:.3f}, ymin={path_ymin:.3f}, ymax={path_ymax:.3f}"
         msg2 = f"Con viewBox: xmin={vb_xmin:.3f}, xmax={vb_xmax:.3f}, ymin={vb_ymin:.3f}, ymax={vb_ymax:.3f}, tol={self.tolerance}"
         msg3 = f"x_match={x_match}, y_match={y_match}"
-        self.logger.debug(msg1)
-        self.logger.debug(msg2)
-        self.logger.debug(msg3)
+        self._debug(msg1)
+        self._debug(msg2)
+        self._debug(msg3)
         if not x_match:
             msg = (
                 f"No coincide en X: "
@@ -119,7 +124,7 @@ class SvgBorderDetector:
                 f"{abs(path_xmax-vb_xmax):.3f} "
                 f"(tol={self.tolerance * vb_width:.3f})"
             )
-            self.logger.debug(msg)
+            self._debug(msg)
         if not y_match:
             msg = (
                 f"No coincide en Y: "
@@ -129,16 +134,16 @@ class SvgBorderDetector:
                 f"{abs(path_ymax-vb_ymax):.3f} "
                 f"(tol={self.tolerance * vb_height:.3f})"
             )
-            self.logger.debug(msg)
+            self._debug(msg)
         if x_match and y_match:
-            self.logger.debug("Path identificado como borde del SVG")
-            self.logger.debug("Path coincide con el marco del SVG (borde)")
+            self._debug("Path identificado como borde del SVG")
+            self._debug("Path coincide con el marco del SVG (borde)")
             return True
         else:
             # Si es rectángulo pero no coincide, advertir
             if self.is_rectangle(path):
                 self.logger.warning("Rectángulo detectado pero no coincide con el borde del SVG (puede ser un marco interno o error de tolerancia)")
-            self.logger.debug("Path NO coincide con el marco del SVG (no borde)")
+            self._debug("Path NO coincide con el marco del SVG (no borde)")
             return False
 
     def __getstate__(self):

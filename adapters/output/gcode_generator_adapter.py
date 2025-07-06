@@ -57,6 +57,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
     - El config debe exponer flags como 'curvature_adjustment_factor', 'minimum_feed_factor', 'disable_gcode_compression', etc.
     - El i18n debe proveer mensajes localizables vía get(key, **kwargs).
     """
+    DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
+
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
     def __init__(
         self,
         *,
@@ -149,7 +155,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         """
         t_start = time.time()
         # Loguear inicio del proceso de generación de G-code
-        self.logger.info(self.i18n.get("INFO_START_GCODE_GEN", count=len(paths), file=svg_attr.get("filename", "N/A")))
+        if self.logger:
+            self.logger.info(self.i18n.get("INFO_START_GCODE_GEN", count=len(paths), file=svg_attr.get("filename", "N/A")))
 
         # Validaciones de configuración
         if self.step_mm <= 0:
@@ -160,11 +167,11 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         gcode = []  # Valor por defecto para evitar UnboundLocalError
         # Log orden y distancia antes de optimizar
         ids = [self._path_id(p, i) for i, p in enumerate(paths)]
-        self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_ORIG", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
-        self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
+        self._debug(self.i18n.get("DEBUG_PATHS_ORDER_ORIG", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
+        self._debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
         optimizer = TrajectoryOptimizer()
         # Loguear inicio de optimización
-        self.logger.debug(self.i18n.get("INFO_OPTIMIZING_PATHS"))
+        self._debug(self.i18n.get("INFO_OPTIMIZING_PATHS"))
         # Barra de progreso con tqdm para optimización
         use_tqdm = True
         pbar = None
@@ -192,9 +199,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         if not optimized_paths or optimized_paths == paths:
             self.logger.warning(self.i18n.get("WARN_NO_OPTIMIZATION"))
         ids = [self._path_id(p, i) for i, p in enumerate(paths)]
-        self.logger.debug(self.i18n.get("DEBUG_PATHS_ORDER_OPT", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
-
-        self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_OPT", dist=f"{self._total_travel_distance(optimized_paths):.2f}"))
+        self._debug(self.i18n.get("DEBUG_PATHS_ORDER_OPT", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
+        self._debug(self.i18n.get("DEBUG_TOTAL_DIST_OPT", dist=f"{self._total_travel_distance(optimized_paths):.2f}"))
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
 
         scale_original = ScaleManager.viewbox_scale(svg_attr)
@@ -205,7 +211,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.logger.debug(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
 
         xmin, xmax, ymin, ymax = bbox
-        self.logger.debug(
+        self._debug(
             self.i18n.get(
                 "DEBUG_BOUNDING_BOX",
                 xmin=f"{xmin:.3f}",
@@ -214,13 +220,13 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 ymax=f"{ymax:.3f}"
             )
         )
-        self.logger.debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
+        self._debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
 
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
-        self.logger.debug(self.i18n.get("DEBUG_REMOVE_BORDER", enabled=remove_border))
+        self._debug(self.i18n.get("DEBUG_REMOVE_BORDER", enabled=remove_border))
 
         use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
-        self.logger.debug(self.i18n.get("DEBUG_RELATIVE_MOVES", enabled=use_relative_moves))
+        self._debug(self.i18n.get("DEBUG_RELATIVE_MOVES", enabled=use_relative_moves))
 
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
         scale = ScaleManager.viewbox_scale(svg_attr)
@@ -237,14 +243,15 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.config,
             logger=self.logger
         )
+        reduction = 0
         if compression_service:
             compression_config = CompressionConfig()
             orig_len = len(gcode)
             gcode, _ = compression_service.compress(gcode, compression_config)
             reduction = 100 * (1 - len(gcode) / orig_len) if orig_len else 0
-            self.logger.debug(self.i18n.get("INFO_COMPRESSION", reduction=f"{reduction:.1f}%"))
-        self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
-        self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
+        self._debug(self.i18n.get("INFO_COMPRESSION", reduction=f"{reduction:.1f}%"))
+        self._debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
+        self._debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
         if remove_border:
             detector = GCodeBorderRectangleDetector()
             border_filter = GCodeBorderFilter(detector)
@@ -257,12 +264,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 gcode_str
             )
             if not border_found:
-                self.logger.debug(self.i18n.get("WARN_BORDER_NOT_FOUND"))
+                self._debug(self.i18n.get("WARN_BORDER_NOT_FOUND"))
             gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
             if isinstance(gcode, str):
                 gcode = gcode.split('\n')
         elapsed_ms = int((time.time() - t_start) * 1000)
-        self.logger.debug(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
+        self._debug(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
         return gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:

@@ -9,6 +9,12 @@ class SvgToGcodeUseCase:
     Orquesta la conversión de SVG a G-code, incluyendo carga, 
     procesamiento, generación y compresión.
     """
+    DEBUG_ENABLED = False
+
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
     def __init__(self, *,
                  svg_loader_factory,
                  path_processing_service,
@@ -30,8 +36,8 @@ class SvgToGcodeUseCase:
             svg_loader = self.svg_loader_factory(svg_file)
             paths = svg_loader.get_paths()
             svg_attr = svg_loader.get_attributes()
-            self.logger.debug(self.i18n.get('DEBUG_SVG_ATTR', attr=svg_attr))
-            self.logger.debug(self.i18n.get('INFO_PATHS_EXTRACTED', count=len(paths)))
+            self._debug(self.i18n.get('DEBUG_SVG_ATTR', attr=svg_attr))
+            self._debug(self.i18n.get('INFO_PATHS_EXTRACTED', count=len(paths)))
             return svg_loader, paths, svg_attr
         except Exception as e:
             self.logger.error(self.i18n.get('ERROR_LOADING_SVG_PATHS', error=str(e)), exc_info=True)
@@ -40,7 +46,7 @@ class SvgToGcodeUseCase:
     def _process_paths(self, paths, svg_attr, svg_file, context=None):
         try:
             processed_paths = self.path_processing_service.process(paths, svg_attr, context=context)
-            self.logger.debug(self.i18n.get('INFO_PATHS_PROCESSED', count=len(processed_paths)))
+            self._debug(self.i18n.get('INFO_PATHS_PROCESSED', count=len(processed_paths)))
             if not processed_paths:
                 self.logger.warning(self.i18n.get('WARN_NO_USEFUL_PATHS', filename=svg_file))
             return processed_paths
@@ -50,13 +56,13 @@ class SvgToGcodeUseCase:
 
     def _generate_gcode(self, processed_paths, svg_attr, context):
         try:
-            self.logger.debug(self.i18n.get('DEBUG_GCODE_CONTEXT', context=context))
+            self._debug(self.i18n.get('DEBUG_GCODE_CONTEXT', context=context))
             gcode_lines = self.gcode_generation_service.generate(
                 processed_paths,
                 svg_attr,
                 context=context
             )
-            self.logger.debug(self.i18n.get('INFO_GCODE_GENERATED', count=len(gcode_lines)))
+            self._debug(self.i18n.get('INFO_GCODE_GENERATED', count=len(gcode_lines)))
             return gcode_lines
         except Exception as e:
             self.logger.error(self.i18n.get('ERROR_GCODE_GENERATION', error=str(e)), exc_info=True)
@@ -67,14 +73,14 @@ class SvgToGcodeUseCase:
             compression_result = self.gcode_compression_use_case.execute(gcode_lines)
             compressed_gcode = compression_result.get('compressed_gcode', gcode_lines)
             ratio = compression_result.get('compression_ratio', 1)
-            self.logger.debug(self.i18n.get(
+            self._debug(self.i18n.get(
                 'INFO_COMPRESSION_SUMMARY',
                 orig=compression_result.get('original_size', 0),
                 comp=compression_result.get('compressed_size', 0),
                 ratio=f"{100 * (1 - ratio):.2f}"
             ))
             if ratio > 0.95:
-                self.logger.debug(self.i18n.get('WARN_COMPRESSION_LOW', ratio=ratio, filename=svg_file))
+                self._debug(self.i18n.get('WARN_COMPRESSION_LOW', ratio=ratio, filename=svg_file))
             return compressed_gcode, compression_result
         except Exception as e:
             self.logger.error(self.i18n.get('ERROR_GCODE_COMPRESSION', error=str(e)), exc_info=True)
@@ -89,7 +95,7 @@ class SvgToGcodeUseCase:
             " Orquesta la conversión de SVG a "
             "G-code. "
         )
-        self.logger.debug(self.i18n.get('DEBUG_LOADING_SVG', filename=svg_file))
+        self._debug(self.i18n.get('DEBUG_LOADING_SVG', filename=svg_file))
         _, paths, svg_attr = self._load_svg(svg_file)
         processed_paths = self._process_paths(paths, svg_attr, svg_file, context=context)
         gcode_lines = self._generate_gcode(processed_paths, svg_attr, context)
