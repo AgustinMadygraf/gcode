@@ -90,8 +90,8 @@ class ApplicationOrchestrator:
                 self.logger.warning(self.i18n.get('WARN_NO_FILES_FOUND'))
             if self.logger:
                 self.logger.info(self.i18n.get('INFO_OPTIONS'))
-            self.print_option(self.i18n.get('MENU_OPTION_CHANGE_INPUT_DIR'))
-            self.print_option(self.i18n.get('MENU_OPTION_EXIT'))
+            self.logger.option(self.i18n.get('MENU_OPTION_CHANGE_INPUT_DIR'))
+            self.logger.option(self.i18n.get('MENU_OPTION_EXIT'))
             while True:
                 user_input = self.input_with_label(self.i18n.get('PROMPT_SELECT_OPTION'))
                 if user_input.strip() in {'0', 'salir', 'exit', 'quit'}:
@@ -108,9 +108,9 @@ class ApplicationOrchestrator:
         while True:
             if self.logger:
                 self.logger.info(self.i18n.get('MENU_MAIN_TITLE'))
-            self.print_option(self.i18n.get('MENU_OPTION_CONVERT'))
-            self.print_option(self.i18n.get('MENU_OPTION_OPTIMIZE'))
-            self.print_option(self.i18n.get('MENU_OPTION_CONFIGURE_AREA'))
+            self.logger.option(self.i18n.get('MENU_OPTION_CONVERT'))
+            self.logger.option(self.i18n.get('MENU_OPTION_OPTIMIZE'))
+            self.logger.option(self.i18n.get('MENU_OPTION_CONFIGURE_AREA'))
             try:
                 user_input = self.input_with_label(self.i18n.get('PROMPT_SELECT_OPTION'))
                 if user_input.strip().lower() in exit_keywords:
@@ -143,11 +143,6 @@ class ApplicationOrchestrator:
             "config_loaded": bool(self.config),
             "max_dimensions": f"{getattr(self, 'max_width_mm', 'N/A')}x{getattr(self, 'max_height_mm', 'N/A')}mm"
         }
-
-    def print_option(self, msg):
-        " Imprime un mensaje de opción en el log. "
-        if self.logger:
-            self.logger.option(msg)
 
     def input_with_label(self, prompt):
         " Imprime un prompt de entrada con etiqueta. "
