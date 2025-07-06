@@ -99,6 +99,9 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         )
         self.curvature_feed_calculator = CurvatureFeedCalculator(self.feed_rate_strategy)
         self.i18n = i18n
+        # Asegura que config tenga i18n para la compresión
+        if self.i18n and not hasattr(self.config, 'i18n'):
+            setattr(self.config, 'i18n', self.i18n)
         self.path_gcode_generator = PathGcodeGenerator(
             self.path_sampler,
             self.transform_manager,
