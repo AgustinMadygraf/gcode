@@ -38,7 +38,14 @@ class Config:
                 self._data.update(user_data)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"[Config] Error loading config.json: {e}. Using defaults only.")
+        # Validar TOOL_DIAMETER
+        if "TOOL_DIAMETER" not in self._data or not isinstance(self._data["TOOL_DIAMETER"], (int, float)):
+            self._data["TOOL_DIAMETER"] = 0.4
         self._validate_config()
+    @property
+    def tool_diameter(self):
+        """Diámetro de la herramienta en mm (por defecto 0.4)"""
+        return self._data.get("TOOL_DIAMETER", 0.4)
 
     def __getitem__(self, key):
         return self._data[key]

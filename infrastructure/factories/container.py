@@ -48,6 +48,7 @@ class Container:
         self.dwell_ms = self.config.dwell_ms
         self.max_height_mm = self.config.plotter_max_area_mm[1]
         self.max_width_mm = self.config.plotter_max_area_mm[0]
+        self.tool_diameter = self.config.tool_diameter
 
     @property
     def logger(self) -> LoggerPort:
@@ -176,3 +177,17 @@ class Container:
     def get_svg_loader(self, svg_file):
         """Devuelve una instancia de SvgLoaderPort para el archivo dado."""
         return AdapterFactory.create_svg_loader(svg_file)
+
+    def create_svg_to_gcode_use_case(self, *, svg_loader_factory, path_processing_service, gcode_generation_service, gcode_compression_use_case, logger, filename_service, i18n=None):
+        """
+        Crea una nueva instancia de SvgToGcodeUseCase con los parámetros dados.
+        """
+        return SvgToGcodeUseCase(
+            svg_loader_factory=svg_loader_factory,
+            path_processing_service=path_processing_service,
+            gcode_generation_service=gcode_generation_service,
+            gcode_compression_use_case=gcode_compression_use_case,
+            logger=logger,
+            filename_service=filename_service,
+            i18n=i18n
+        )

@@ -4,7 +4,7 @@ Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 """
 
 import time
-from typing import List, Optional, Any, Dict
+from typing import List, Optional
 from tqdm import tqdm
 
 from domain.entities.point import Point
@@ -138,7 +138,11 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 dist += ((end_pt.x - start_pt.x)**2 + (end_pt.y - start_pt.y)**2) ** 0.5
         return dist
 
-    def generate(self, paths, svg_attr: Dict[str, Any]) -> List[str]:
+    def generate(self, paths, svg_attr: dict, context=None) -> list:  # pylint: disable=unused-argument
+        """
+        Genera las líneas de G-code a partir de los paths y atributos SVG.
+        El parámetro context permite pasar información adicional (por ejemplo, tool_diameter).
+        """
         t_start = time.time()
         # Loguear inicio del proceso de generación de G-code
         self.logger.info(self.i18n.get("INFO_START_GCODE_GEN", count=len(paths), file=svg_attr.get("filename", "N/A")))
@@ -225,8 +229,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         except Exception:
             self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
             raise
-        self.logger.debug(self.i18n.get("INFO_GCODE_LINES_PRECOMP", count=len(gcode)))
-        # Compresión configurable
         compression_service = GcodeCompressionFactory.get_compression_service(
             self.config,
             logger=self.logger

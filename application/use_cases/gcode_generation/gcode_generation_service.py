@@ -15,4 +15,4 @@ class GCodeGenerationService:
         Genera las líneas de G-code a partir de los paths y atributos SVG.
         """
         # Usar el método global del adaptador para optimización y logs
-        return self.generator.generate(paths, svg_attr)
+        return self.generator.generate(paths, svg_attr, context=context)

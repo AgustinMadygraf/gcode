@@ -121,7 +121,8 @@ class SvgToGcodeWorkflow:
                 logger.debug(self.i18n.get("debug_double_pass_configured", double_pass=double_pass))
             context = {
                 "tool_type": tool_type_str,
-                "double_pass": double_pass
+                "double_pass": double_pass,
+                "tool_diameter": getattr(self.config, 'tool_diameter', 0.4)
             }
             logger.debug(self.i18n.get("debug_executing_svg_to_gcode_usecase"))
             try:

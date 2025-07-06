@@ -25,7 +25,7 @@ class PathFilter(PathFilterPort):
         for _i, p in enumerate(paths):
             try:
                 total_length = sum(seg.length() for seg in p)
-                self.logger.debug(self.i18n.get('DEBUG_PATH_LENGTH', idx=_i, length=total_length, segments=len(p)))
+                #self.logger.debug(self.i18n.get('DEBUG_PATH_LENGTH', idx=_i, length=total_length, segments=len(p)))
                 if total_length <= self.min_length:
                     self.logger.debug(self.i18n.get('DEBUG_PATH_DISCARDED_LENGTH', idx=_i, length=total_length))
                     continue
@@ -40,7 +40,7 @@ class PathFilter(PathFilterPort):
                     if not svg_attr:
                         self.logger.warning(self.i18n.get('WARN_NO_SVG_ATTR', idx=_i))
                     else:
-                        self.logger.debug(self.i18n.get('DEBUG_EVALUATING_BORDER', idx=_i, segments=len(p)))
+                        #self.logger.debug(self.i18n.get('DEBUG_EVALUATING_BORDER', idx=_i, segments=len(p)))
                         try:
                             borde = self.border_detector.matches_svg_bounds(p, svg_attr)
                         except (TypeError, ValueError) as e:

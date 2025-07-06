@@ -4,11 +4,10 @@ Módulo para gestionar argumentos de línea de comandos para simple_svg2gcode.
 import argparse
 from pathlib import Path
 from cli.i18n import get_message
-import json
 from infrastructure.config.config import Config
 
 def create_parser() -> argparse.ArgumentParser:
-    # Cargar presets desde config
+    " Crea y configura el ArgumentParser para la CLI. "
     config = Config()
     presets = config.get("SURFACE_PRESETS", {})
     preset_names = list(presets.keys())
@@ -37,6 +36,12 @@ def create_parser() -> argparse.ArgumentParser:
                         help=get_message('ARG_DOUBLE_PASS'))
     parser.add_argument("--no-double-pass", dest="double_pass", action="store_false",
                         help=get_message('ARG_NO_DOUBLE_PASS'))
+    parser.add_argument(
+        "--tool-diameter",
+        type=float,
+        default=None,
+        help="Diámetro de la herramienta en mm (sobrescribe configuración)"
+    )
     parser.add_argument(
         "--dev", "--debug", action="store_true",
         help=get_message('ARG_DEV')

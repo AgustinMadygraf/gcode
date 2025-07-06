@@ -25,29 +25,6 @@ class SvgToGcodeUseCase:
         self.filename_service = filename_service
         self.i18n = i18n
 
-    def execute(
-        self,
-        svg_file: Path,
-        context: dict = None
-    ):
-        (
-            " Orquesta la conversión de SVG a "
-            "G-code. "
-        )
-        self.logger.debug(self.i18n.get('DEBUG_LOADING_SVG', filename=svg_file))
-        _, paths, svg_attr = self._load_svg(svg_file)
-        processed_paths = self._process_paths(paths, svg_attr, svg_file)
-        gcode_lines = self._generate_gcode(processed_paths, svg_attr, context)
-        compressed_gcode, compression_result = self._compress_gcode(gcode_lines, svg_file)
-        return {
-            'svg_file': svg_file,
-            'svg_attr': svg_attr,
-            'processed_paths': processed_paths,
-            'gcode_lines': gcode_lines,
-            'compressed_gcode': compressed_gcode,
-            'compression_result': compression_result
-        }
-
     def _load_svg(self, svg_file):
         try:
             svg_loader = self.svg_loader_factory(svg_file)
@@ -60,9 +37,9 @@ class SvgToGcodeUseCase:
             self.logger.error(self.i18n.get('ERROR_LOADING_SVG_PATHS', error=str(e)), exc_info=True)
             raise
 
-    def _process_paths(self, paths, svg_attr, svg_file):
+    def _process_paths(self, paths, svg_attr, svg_file, context=None):
         try:
-            processed_paths = self.path_processing_service.process(paths, svg_attr)
+            processed_paths = self.path_processing_service.process(paths, svg_attr, context=context)
             self.logger.debug(self.i18n.get('INFO_PATHS_PROCESSED', count=len(processed_paths)))
             if not processed_paths:
                 self.logger.warning(self.i18n.get('WARN_NO_USEFUL_PATHS', filename=svg_file))
@@ -102,3 +79,26 @@ class SvgToGcodeUseCase:
         except Exception as e:
             self.logger.error(self.i18n.get('ERROR_GCODE_COMPRESSION', error=str(e)), exc_info=True)
             raise
+
+    def execute(
+        self,
+        svg_file: Path,
+        context: dict = None
+    ):
+        (
+            " Orquesta la conversión de SVG a "
+            "G-code. "
+        )
+        self.logger.debug(self.i18n.get('DEBUG_LOADING_SVG', filename=svg_file))
+        _, paths, svg_attr = self._load_svg(svg_file)
+        processed_paths = self._process_paths(paths, svg_attr, svg_file, context=context)
+        gcode_lines = self._generate_gcode(processed_paths, svg_attr, context)
+        compressed_gcode, compression_result = self._compress_gcode(gcode_lines, svg_file)
+        return {
+            'svg_file': svg_file,
+            'svg_attr': svg_attr,
+            'processed_paths': processed_paths,
+            'gcode_lines': gcode_lines,
+            'compressed_gcode': compressed_gcode,
+            'compression_result': compression_result
+        }

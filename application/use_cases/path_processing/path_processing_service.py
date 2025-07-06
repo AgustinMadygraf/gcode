@@ -6,6 +6,8 @@ filtrado y transformaciones.
 from typing import List, Any, Callable
 from svgpathtools import Path as SvgPath
 from domain.services.path_filter_service import PathFilter
+from domain.services.tool_offset import ToolOffsetService
+from domain.services.path_overlap_detector import PathOverlapDetector
 from infrastructure.factories.infra_factory import InfraFactory
 
 class PathProcessingService:
@@ -47,9 +49,10 @@ class PathProcessingService:
             subpaths.append(SvgPath(*current))
         return subpaths
 
-    def process(self, paths: list, attributes: dict) -> list:
+    def process(self, paths: list, attributes: dict, context: dict = None) -> list:
         """
         Procesa los paths: divide en subpaths continuos y filtra los triviales.
+        Si se provee context y contiene tool_diameter, aplica compensación de herramienta y filtra solapamientos.
         """
         # 1. Dividir paths discontinuos en subpaths continuos
         all_subpaths = []
@@ -58,5 +61,14 @@ class PathProcessingService:
             all_subpaths.extend(subpaths)
         # 2. Filtrar paths triviales y bordes SVG
         filtered = self.path_filter.filter_nontrivial(all_subpaths, attributes)
-        # 3. (Transformaciones de puntos se aplican en GCodeGenerator, no aquí)
+        # 3. Compensación de herramienta (offset) si corresponde
+        tool_diameter = None
+        if context and 'tool_diameter' in context and context['tool_diameter']:
+            tool_diameter = context['tool_diameter']
+            offset_service = ToolOffsetService(tool_diameter)
+            filtered = offset_service.apply_offset(filtered)
+            # 4. Filtrado de solapamientos si corresponde
+            overlap_detector = PathOverlapDetector(tool_diameter)
+            filtered = overlap_detector.filter_overlapping_paths(filtered, logger=self.path_filter.logger)
+        # 5. (Transformaciones de puntos se aplican en GCodeGenerator, no aquí)
         return filtered

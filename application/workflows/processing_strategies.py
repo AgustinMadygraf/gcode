@@ -5,11 +5,13 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 class ProcessingStrategy(ABC):
+    " "
     @abstractmethod
     def process(self, workflow, args, input_data, temp_path, output_path, optimize, rescale):
         pass
 
 class SvgProcessingStrategy(ProcessingStrategy):
+    " "
     def process(self, workflow, args, input_data, temp_path, output_path, optimize, rescale):
         # --- Soporte para surface-preset en modo batch ---
         surface_preset = getattr(args, 'surface_preset', None)
@@ -26,7 +28,7 @@ class SvgProcessingStrategy(ProcessingStrategy):
                     scale = min(scale_w, scale_h)
                     dims = [round(dims[0]*scale, 2), round(dims[1]*scale, 2)]
                     workflow.presenter.print(f"[WARN] Área objetivo del preset '{surface_preset}' excedía el área máxima. Escalado automático a {dims[0]}x{dims[1]} mm.", color='yellow')
-                workflow.config._data["TARGET_WRITE_AREA_MM"] = dims
+                workflow.config.set("TARGET_WRITE_AREA_MM", dims)
                 workflow.presenter.print(f"[INFO] Área de escritura configurada por preset: {dims[0]}x{dims[1]} mm ({surface_preset})", color='green')
             else:
                 available = ', '.join(presets.keys())
@@ -43,9 +45,17 @@ class SvgProcessingStrategy(ProcessingStrategy):
             temp_path = tmp_path
         paths = svg_loader_factory(temp_path).get_paths()
         workflow.presenter.print("processing_complete", color='green')
-        bbox = workflow.container.domain_factory.create_geometry_service()._calculate_bbox(paths)
+        geometry_service = workflow.container.domain_factory.create_geometry_service()
+        if hasattr(geometry_service, "calculate_bbox"):
+            bbox = geometry_service.calculate_bbox(paths)
+        else:
+            raise AttributeError("geometry_service does not have a public 'calculate_bbox' method.")
         _xmin, _xmax, _ymin, _ymax = bbox
-        _cx, cy = workflow.container.domain_factory.create_geometry_service()._center(bbox)
+        geometry_service = workflow.container.domain_factory.create_geometry_service()
+        if hasattr(geometry_service, "center"):
+            _cx, cy = geometry_service.center(bbox)
+        else:
+            raise AttributeError("geometry_service does not have a public 'center' method.")
         transform_strategies = []
         if workflow.config.get_mirror_vertical():
             from domain.services.path_transform_strategies import MirrorVerticalStrategy
@@ -56,13 +66,14 @@ class SvgProcessingStrategy(ProcessingStrategy):
         compression_service = workflow.container.gcode_compression_service or workflow.container.create_gcode_compression_service()
         config_reader = workflow.container.adapter_factory.create_config_adapter(workflow.config)
         compress_use_case = workflow.container.compress_gcode_use_case or workflow.container.create_compress_gcode_use_case(compression_service, config_reader)
-        svg_to_gcode_use_case = workflow.container.svg_to_gcode_use_case or workflow.container.create_svg_to_gcode_use_case(
+        svg_to_gcode_use_case = workflow.container.create_svg_to_gcode_use_case(
             svg_loader_factory=svg_loader_factory,
             path_processing_service=path_processor,
             gcode_generation_service=gcode_service,
             gcode_compression_use_case=compress_use_case,
             logger=workflow.logger,
-            filename_service=workflow.filename_service
+            filename_service=workflow.filename_service,
+            i18n=workflow.presenter.i18n
         )
         tool_type = getattr(args, 'tool', 'pen')
         double_pass = getattr(args, 'double_pass', True)
@@ -70,14 +81,14 @@ class SvgProcessingStrategy(ProcessingStrategy):
             "tool_type": tool_type,
             "double_pass": double_pass
         }
-        result = svg_to_gcode_use_case.execute(temp_path, transform_strategies=transform_strategies, context=context)
+        result = svg_to_gcode_use_case.execute(temp_path, context=context)
         gcode_lines = result['compressed_gcode'] if optimize else result['gcode_lines']
         if output_path == '-' or output_path is None:
             import sys
             sys.stdout.write("\n".join(gcode_lines) + "\n")
             return 0
         else:
-            workflow._write_gcode_file(Path(output_path), gcode_lines)
+            workflow.write_gcode_file(Path(output_path), gcode_lines)
             out_file = output_path
             workflow.presenter.print("processing_complete", color='green')
             msg = workflow.presenter.i18n.get("success_refactor", output_file=out_file)
@@ -105,7 +116,7 @@ class GcodeProcessingStrategy(ProcessingStrategy):
                 sys.stdout.write("\n".join(gcode_out) + "\n")
                 return 0
             else:
-                workflow._write_gcode_file(Path(output_path), gcode_out)
+                workflow.write_gcode_file(Path(output_path), gcode_out)
                 out_file = output_path
                 msg = workflow.presenter.i18n.get("success_refactor", output_file=out_file)
                 workflow.presenter.print(msg, color='green')
@@ -124,7 +135,7 @@ class GcodeProcessingStrategy(ProcessingStrategy):
                 sys.stdout.write("\n".join(gcode_out) + "\n")
                 return 0
             else:
-                workflow._write_gcode_file(Path(output_path), gcode_out)
+                workflow.write_gcode_file(Path(output_path), gcode_out)
                 out_file = output_path
                 original_dim = result.get('original_dimensions', {})
                 new_dim = result.get('new_dimensions', {})
