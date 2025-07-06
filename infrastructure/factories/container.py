@@ -6,22 +6,26 @@ Refactorizado: delega la creación de dependencias a factories por capa.
 from infrastructure.factories.adapter_factory import AdapterFactory
 from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.infra_factory import InfraFactory
+from infrastructure.events.simple_event_bus import SimpleEventBus
+from infrastructure.error_handling.error_handler import ErrorHandler
+from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
+
 from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
 from domain.ports.file_selector_port import FileSelectorPort
 from domain.ports.event_bus_port import EventBusPort
 from domain.ports.error_handler_port import ErrorHandlerPort
-from infrastructure.events.simple_event_bus import SimpleEventBus
-from infrastructure.error_handling.error_handler import ErrorHandler
-from adapters.output.filename_service_adapter import FilenameServiceAdapter
 from domain.ports.filename_service_port import FilenameServicePort
+
+from adapters.output.filename_service_adapter import FilenameServiceAdapter
+
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
-from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 
 class Container:
+    " Contenedor simple de dependencias para Clean Architecture. "
     def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None, logger: LoggerPort = None, config_path=None):
         self.config = InfraFactory.create_config(config_path) if config_path else InfraFactory.create_config()
         self.config_port: ConfigPort = AdapterFactory.create_config_adapter(self.config)
@@ -47,18 +51,21 @@ class Container:
 
     @property
     def logger(self) -> LoggerPort:
+        " Devuelve el logger configurado o crea uno por defecto. "
         if self._logger is None:
             self._logger = AdapterFactory.create_logger_adapter()
         return self._logger
 
     @property
     def selector(self) -> FileSelectorPort:
+        " Devuelve el selector de archivos inyectado o lanza un error si no está configurado. "
         if self._selector is None:
             raise ValueError("FileSelectorPort no ha sido inyectado en el contenedor.")
         return self._selector
 
     @property
     def filename_gen(self) -> FilenameServicePort:
+        " Devuelve el servicio de generación de nombres de archivo. "
         if self._filename_gen is None:
             # Suponemos que config.get_gcode_output_dir() devuelve un Path
             output_dir = self.config.get_gcode_output_dir()
@@ -67,28 +74,36 @@ class Container:
 
     @property
     def event_bus(self) -> EventBusPort:
+        " Devuelve el bus de eventos configurado. "
         return self._event_bus
 
     @property
     def error_handler(self) -> ErrorHandlerPort:
+        " Devuelve el manejador de errores configurado o crea uno por defecto. "
         if self._error_handler is None:
             self._error_handler = ErrorHandler(self.logger)
         return self._error_handler
 
     @property
     def domain_factory(self):
+        " Devuelve la factory de dominio, creando una si no existe. "
         if self._domain_factory is None:
             self._domain_factory = DomainFactory()
         return self._domain_factory
 
     @property
     def path_processing_service(self):
+        " Devuelve el servicio de procesamiento de rutas, creando uno si no existe. "
         if self._path_processing_service is None:
-            self._path_processing_service = PathProcessingService()
+            # Intenta obtener logger e i18n del contenedor si existen
+            logger = getattr(self, 'logger', None)
+            i18n = getattr(self, 'i18n', None)
+            self._path_processing_service = PathProcessingService(logger=logger, i18n=i18n)
         return self._path_processing_service
 
     @property
     def gcode_generation_service(self):
+        " Devuelve el servicio de generación de G-code, creando uno si no existe. "
         if self._gcode_generation_service is None:
             generator = self.get_gcode_generator()
             self._gcode_generation_service = GCodeGenerationService(generator)
@@ -96,18 +111,23 @@ class Container:
 
     @property
     def gcode_compression_service(self):
+        " Devuelve el servicio de compresión de G-code, creando uno si no existe. "
         if self._gcode_compression_service is None:
-            self._gcode_compression_service = create_gcode_compression_service()
+            logger = getattr(self, 'logger', None)
+            i18n = getattr(self, 'i18n', None)
+            self._gcode_compression_service = create_gcode_compression_service(logger=logger, i18n=i18n)
         return self._gcode_compression_service
 
     @property
     def adapter_factory(self):
+        " Devuelve la factory de adaptadores, creando una si no existe. "
         if self._adapter_factory is None:
             self._adapter_factory = AdapterFactory()
         return self._adapter_factory
 
     @property
     def compress_gcode_use_case(self):
+        " Devuelve el caso de uso de compresión de G-code, creando uno si no existe. "
         if self._compress_gcode_use_case is None:
             # Se asume que la factory requiere el servicio de compresión y el config_port
             compression_service = self.gcode_compression_service
@@ -117,6 +137,7 @@ class Container:
 
     @property
     def svg_to_gcode_use_case(self):
+        " Devuelve el caso de uso de conversión SVG a G-code, creando uno si no existe. "
         if self._svg_to_gcode_use_case is None:
             svg_loader_factory = self.get_svg_loader
             path_processor = self.path_processing_service
@@ -135,6 +156,7 @@ class Container:
         return self._svg_to_gcode_use_case
 
     def get_gcode_generator(self, transform_strategies=None, i18n=None):
+        " Devuelve un generador de G-code configurado. "
         path_sampler = AdapterFactory.create_path_sampler(self.step_mm, logger=self.logger)
         return AdapterFactory.create_gcode_generator(
             path_sampler=path_sampler,
@@ -154,5 +176,3 @@ class Container:
     def get_svg_loader(self, svg_file):
         """Devuelve una instancia de SvgLoaderPort para el archivo dado."""
         return AdapterFactory.create_svg_loader(svg_file)
-
-    # Agregar más factories según sea necesario

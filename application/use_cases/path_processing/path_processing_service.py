@@ -17,10 +17,11 @@ class PathProcessingService:
                  transform_strategies: list = None,
                  remove_svg_border: bool = True,
                  border_tolerance: float = 0.05,
-                 logger=None):
+                 logger=None,
+                 i18n=None):
         if logger is None:
             logger = InfraFactory.get_logger(show_file_line=True)
-        self.path_filter = PathFilter(min_length, extra_filters, remove_svg_border, border_tolerance, logger=logger)
+        self.path_filter = PathFilter(min_length, extra_filters, remove_svg_border, border_tolerance, logger=logger, i18n=i18n)
         self.transform_strategies = transform_strategies or []
 
     def split_path_into_continuous_subpaths(self, path, tol=1e-6) -> List[SvgPath]:

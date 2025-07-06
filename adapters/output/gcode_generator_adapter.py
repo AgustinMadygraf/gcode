@@ -153,7 +153,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self.logger.debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
         optimizer = TrajectoryOptimizer()
         # Loguear inicio de optimización
-        self.logger.info(self.i18n.get("INFO_OPTIMIZING_PATHS"))
+        self.logger.debug(self.i18n.get("INFO_OPTIMIZING_PATHS"))
         # Barra de progreso con tqdm para optimización
         use_tqdm = True
         pbar = None
@@ -191,7 +191,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
         scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
         if scale < scale_original:
-            self.logger.warning(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
+            self.logger.debug(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
 
         xmin, xmax, ymin, ymax = bbox
         self.logger.debug(
@@ -222,7 +222,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         except Exception:
             self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
             raise
-        self.logger.info(self.i18n.get("INFO_GCODE_LINES_PRECOMP", count=len(gcode)))
+        self.logger.debug(self.i18n.get("INFO_GCODE_LINES_PRECOMP", count=len(gcode)))
         # Compresión configurable
         compression_service = GcodeCompressionFactory.get_compression_service(
             self.config,
@@ -233,7 +233,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             orig_len = len(gcode)
             gcode, _ = compression_service.compress(gcode, compression_config)
             reduction = 100 * (1 - len(gcode) / orig_len) if orig_len else 0
-            self.logger.info(self.i18n.get("INFO_COMPRESSION", reduction=f"{reduction:.1f}%"))
+            self.logger.debug(self.i18n.get("INFO_COMPRESSION", reduction=f"{reduction:.1f}%"))
         self.logger.debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
         self.logger.debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
         if remove_border:
@@ -248,12 +248,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
                 gcode_str
             )
             if not border_found:
-                self.logger.warning(self.i18n.get("WARN_BORDER_NOT_FOUND"))
+                self.logger.debug(self.i18n.get("WARN_BORDER_NOT_FOUND"))
             gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
             if isinstance(gcode, str):
                 gcode = gcode.split('\n')
         elapsed_ms = int((time.time() - t_start) * 1000)
-        self.logger.info(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
+        self.logger.debug(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
         return gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:

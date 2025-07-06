@@ -138,6 +138,7 @@ def main():
         )
         if getattr(args, 'dev', False):
             tb_str = traceback.format_exc()
+            logger.error(i18n.get('ERROR_TRACEBACK') if 'ERROR_TRACEBACK' in MESSAGES else 'Traceback:')
             logger.error(tb_str)
         return 99
 

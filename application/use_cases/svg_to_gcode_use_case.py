@@ -15,13 +15,15 @@ class SvgToGcodeUseCase:
                  gcode_generation_service,
                  gcode_compression_use_case,
                  logger,
-                 filename_service):
+                 filename_service,
+                 i18n=None):
         self.svg_loader_factory = svg_loader_factory
         self.path_processing_service = path_processing_service
         self.gcode_generation_service = gcode_generation_service
         self.gcode_compression_use_case = gcode_compression_use_case
         self.logger = logger
         self.filename_service = filename_service
+        self.i18n = i18n
 
     def execute(
         self,
@@ -32,7 +34,7 @@ class SvgToGcodeUseCase:
             " Orquesta la conversión de SVG a "
             "G-code. "
         )
-        self.logger.debug(f"Iniciando carga de SVG: {svg_file}")
+        self.logger.debug(self.i18n.get('DEBUG_LOADING_SVG', filename=svg_file))
         _, paths, svg_attr = self._load_svg(svg_file)
         processed_paths = self._process_paths(paths, svg_attr, svg_file)
         gcode_lines = self._generate_gcode(processed_paths, svg_attr, context)
@@ -51,42 +53,36 @@ class SvgToGcodeUseCase:
             svg_loader = self.svg_loader_factory(svg_file)
             paths = svg_loader.get_paths()
             svg_attr = svg_loader.get_attributes()
-            self.logger.debug(f"Atributos SVG: {svg_attr}")
-            self.logger.info(f"Paths extraídos: {len(paths)}")
+            self.logger.debug(self.i18n.get('DEBUG_SVG_ATTR', attr=svg_attr))
+            self.logger.debug(self.i18n.get('INFO_PATHS_EXTRACTED', count=len(paths)))
             return svg_loader, paths, svg_attr
         except Exception as e:
-            self.logger.error(f"Error al cargar SVG o extraer paths: {e}", exc_info=True)
+            self.logger.error(self.i18n.get('ERROR_LOADING_SVG_PATHS', error=str(e)), exc_info=True)
             raise
 
     def _process_paths(self, paths, svg_attr, svg_file):
         try:
             processed_paths = self.path_processing_service.process(paths, svg_attr)
-            self.logger.info(f"Paths útiles tras procesamiento: {len(processed_paths)}")
+            self.logger.debug(self.i18n.get('INFO_PATHS_PROCESSED', count=len(processed_paths)))
             if not processed_paths:
-                self.logger.warning(
-                    "No se encontraron paths útiles tras el "
-                    "procesamiento para "
-                    f"{svg_file}"
-                )
+                self.logger.warning(self.i18n.get('WARN_NO_USEFUL_PATHS', filename=svg_file))
             return processed_paths
         except Exception as e:
-            self.logger.error(f"Error en el procesamiento de paths: {e}", exc_info=True)
+            self.logger.error(self.i18n.get('ERROR_PROCESSING_PATHS', error=str(e)), exc_info=True)
             raise
 
     def _generate_gcode(self, processed_paths, svg_attr, context):
         try:
-            self.logger.debug(f"Contexto para generación de G-code: {context}")
+            self.logger.debug(self.i18n.get('DEBUG_GCODE_CONTEXT', context=context))
             gcode_lines = self.gcode_generation_service.generate(
                 processed_paths,
                 svg_attr,
                 context=context
             )
-            self.logger.info(
-                f"G-code generado con {len(gcode_lines)} líneas"
-            )
+            self.logger.debug(self.i18n.get('INFO_GCODE_GENERATED', count=len(gcode_lines)))
             return gcode_lines
         except Exception as e:
-            self.logger.error(f"Error en la generación de G-code: {e}", exc_info=True)
+            self.logger.error(self.i18n.get('ERROR_GCODE_GENERATION', error=str(e)), exc_info=True)
             raise
 
     def _compress_gcode(self, gcode_lines, svg_file):
@@ -94,17 +90,15 @@ class SvgToGcodeUseCase:
             compression_result = self.gcode_compression_use_case.execute(gcode_lines)
             compressed_gcode = compression_result.get('compressed_gcode', gcode_lines)
             ratio = compression_result.get('compression_ratio', 1)
-            self.logger.info(
-                f"Compresión: original={compression_result.get('original_size', 0)}, "
-                f"comprimido={compression_result.get('compressed_size', 0)}, "
-                f"ratio={100 * (1 - ratio):.2f}%"
-            )
+            self.logger.debug(self.i18n.get(
+                'INFO_COMPRESSION_SUMMARY',
+                orig=compression_result.get('original_size', 0),
+                comp=compression_result.get('compressed_size', 0),
+                ratio=f"{100 * (1 - ratio):.2f}"
+            ))
             if ratio > 0.95:
-                self.logger.warning(
-                    f"La compresión fue poco efectiva "
-                    f"(ratio={ratio:.2f}) para {svg_file}"
-                )
+                self.logger.debug(self.i18n.get('WARN_COMPRESSION_LOW', ratio=ratio, filename=svg_file))
             return compressed_gcode, compression_result
         except Exception as e:
-            self.logger.error(f"Error en la compresión de G-code: {e}", exc_info=True)
+            self.logger.error(self.i18n.get('ERROR_GCODE_COMPRESSION', error=str(e)), exc_info=True)
             raise
