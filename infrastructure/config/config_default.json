@@ -28,5 +28,6 @@
     "A5_LANDSCAPE": [210.0, 148.0]
   },
   "TOOL_DIAMETER": 0.0,
-  "COMPENSATION_TYPE": "none"
+  "COMPENSATION_TYPE": "none",
+  "ROTATE_90_CLOCKWISE": false
 }

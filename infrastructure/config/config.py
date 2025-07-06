@@ -13,6 +13,11 @@ class Config:
     - El campo MAX_HEIGHT_MM está deprecado y no debe usarse.
     - Todos los métodos y validaciones usan la nueva convención.
     """
+    @property
+    def rotate_90_clockwise(self):
+        """Devuelve si debe rotar 90 grados en sentido horario (ROTATE_90_CLOCKWISE)."""
+        return bool(self._data.get("ROTATE_90_CLOCKWISE", False))
+
     def __init__(self, config_path: Path = Path(__file__).parent / "config.json"):
         default_path = Path(__file__).parent / "config_default.json"
         # Si no existe config.json, crear uno a partir de config_default.json

@@ -14,14 +14,14 @@ class SvgLoaderPort(ABC):
     @abstractmethod
     def load(self, file_path: str) -> None:
         " Carga un archivo SVG desde la ruta especificada. """
-        pass
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_paths(self) -> List[Path]:
         " Obtiene las rutas del documento SVG cargado. "
-        pass
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass
 
     @abstractmethod
     def get_attributes(self) -> Dict[str, Any]:
         " Obtiene los atributos del documento SVG cargado. "
-        pass
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass

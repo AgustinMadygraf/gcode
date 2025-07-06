@@ -2,7 +2,9 @@
 Caso de uso: Orquestación completa de conversión SVG → G-code
 (procesamiento, generación y compresión).
 """
+
 from pathlib import Path
+from domain.services.geometry_rotate import rotate_paths_90_clockwise
 
 class SvgToGcodeUseCase:
     """
@@ -97,6 +99,18 @@ class SvgToGcodeUseCase:
         )
         self._debug(self.i18n.get('DEBUG_LOADING_SVG', filename=svg_file))
         _, paths, svg_attr = self._load_svg(svg_file)
+        # Rotar paths si la configuración lo indica
+        config = getattr(self, 'config', None)
+        rotate_90 = False
+        if context and 'config' in context:
+            config = context['config']
+        if config and hasattr(config, 'rotate_90_clockwise'):
+            rotate_90 = config.rotate_90_clockwise
+        elif context and 'rotate_90_clockwise' in context:
+            rotate_90 = context['rotate_90_clockwise']
+        if rotate_90:
+            paths = rotate_paths_90_clockwise(paths)
+            self._debug('INFO_PATHS_ROTATED_90_CLOCKWISE')
         processed_paths = self._process_paths(paths, svg_attr, svg_file, context=context)
         gcode_lines = self._generate_gcode(processed_paths, svg_attr, context)
         compressed_gcode, compression_result = self._compress_gcode(gcode_lines, svg_file)

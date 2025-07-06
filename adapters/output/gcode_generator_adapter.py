@@ -57,7 +57,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
     - El config debe exponer flags como 'curvature_adjustment_factor', 'minimum_feed_factor', 'disable_gcode_compression', etc.
     - El i18n debe proveer mensajes localizables vía get(key, **kwargs).
     """
-    DEBUG_ENABLED = True
+    DEBUG_ENABLED = False
 
     def _debug(self, msg, *args, **kwargs):
         if self.DEBUG_ENABLED and self.logger:

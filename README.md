@@ -69,6 +69,7 @@ python run.py
 
 - `REMOVE_SVG_BORDER` (bool): Si es `true`, intenta eliminar el marco/borde exterior del SVG si coincide exactamente con el `viewBox`.
 - `BORDER_DETECTION_TOLERANCE` (float): Tolerancia relativa (por defecto 0.05) usada para comparar los márgenes del path con el `viewBox`. Un valor menor hace la detección más estricta; un valor mayor la hace más laxa. Si tienes rectángulos internos que no deben eliminarse, ajusta este valor para evitar falsos positivos.
+- `ROTATE_90_CLOCKWISE` (bool): Si es `true`, el contenido SVG se rotará 90° en sentido horario antes de cualquier otro procesamiento. Útil para ajustar la orientación por defecto de la imagen sin modificar el archivo SVG original.
 
 ## Parámetros de área y superficie
 

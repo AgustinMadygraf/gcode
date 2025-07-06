@@ -9,13 +9,14 @@ from domain.gcode.reference_mark import reference_mark_gcode
 class ReferenceMarksGenerator:
     """
     Clase adaptador para la generación de G-code de marcas de referencia.
-    
-    - Utiliza la configuración activa para determinar parámetros como feed, comandos de bajada/subida, dwell y área de trabajo.
-    - Genera marcas en las cuatro esquinas del área definida (bottomleft, bottomright, topleft, topright).
-    - Si la opción GENERATE_REFERENCE_MARKS está en False, omite los comandos de bajada/subida de herramienta, pero mantiene los movimientos.
-    - Permite instrumentación con logger para depuración y trazabilidad del proceso.
-    - Añade comentarios delimitadores en el G-code para identificar el bloque de marcas de referencia.
     """
+    DEBUG_ENABLED = False
+
+    @staticmethod
+    def _debug(logger, msg, *args, **kwargs):
+        if ReferenceMarksGenerator.DEBUG_ENABLED and logger:
+            logger.debug(msg, *args, **kwargs)
+
     @staticmethod
     def generate(logger=None, width=None, height=None):
         """
@@ -56,26 +57,21 @@ class ReferenceMarksGenerator:
             logger.info(f"[REF_MARKS] Inicio generación de marcas de referencia. GENERATE_REFERENCE_MARKS={enable_marks}")
         body = []
         for x, y, direction in marks:
-            if logger:
-                logger.debug(f"[REF_MARKS] Generando marca en ({x}, {y}) dirección {direction}")
+            ReferenceMarksGenerator._debug(logger, f"[REF_MARKS] Generando marca en ({x}, {y}) dirección {direction}")
             for line in reference_mark_gcode(x, y, direction, feed):
                 # CMD_DOWN/CMD_UP controlan la bajada/subida de herramienta
                 if line == "CMD_DOWN":
                     if enable_marks:
                         body.append(cmd_down)
-                        if logger:
-                            logger.debug(f"[REF_MARKS] CMD_DOWN insertado en ({x}, {y})")
+                        ReferenceMarksGenerator._debug(logger, f"[REF_MARKS] CMD_DOWN insertado en ({x}, {y})")
                     else:
-                        if logger:
-                            logger.debug(f"[REF_MARKS] CMD_DOWN omitido por configuración en ({x}, {y})")
+                        ReferenceMarksGenerator._debug(logger, f"[REF_MARKS] CMD_DOWN omitido por configuración en ({x}, {y})")
                 elif line == "CMD_UP":
                     if enable_marks:
                         body.append(cmd_up)
-                        if logger:
-                            logger.debug(f"[REF_MARKS] CMD_UP insertado en ({x}, {y})")
+                        ReferenceMarksGenerator._debug(logger, f"[REF_MARKS] CMD_UP insertado en ({x}, {y})")
                     else:
-                        if logger:
-                            logger.debug(f"[REF_MARKS] CMD_UP omitido por configuración en ({x}, {y})")
+                        ReferenceMarksGenerator._debug(logger, f"[REF_MARKS] CMD_UP omitido por configuración en ({x}, {y})")
                 elif line == "DWELL":
                     # Pausa opcional para asegurar la marca
                     body.append(f"G4 P{dwell/1000}")
