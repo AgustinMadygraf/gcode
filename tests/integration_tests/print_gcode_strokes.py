@@ -1,3 +1,12 @@
+class DummyI18n:
+    def get(self, key, **kwargs):
+        return key
+class DummyLogger:
+    def info(self, *a, **k): pass
+    def warning(self, *a, **k): pass
+    def error(self, *a, **k): pass
+    def debug(self, *a, **k): pass
+
 """
 Script para imprimir y analizar el flujo de comandos G-code generado para varios trazos.
 """
@@ -21,15 +30,18 @@ def print_gcode_for_multiple_strokes():
     # Definir plotter_max_area_mm localmente (simula config)
     plotter_max_area_mm = [180.0, 250.0]
     generator = GCodeGeneratorAdapter(
+        path_sampler=None,  # Ajusta si tienes un path_sampler adecuado
         feed=1000,
         cmd_down="M3 S1000",
         cmd_up="M5",
         step_mm=5,
         dwell_ms=100,
         max_height_mm=plotter_max_area_mm[1],
-        logger=None,
+        logger=DummyLogger(),
+        i18n=DummyI18n(),
         transform_strategies=[DummyStrategy()],
-        optimizer=OptimizationChain()  # Inyectar la cadena de optimización
+        optimizer=OptimizationChain(),
+        config=None  # Ajusta si tienes un config adecuado
     )
     gcode_service = GCodeGenerationService(generator)
     # Imprimir puntos de inicio y fin de cada trazo

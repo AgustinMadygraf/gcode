@@ -3,6 +3,10 @@ from svgpathtools import Path, Line
 from domain.services.path_filter_service import PathFilter
 from infrastructure.factories.infra_factory import InfraFactory
 
+class DummyI18n:
+    def get(self, key, **_kwargs):
+        return key
+
 class TestPathFilter(unittest.TestCase):
     def test_removes_border_but_keeps_internal_rectangle(self):
         # Path que simula el borde del SVG
@@ -15,7 +19,7 @@ class TestPathFilter(unittest.TestCase):
         
         # Crear filtro que SÍ elimina el borde
         logger = InfraFactory.get_logger()
-        path_filter = PathFilter(remove_svg_border=True, border_tolerance=0.05, logger=logger)
+        path_filter = PathFilter(remove_svg_border=True, border_tolerance=0.05, logger=logger, i18n=DummyI18n())
         
         filtered_paths = path_filter.filter_nontrivial(paths, svg_attr)
         

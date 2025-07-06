@@ -13,6 +13,20 @@ from tests.mocks.mock_geometry import DummySegment
 from tests.mocks.mock_strategy import DummyStrategy
 from tests.mocks.mock_config import DummyConfig
 
+class DummyLogger:
+    def info(self, *a, **k): pass
+    def error(self, *a, **k): pass
+    def debug(self, *a, **k): pass
+    def warning(self, *a, **k): pass
+
+class DummyI18n:
+    def get(self, key, **_kwargs):
+        return key
+    def info(self, *a, **k): pass
+    def warning(self, *a, **k): pass
+    def error(self, *a, **k): pass
+    def debug(self, *a, **k): pass
+
 class TestGCodeGeneratorIntegration(unittest.TestCase):
     def test_generate_with_transform_manager(self):
         import tempfile
@@ -28,7 +42,8 @@ class TestGCodeGeneratorIntegration(unittest.TestCase):
                 step_mm=1,
                 dwell_ms=100,
                 max_height_mm=10,
-                logger=None,
+                logger=DummyLogger(),
+                i18n=DummyI18n(),
                 transform_strategies=[DummyStrategy()],
                 optimizer=OptimizationChain(),
                 config=DummyConfig(tmpdir)  # Mock config

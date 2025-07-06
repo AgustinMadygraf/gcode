@@ -2,11 +2,9 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import pytest
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from adapters.input.svg_loader_adapter import SvgLoaderAdapter
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
-from domain.entities.point import Point
 from domain.services.optimization.optimization_chain import OptimizationChain
 from adapters.input.path_sampler import PathSampler
 from infrastructure.config.config import Config
@@ -32,12 +30,18 @@ def test_single_line_no_duplicate_g1(tmp_path):
     svg_path = tmp_path / "line.svg"
     svg_path.write_text(SVG_SIMPLE_LINE)
     loader = SvgLoaderAdapter(str(svg_path))
-    subpaths = loader.get_subpaths()
+    _subpaths = loader.get_subpaths()
     # Usar segmentos mock en vez de Point
     points = [[DummySegment((1, 1), (9, 1))]]
+    class _DummyI18n:
+        def get(self, key, **_kwargs):
+            return key
+    from tests.mocks.mock_use_case import DummyLogger
     generator = GCodeGeneratorAdapter(
         path_sampler=PathSampler(1.0),
         config=config,
+        logger=DummyLogger(),
+        i18n=_DummyI18n(),
         **GEN_KWARGS
     )
     gcode_service = GCodeGenerationService(generator)
@@ -52,11 +56,14 @@ def test_single_line_no_duplicate_g1(tmp_path):
 def test_broken_line_creates_two_traces(tmp_path):
     svg_path = tmp_path / "broken.svg"
     svg_path.write_text(SVG_BROKEN_LINE)
-    loader = SvgLoaderAdapter(str(svg_path))
-    subpaths = loader.get_subpaths()
+    _loader = SvgLoaderAdapter(str(svg_path))
     # Usar segmentos mock para dos trazos
     points = [[DummySegment((1, 1), (5, 1))], [DummySegment((5.001, 1), (9, 1))]]
-    gen = GCodeGeneratorAdapter(path_sampler=PathSampler(1.0), config=config, **GEN_KWARGS)
+    from tests.mocks.mock_use_case import DummyLogger
+    class DummyI18n:
+        def get(self, key, **_kwargs):
+            return key
+    gen = GCodeGeneratorAdapter(path_sampler=PathSampler(1.0), config=config, logger=DummyLogger(), i18n=DummyI18n(), **GEN_KWARGS)
     gcode_service = GCodeGenerationService(gen)
     gcode = gcode_service.generate(points, {})
     # Debe haber dos bloques de G1
@@ -68,9 +75,15 @@ def test_broken_line_creates_two_traces(tmp_path):
 def test_no_duplicate_points():
     # Simula segmentos con puntos duplicados
     points = [[DummySegment((1, 1), (1, 1)), DummySegment((1, 1), (5, 1)), DummySegment((5, 1), (9, 1)), DummySegment((9, 1), (9, 1))]]
+    from tests.mocks.mock_use_case import DummyLogger
+    class DummyI18n:
+        def get(self, key, **_kwargs):
+            return key
     gen = GCodeGeneratorAdapter(
         path_sampler=PathSampler(1.0),
         config=config,
+        logger=DummyLogger(),
+        i18n=DummyI18n(),
         **GEN_KWARGS
     )
     gcode_service = GCodeGenerationService(gen)

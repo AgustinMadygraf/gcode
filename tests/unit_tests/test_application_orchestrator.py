@@ -8,7 +8,7 @@ from infrastructure.events.event_manager import EventManager
 class DummyWorkflow:
     def __init__(self):
         self.ran = False
-    def run(self, *args, **kwargs):
+    def run(self, *_args, **_kwargs):
         self.ran = True
         return 'ok'
 
@@ -19,14 +19,15 @@ class DummyModeStrategy:
 class TestApplicationOrchestrator(unittest.TestCase):
     def test_orchestrator_runs_workflow(self):
         dummy_workflow = DummyWorkflow()
+        # Crear un mock mínimo de services con la clave esperada
+        services = {
+            'filename_service': object(),
+            'workflows': {'dummy': dummy_workflow}
+        }
         orchestrator = ApplicationOrchestrator(
-            container=None,
-            presenter=None,
-            filename_service=None,
-            config=None,
-            event_bus=None,
-            workflows={'dummy': dummy_workflow},
-            operations={},
+            container={'workflows': {'dummy': dummy_workflow}},
+            services=services,
+            i18n=None,
             mode_strategy=DummyModeStrategy(),
             args=None
         )

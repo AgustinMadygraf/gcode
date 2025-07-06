@@ -4,14 +4,29 @@ Test para verificar que el comando CMD_UP separa correctamente los trazos en el 
 import unittest
 import sys
 import os
+
+from tests.mocks.mock_strategy import MockStrategy
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.services.optimization.optimization_chain import OptimizationChain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from adapters.input.path_sampler import PathSampler
 from tests.mocks.mock_geometry import DummySegment
-from tests.mocks.mock_strategy import MockStrategy
 from tests.mocks.mock_config import DummyConfig
+
+class DummyLogger:
+    def info(self, *a, **k): pass
+    def error(self, *a, **k): pass
+    def debug(self, *a, **k): pass
+    def warning(self, *a, **k): pass
+
+class DummyI18n:
+    def get(self, key, **_kwargs):
+        return key
+    def info(self, *a, **k): pass
+    def warning(self, *a, **k): pass
+    def error(self, *a, **k): pass
+    def debug(self, *a, **k): pass
 
 class TestGCodeCMDUP(unittest.TestCase):
     def test_cmd_up_separates_strokes(self):
@@ -29,7 +44,8 @@ class TestGCodeCMDUP(unittest.TestCase):
                 step_mm=1,
                 dwell_ms=100,
                 max_height_mm=DummyConfig(tmpdir).plotter_max_area_mm[1],
-                logger=None,
+                logger=DummyLogger(),
+                i18n=DummyI18n(),
                 transform_strategies=[MockStrategy()],
                 optimizer=OptimizationChain(),  # Inyectar la cadena de optimización
                 config=DummyConfig(tmpdir)  # Mock config
@@ -53,8 +69,6 @@ class TestGCodeCMDUP(unittest.TestCase):
                 )
 
     def test_path_sampler_direct(self):
-        from adapters.input.path_sampler import PathSampler
-        from tests.mocks.mock_geometry import DummySegment
         sampler = PathSampler(1)
         seg = DummySegment(start=(0,0), end=(5,0))
         points = list(sampler.sample([seg]))
@@ -62,11 +76,8 @@ class TestGCodeCMDUP(unittest.TestCase):
         self.assertGreaterEqual(len(points), 2)
 
     def test_sample_transform_pipeline_direct(self):
-        from adapters.input.path_sampler import PathSampler
         from adapters.output.sample_transform_pipeline import SampleTransformPipeline
-        from tests.mocks.mock_geometry import DummySegment
         from infrastructure.transform_manager import TransformManager
-        from tests.mocks.mock_strategy import MockStrategy
         sampler = PathSampler(1)
         transform_manager = TransformManager([MockStrategy()])
         pipeline = SampleTransformPipeline(sampler, transform_manager, 1.0)

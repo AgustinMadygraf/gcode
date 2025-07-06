@@ -28,7 +28,7 @@ class Config:
                 with open(default_path, encoding="utf-8") as f:
                     defaults = json.load(f)
                 self._data.update(defaults)
-            except Exception as e:
+            except (json.JSONDecodeError, IOError) as e:
                 print(f"[Config] Error loading config_default.json: {e}. Using empty defaults.")
         # Luego sobreescribir con el config del usuario si existe
         if config_path.exists():

@@ -1,7 +1,6 @@
 """
 Mocks para pruebas de casos de uso.
 """
-from pathlib import Path
 
 class DummyLoader:
     """Mock de cargador para casos de uso"""
@@ -16,12 +15,12 @@ class DummyLoader:
 
 class DummyPathProcessor:
     """Mock de procesador de rutas"""
-    def process(self, paths, attrs):
+    def process(self, paths, _attrs):
         return paths[:2]  # Simula filtrado
 
 class DummyGcodeGen:
     """Mock de generador de GCode para casos de uso"""
-    def generate(self, paths, attrs, context=None):
+    def generate(self, paths, _attrs, _context=None, **_kwargs):
         return [f'G1 X{p}' for p in paths]
 
 class DummyCompressUseCase:
@@ -36,15 +35,15 @@ class DummyCompressUseCase:
 
 class DummyLogger:
     """Mock de logger"""
-    def info(self, *a, **k): 
+    def info(self, *_a, **_k): 
         pass
-    
-    def error(self, *a, **k):
+    def error(self, *_a, **_k):
         pass
-    
-    def debug(self, *a, **k):
+    def debug(self, *_a, **_k):
+        pass
+    def warning(self, *_a, **_k):
         pass
 
 class DummyFilenameService:
     """Mock de servicio de nombres de archivo"""
-    pass
+    pass  # pylint: disable=unnecessary-pass

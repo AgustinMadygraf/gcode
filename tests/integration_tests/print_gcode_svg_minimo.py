@@ -1,3 +1,12 @@
+class DummyI18n:
+    def get(self, key, **kwargs):
+        return key
+class DummyLogger:
+    def info(self, *a, **k): pass
+    def warning(self, *a, **k): pass
+    def error(self, *a, **k): pass
+    def debug(self, *a, **k): pass
+
 import sys
 import os
 from pathlib import Path
@@ -16,15 +25,18 @@ svg = SvgLoaderAdapter(svg_file)
 paths = svg.get_paths()
 svg_attr = svg.get_attributes()
 generator = GCodeGeneratorAdapter(
+    path_sampler=None,  # Ajusta si tienes un path_sampler adecuado
     feed=config.feed,
     cmd_down=config.cmd_down,
     cmd_up=config.cmd_up,
     step_mm=config.step_mm,
     dwell_ms=config.dwell_ms,
     max_height_mm=config.plotter_max_area_mm[1],
-    logger=None,
+    logger=DummyLogger(),
+    i18n=DummyI18n(),
     transform_strategies=[MockStrategy()],
-    optimizer=OptimizationChain()  # Inyectar la cadena de optimización
+    optimizer=OptimizationChain(),
+    config=config  # Asegura que config esté presente
 )
 gcode_service = GCodeGenerationService(generator)
 gcode = gcode_service.generate(paths, svg_attr)
