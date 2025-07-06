@@ -1,6 +1,7 @@
 import time
 from functools import wraps
 
+# DEPRECATED: Usar infrastructure.performance.timing.PerformanceTimer en su lugar.
 def timed_log(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):

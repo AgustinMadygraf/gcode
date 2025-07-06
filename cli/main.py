@@ -9,6 +9,7 @@ Nota: Este módulo NO debe ejecutarse directamente. El único punto de entrada s
 
 from infrastructure.factories.container import Container
 from infrastructure.i18n.i18n_service import I18nService
+from infrastructure.logger import get_logger, get_dev_logger
 
 from domain.ports.logger_port import LoggerPort
 from domain.ports.file_selector_port import FileSelectorPort
@@ -56,6 +57,11 @@ class SvgToGcodeApp:
         self.interactive_mode = True if args is None else not getattr(args, 'no_interactive', False)
         # Detección automática de soporte de colores (refactorizado)
         self.use_colors = supports_color(args)
+        # Selección de logger según modo dev
+        if args and getattr(args, 'dev', False):
+            self.logger = get_dev_logger(use_color=self.use_colors)
+        else:
+            self.logger = get_logger(use_color=self.use_colors)
         # Detección automática de idioma (refactorizado)
         self.language = detect_language(args)
         self.i18n = I18nService(MESSAGES, default_lang=self.language)

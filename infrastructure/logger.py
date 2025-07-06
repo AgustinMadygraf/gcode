@@ -100,3 +100,9 @@ def get_logger(use_color=True, level='INFO', show_file_line=False):
     No existe más instancia global; el uso debe ser explícito.
     """
     return ConsoleLogger(use_color=use_color, level=level, show_file_line=show_file_line)
+
+def get_dev_logger(use_color=True):
+    """
+    Retorna un logger en modo desarrollador (DEBUG + show_file_line).
+    """
+    return ConsoleLogger(use_color=use_color, level='DEBUG', show_file_line=True)
