@@ -30,6 +30,7 @@ class ReferenceMarksGenerator:
         - Genera marcas en las cuatro esquinas del área de trabajo.
         - Si GENERATE_REFERENCE_MARKS es False, omite comandos de bajada/subida de herramienta.
         - Permite logging detallado del proceso.
+        - Agrega marcas de las cuatro esquinas de PLOTTER_MAX_AREA_MM y TARGET_WRITE_AREA_MM.
         - Usa self.logger y self.i18n para mensajes localizados.
         """
         config = Config()
@@ -43,11 +44,12 @@ class ReferenceMarksGenerator:
         else:
             area = config.get("TARGET_WRITE_AREA_MM")
         width, height = area
+        # Orden: abajo izquierda, abajo derecha, arriba derecha, arriba izquierda
         marks = [
             (0, 0, 'bottomleft'),
             (width, 0, 'bottomright'),
-            (0, height, 'topleft'),
-            (width, height, 'topright')
+            (width, height, 'topright'),
+            (0, height, 'topleft')
         ]
         # Leer la opción de marcas de referencia
         enable_marks = config.get("GENERATE_REFERENCE_MARKS", True)
@@ -83,6 +85,27 @@ class ReferenceMarksGenerator:
                     body.append(f"G4 P{dwell/1000}")
                 else:
                     body.append(line)
+
+        # --- Marcas de PLOTTER_MAX_AREA_MM y TARGET_WRITE_AREA_MM ---
+        def area_marks(area_name, area_xy):
+            wx, hy = area_xy
+            corners = [
+                (0, 0, 'abajo izquierda'),
+                (wx, 0, 'abajo derecha'),
+                (wx, hy, 'arriba derecha'),
+                (0, hy, 'arriba izquierda')
+            ]
+            for x, y, label in corners:
+                body.append(f"; Marca {area_name} esquina {label}")
+                body.append(f"G0 X{x} Y{y}")
+                body.append(cmd_up)
+
+        plotter_area = config.get("PLOTTER_MAX_AREA_MM")
+        target_area = config.get("TARGET_WRITE_AREA_MM")
+        if plotter_area:
+            area_marks("PLOTTER_MAX_AREA_MM", plotter_area)
+        if target_area:
+            area_marks("TARGET_WRITE_AREA_MM", target_area)
         body.append("G0 X0 Y0")
         if self.logger and self.i18n:
             self.logger.info(self.i18n.get("REF_MARKS_END", "[REF_MARKS] Finalización de la generación de marcas de referencia. Total líneas: {}"
