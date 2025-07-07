@@ -21,8 +21,8 @@ class DummyLogger:
     def warning(self, *a, **k): pass
 
 class DummyI18n:
-    def get(self, key, **_kwargs):
-        return key
+    def get(self, key, default=None, **_kwargs):
+        return default or key
     def info(self, *a, **k): pass
     def warning(self, *a, **k): pass
     def error(self, *a, **k): pass

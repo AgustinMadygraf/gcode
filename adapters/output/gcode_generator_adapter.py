@@ -24,17 +24,14 @@ from domain.services.optimization.trajectory_optimizer import TrajectoryOptimize
 from domain.compression_config import CompressionConfig
 
 from infrastructure.transform_manager import TransformManager
+from infrastructure.adapters.reference_marks_generator import ReferenceMarksGenerator
 from adapters.output.feed_rate_strategy import FeedRateStrategy
 from adapters.output.sample_transform_pipeline import SampleTransformPipeline
 from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
-from infrastructure.adapters.reference_marks_generator import ReferenceMarksGenerator
 
-class DummyI18n:
-    def get(self, key, **_kwargs):
-        return key
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     """
@@ -108,7 +105,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             min_feed_factor=getattr(config, 'minimum_feed_factor', 0.4)
         )
         self.curvature_feed_calculator = CurvatureFeedCalculator(self.feed_rate_strategy)
-        self.i18n = i18n if i18n is not None else DummyI18n()
+        self.i18n = i18n
         # Asegura que config tenga i18n para la compresión
         if self.i18n and not hasattr(self.config, 'i18n'):
             setattr(self.config, 'i18n', self.i18n)
@@ -160,8 +157,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             raise ValueError("PathSamplerPort is required")
         gcode = []  # Valor por defecto para evitar UnboundLocalError
         # --- INICIO: Incorporar marcas de referencia ---
-        ref_marks_gcode = ReferenceMarksGenerator.generate(
-            logger=self.logger,
+        ref_marks_generator = ReferenceMarksGenerator(logger=self.logger, i18n=self.i18n)
+        ref_marks_gcode = ref_marks_generator.generate(
             width=self.max_width_mm,
             height=self.max_height_mm
         )
@@ -272,8 +269,8 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         elapsed_ms = int((time.time() - t_start) * 1000)
         self._debug(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
         # --- INICIO: Incorporar marcas de referencia ---
-        ref_marks_gcode = ReferenceMarksGenerator.generate(
-            logger=self.logger,
+        ref_marks_generator = ReferenceMarksGenerator(logger=self.logger, i18n=self.i18n)
+        ref_marks_gcode = ref_marks_generator.generate(
             width=self.max_width_mm,
             height=self.max_height_mm
         )
@@ -290,7 +287,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             while gcode_lines and gcode_lines[0].strip() in encabezados:
                 gcode_lines.pop(0)
             gcode = ref_marks_gcode + '\n' + '\n'.join(gcode_lines)
-        if self.logger:
+        if self.logger is not None:
             self.logger.info("[REF_MARKS] Marcas de referencia incorporadas al inicio del G-code (sin duplicar encabezados).")
         # --- FIN: Incorporar marcas de referencia ---
         return gcode

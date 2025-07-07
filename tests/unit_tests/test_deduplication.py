@@ -34,8 +34,8 @@ def test_single_line_no_duplicate_g1(tmp_path):
     # Usar segmentos mock en vez de Point
     points = [[DummySegment((1, 1), (9, 1))]]
     class _DummyI18n:
-        def get(self, key, **_kwargs):
-            return key
+        def get(self, key, default=None, **_kwargs):
+            return default or key
     from tests.mocks.mock_use_case import DummyLogger
     generator = GCodeGeneratorAdapter(
         path_sampler=PathSampler(1.0),
@@ -61,8 +61,8 @@ def test_broken_line_creates_two_traces(tmp_path):
     points = [[DummySegment((1, 1), (5, 1))], [DummySegment((5.001, 1), (9, 1))]]
     from tests.mocks.mock_use_case import DummyLogger
     class DummyI18n:
-        def get(self, key, **_kwargs):
-            return key
+        def get(self, key, default=None, **_kwargs):
+            return default or key
     gen = GCodeGeneratorAdapter(path_sampler=PathSampler(1.0), config=config, logger=DummyLogger(), i18n=DummyI18n(), **GEN_KWARGS)
     gcode_service = GCodeGenerationService(gen)
     gcode = gcode_service.generate(points, {})
@@ -77,8 +77,8 @@ def test_no_duplicate_points():
     points = [[DummySegment((1, 1), (1, 1)), DummySegment((1, 1), (5, 1)), DummySegment((5, 1), (9, 1)), DummySegment((9, 1), (9, 1))]]
     from tests.mocks.mock_use_case import DummyLogger
     class DummyI18n:
-        def get(self, key, **_kwargs):
-            return key
+        def get(self, key, default=None, **_kwargs):
+            return default or key
     gen = GCodeGeneratorAdapter(
         path_sampler=PathSampler(1.0),
         config=config,

@@ -6,7 +6,9 @@ ejecuta Vulture, filtra rutas, busca referencias y reporta símbolos seguros par
 
 import os
 import re
+import argparse
 import chardet
+
 from tools.vulture_runner import VultureRunner
 from tools.report_presenter import ReportPresenter
 
@@ -159,10 +161,77 @@ class ReferenceFinder:
         # 3. Por defecto, riesgo bajo
         return 'BAJO'
 
+def process_folder(folder, aggressiveness, round_num, finder, parser, presenter, processed_folders, args):
+    folder_key = f"{folder}-{aggressiveness['name']}"
+    if folder_key in processed_folders:
+        print(f"\nOmitiendo carpeta ya procesada: {folder}")
+        return
+
+    print(f"\nAnalizando carpeta: {folder}")
+    vulture = VultureRunner(folder, EXCLUDE, REPORT_PATH)
+    vulture.run()
+    unused = parser.parse()
+    encontrados = []
+    muy_seguros = []
+    riesgo_bajo = []
+
+    motivos_no_eliminados = []
+    for item in unused:
+        # Filtrar por umbral de confianza según la ronda
+        if int(item['confidence']) < aggressiveness['confidence_threshold']:
+            item['motivo_no_eliminado'] = f"Confianza ({item['confidence']}%) menor al umbral ({aggressiveness['confidence_threshold']}%)"
+            motivos_no_eliminados.append(item)
+            continue
+
+        if not finder.is_symbol_used(item['symbol'], item['file']):
+            muy_seguro = not finder.is_symbol_used_anywhere(
+                item['symbol'], item['file']
+            )
+            item['muy_seguro'] = muy_seguro
+
+            # Calcular riesgo usando el presentador con nivel de agresividad
+            file_path = os.path.join(PROJECT_ROOT, item['file'])
+            item['risk_level'] = presenter.calculate_risk_level(item, file_path, aggressiveness['strict_checks'])
+
+            # En modo agresivo, bajar nivel de riesgo para ciertos tipos
+            if not aggressiveness['strict_checks']:
+                if item['risk_level'] == 'MEDIO' and item['type'] in ['attribute', 'import']:
+                    item['risk_level'] = 'BAJO'
+                    item['downgraded'] = True
+
+            encontrados.append(item)
+            if muy_seguro:
+                muy_seguros.append(item)
+            if item['risk_level'] == 'BAJO':
+                riesgo_bajo.append(item)
+        else:
+            item['motivo_no_eliminado'] = "Referencia directa encontrada en el proyecto"
+            motivos_no_eliminados.append(item)
+
+    if encontrados:
+        print(f"\nRONDA {round_num+1} ({aggressiveness['name']}): Símbolos seguros para eliminar:")
+        presenter.show(unused, finder)
+
+        # Eliminar automáticamente símbolos con riesgo BAJO
+        if riesgo_bajo:
+            print(f"\nEliminando automáticamente {len(riesgo_bajo)} símbolos con riesgo BAJO:")
+            presenter.auto_remove_symbols(riesgo_bajo)
+
+        print(f"\nSe encontraron {len(encontrados)} símbolos seguros para eliminar en '{folder}'.")
+
+        processed_folders.add(folder_key)
+    else:
+        print("No se encontraron símbolos seguros para eliminar en esta carpeta.")
+
+    # Reporte de motivos para símbolos no eliminados (solo si flag activa)
+    if args.motivos and motivos_no_eliminados:
+        print(f"\nMotivos por los que NO se eliminaron {len(motivos_no_eliminados)} símbolos en '{folder}':")
+        for item in motivos_no_eliminados:
+            print(f"- {item['file']}:{item['line']} {item['type']} {item['symbol']} -> {item.get('motivo_no_eliminado','(sin motivo)')}")
+
 def main():
     " Función principal para ejecutar el análisis de código muerto. "
 
-    import argparse
     parser_args = argparse.ArgumentParser(description="Análisis de código muerto con reporte opcional de motivos de no eliminación.")
     parser_args.add_argument('--motivos', action='store_true', help='Imprime los motivos por los que NO se eliminaron símbolos')
     args = parser_args.parse_args()
@@ -182,72 +251,7 @@ def main():
         print(f"Verificaciones estrictas: {'Sí' if aggressiveness['strict_checks'] else 'No'}")
 
         for folder in ANALYSIS_FOLDERS:
-            folder_key = f"{folder}-{aggressiveness['name']}"
-            if folder_key in processed_folders:
-                print(f"\nOmitiendo carpeta ya procesada: {folder}")
-                continue
-
-            print(f"\nAnalizando carpeta: {folder}")
-            vulture = VultureRunner(folder, EXCLUDE, REPORT_PATH)
-            vulture.run()
-            unused = parser.parse()
-            encontrados = []
-            muy_seguros = []
-            riesgo_bajo = []
-
-            motivos_no_eliminados = []
-            for item in unused:
-                # Filtrar por umbral de confianza según la ronda
-                if int(item['confidence']) < aggressiveness['confidence_threshold']:
-                    item['motivo_no_eliminado'] = f"Confianza ({item['confidence']}%) menor al umbral ({aggressiveness['confidence_threshold']}%)"
-                    motivos_no_eliminados.append(item)
-                    continue
-
-                if not finder.is_symbol_used(item['symbol'], item['file']):
-                    muy_seguro = not finder.is_symbol_used_anywhere(
-                        item['symbol'], item['file']
-                    )
-                    item['muy_seguro'] = muy_seguro
-
-                    # Calcular riesgo usando el presentador con nivel de agresividad
-                    file_path = os.path.join(PROJECT_ROOT, item['file'])
-                    item['risk_level'] = presenter.calculate_risk_level(item, file_path, aggressiveness['strict_checks'])
-
-                    # En modo agresivo, bajar nivel de riesgo para ciertos tipos
-                    if not aggressiveness['strict_checks']:
-                        if item['risk_level'] == 'MEDIO' and item['type'] in ['attribute', 'import']:
-                            item['risk_level'] = 'BAJO'
-                            item['downgraded'] = True
-
-                    encontrados.append(item)
-                    if muy_seguro:
-                        muy_seguros.append(item)
-                    if item['risk_level'] == 'BAJO':
-                        riesgo_bajo.append(item)
-                else:
-                    item['motivo_no_eliminado'] = "Referencia directa encontrada en el proyecto"
-                    motivos_no_eliminados.append(item)
-
-            if encontrados:
-                print(f"\nRONDA {round_num+1} ({aggressiveness['name']}): Símbolos seguros para eliminar:")
-                presenter.show(unused, finder)
-
-                # Eliminar automáticamente símbolos con riesgo BAJO
-                if riesgo_bajo:
-                    print(f"\nEliminando automáticamente {len(riesgo_bajo)} símbolos con riesgo BAJO:")
-                    presenter.auto_remove_symbols(riesgo_bajo)
-
-                print(f"\nSe encontraron {len(encontrados)} símbolos seguros para eliminar en '{folder}'.")
-
-                processed_folders.add(folder_key)
-            else:
-                print("No se encontraron símbolos seguros para eliminar en esta carpeta.")
-
-            # Reporte de motivos para símbolos no eliminados (solo si flag activa)
-            if args.motivos and motivos_no_eliminados:
-                print(f"\nMotivos por los que NO se eliminaron {len(motivos_no_eliminados)} símbolos en '{folder}':")
-                for item in motivos_no_eliminados:
-                    print(f"- {item['file']}:{item['line']} {item['type']} {item['symbol']} -> {item.get('motivo_no_eliminado','(sin motivo)')}")
+            process_folder(folder, aggressiveness, round_num, finder, parser, presenter, processed_folders, args)
 
 if __name__ == "__main__":
     main()
