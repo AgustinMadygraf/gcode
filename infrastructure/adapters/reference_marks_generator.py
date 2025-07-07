@@ -52,22 +52,21 @@ class ReferenceMarkBlockGenerator:
                     body.append(f"G4 P{self.dwell/1000}")
                 else:
                     body.append(line)
-            # Movimientos en L
+            # Movimientos especiales en un solo eje tras cada marca de referencia
             if idx == 0:
-                if width > 0:
-                    body.append("; Movimiento horizontal por borde inferior")
-                    body.append(f"G0 X{width} Y0")
+                # Tras la primera marca: mover solo en Y al extremo inferior (Y=0)
+                body.append(f"G0 X{x} Y0")
             elif idx == 1:
-                if height > 0:
-                    body.append("; Movimiento vertical por borde derecho")
-                    body.append(f"G0 X{width} Y{height}")
+                # Tras la segunda marca: mover solo en X al extremo derecho (X=width)
+                body.append(f"G0 X{width} Y{y}")
             elif idx == 2:
-                if width > 0:
-                    body.append("; Movimiento horizontal por borde superior")
-                    body.append(f"G0 X0 Y{height}")
+                # Tras la tercera marca: mover solo en Y al extremo superior (Y=height)
+                body.append(f"G0 X{x} Y{height}")
+            elif idx == 3:
+                # Tras la cuarta marca: mover solo en X al extremo izquierdo (X=0)
+                body.append(f"G0 X0 Y{y}")
         return body
 
-# --- SRP: Generador de marcas de área ---
 class AreaMarkBlockGenerator:
     " Genera el bloque de G-code para las marcas de área."
     def __init__(self, cmd_up):
