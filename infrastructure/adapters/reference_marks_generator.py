@@ -7,8 +7,12 @@ Incluye marcas de referencia en las esquinas del área de trabajo y marcas para 
 from infrastructure.config.config import Config
 from domain.gcode.reference_mark import reference_mark_gcode
 
-class ReferenceMarkBlockGenerator:
-    " Genera el bloque de G-code para las marcas de referencia."
+
+# --- SRP/POO Refactor ---
+class ReferenceMarkGenerator:
+    """
+    Genera el G-code para una marca de referencia en una posición específica.
+    """
     def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True):
         self.feed = feed
         self.cmd_down = cmd_down
@@ -22,49 +26,62 @@ class ReferenceMarkBlockGenerator:
         if self.logger:
             self.logger.debug(msg)
 
+    def generate(self, x, y, direction):
+        """
+        Genera el G-code para una marca de referencia en (x, y) con dirección dada.
+        """
+        body = []
+        for line in reference_mark_gcode(x, y, direction, self.feed):
+            if line == "CMD_DOWN":
+                if self.enable_marks:
+                    body.append(self.cmd_down)
+                    self._debug(f"[REF_MARKS] CMD_DOWN insertado en ({x}, {y})")
+                else:
+                    self._debug(f"[REF_MARKS] CMD_DOWN omitido por configuración en ({x}, {y})")
+            elif line == "CMD_UP":
+                if self.enable_marks:
+                    body.append(self.cmd_up)
+                    self._debug(f"[REF_MARKS] CMD_UP insertado en ({x}, {y})")
+                else:
+                    self._debug(f"[REF_MARKS] CMD_UP omitido por configuración en ({x}, {y})")
+            elif line == "DWELL":
+                body.append(f"G4 P{self.dwell/1000}")
+            else:
+                body.append(line)
+        return body
+
+class ReferenceMarkBlockGenerator:
+    """
+    Genera solo la primera marca de referencia (abajo izquierda) y su G-code.
+    """
+    def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True):
+        self.mark_generator = ReferenceMarkGenerator(feed, cmd_down, cmd_up, dwell, logger, i18n, enable_marks)
+        self.feed = feed
+        self.cmd_down = cmd_down
+        self.cmd_up = cmd_up
+        self.dwell = dwell
+        self.logger = logger
+        self.i18n = i18n
+        self.enable_marks = enable_marks
+
     def generate(self, width, height):
-        """
-        Genera el bloque de G-code para las marcas de referencia principales.
-        """
-        ref_points = [
-            (0, 0, 'bottomleft'),
-            (width, 0, 'bottomright'),
-            (width, height, 'topright'),
-            (0, height, 'topleft')
+        " Genera el bloque de G-code para las marcas de referencia."
+        config = Config()
+        target_area = config.get("TARGET_WRITE_AREA_MM", [width, height])
+        target_x, target_y = target_area[0], 0
+        marks = [
+            (0, 0, 'bottomleft'),  # 1ra marca
+            (target_x, target_y, 'bottomright'),  # 2da marca
+            (target_x, height, 'topright'),  # 3ra marca
+            (0, height, 'topleft')  # 4ta marca
         ]
         body = []
-        for idx, (x, y, direction) in enumerate(ref_points):
-            self._debug(f"[REF_MARKS] Generando marca en ({x}, {y}) dirección {direction}")
-            for line in reference_mark_gcode(x, y, direction, self.feed):
-                if line == "CMD_DOWN":
-                    if self.enable_marks:
-                        body.append(self.cmd_down)
-                        self._debug(f"[REF_MARKS] CMD_DOWN insertado en ({x}, {y})")
-                    else:
-                        self._debug(f"[REF_MARKS] CMD_DOWN omitido por configuración en ({x}, {y})")
-                elif line == "CMD_UP":
-                    if self.enable_marks:
-                        body.append(self.cmd_up)
-                        self._debug(f"[REF_MARKS] CMD_UP insertado en ({x}, {y})")
-                    else:
-                        self._debug(f"[REF_MARKS] CMD_UP omitido por configuración en ({x}, {y})")
-                elif line == "DWELL":
-                    body.append(f"G4 P{self.dwell/1000}")
-                else:
-                    body.append(line)
-            # Movimientos especiales en un solo eje tras cada marca de referencia
-            if idx == 0:
-                # Tras la primera marca: mover solo en Y al extremo inferior (Y=0)
-                body.append(f"G0 X{x} Y0")
-            elif idx == 1:
-                # Tras la segunda marca: mover solo en X al extremo derecho (X=width)
-                body.append(f"G0 X{width} Y{y}")
-            elif idx == 2:
-                # Tras la tercera marca: mover solo en Y al extremo superior (Y=height)
-                body.append(f"G0 X{x} Y{height}")
-            elif idx == 3:
-                # Tras la cuarta marca: mover solo en X al extremo izquierdo (X=0)
-                body.append(f"G0 X0 Y{y}")
+        for idx, (x, y, direction) in enumerate(marks):
+            body.append(f"; Iniciando {idx+1}ra marca de referencia")
+            body.append(f"G0 X{x} Y{y}")
+            body.extend(self.mark_generator.generate(x, y, direction))
+            body.append(f"G0 X{x} Y{y}")
+
         return body
 
 class AreaMarkBlockGenerator:
@@ -87,7 +104,6 @@ class AreaMarkBlockGenerator:
             body.append(f"G0 X{x} Y{y}")
             body.append(self.cmd_up)
         return body
-
 
 class ReferenceMarksGenerator:
     " Generador de marcas de referencia para G-code."

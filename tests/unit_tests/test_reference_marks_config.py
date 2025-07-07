@@ -43,10 +43,12 @@ def test_reference_marks_enabled(monkeypatch):
     assert '; Marca PLOTTER_MAX_AREA_MM esquina arriba derecha' in gcode
     assert '; Marca TARGET_WRITE_AREA_MM esquina abajo derecha' in gcode
     assert '; Marca TARGET_WRITE_AREA_MM esquina arriba izquierda' in gcode
-    # Verifica movimientos en L
-    assert '; Movimiento horizontal por borde inferior' in gcode
-    assert '; Movimiento vertical por borde derecho' in gcode
-    assert '; Movimiento horizontal por borde superior' in gcode
+    # Verifica transiciones de referencia (no comentarios de movimientos en L)
+    assert f"G0 X{210.0} Y0" in gcode
+    assert f"G0 X{210.0} Y{148.0}" in gcode
+    assert f"G0 X0 Y{148.0}" in gcode
+    assert "G0 X0 Y0" in gcode
+    # Ya no se verifican comentarios de movimientos en L
 
 
 def test_reference_marks_disabled(monkeypatch):
