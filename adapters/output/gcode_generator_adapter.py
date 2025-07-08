@@ -206,7 +206,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
         scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
         if scale < scale_original:
-            self.logger.debug(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
+            self._debug(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
 
         xmin, xmax, ymin, ymax = bbox
         self._debug(

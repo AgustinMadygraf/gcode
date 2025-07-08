@@ -6,22 +6,20 @@ from pathlib import Path
 from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 from infrastructure.factories.adapter_factory import AdapterFactory
+from infrastructure.performance.timing import PerformanceTimer
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
 from domain.services.path_transform_strategies import MirrorVerticalStrategy
-from infrastructure.performance.timing import PerformanceTimer
 
 class SvgToGcodeWorkflow:
     " Workflow para convertir SVG a GCODE. "
     DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
 
     def _debug(self, msg, *args, **kwargs):
-        logger = getattr(self, 'container', None)
-        logger = getattr(logger, 'logger', None) if logger else None
-        if self.DEBUG_ENABLED and logger:
-            logger.debug(msg, *args, **kwargs)
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
 
     def __init__(self, container, presenter, filename_service, config):
         self.container = container
@@ -29,24 +27,24 @@ class SvgToGcodeWorkflow:
         self.filename_service = filename_service
         self.config = config
         self.i18n = presenter.i18n
+        self.logger = getattr(container, 'logger', None)
 
     def run(self, selector=None):
         " Ejecuta el flujo de trabajo. "
-        logger = self.container.logger
         self._debug(self.i18n.get("debug_workflow_started"))
-        with PerformanceTimer.measure(logger, "SVG to GCODE Workflow"):  # Medición de tiempo
+        with PerformanceTimer.measure(self.logger, "SVG to GCODE Workflow"):  # Medición de tiempo
             # Si el selector no tiene i18n, se lo inyecta (retrocompatibilidad)
             if selector and getattr(selector, 'i18n', None) is None:
                 self._debug(self.i18n.get("debug_selector_no_i18n"))
                 selector.i18n = self.presenter.i18n
             svg_file = selector.select_svg_file()
             if not svg_file:
-                logger.warning(self.i18n.get("warn_no_svg_selected"))
-                logger.error(self.i18n.get("error_no_svg"))
+                self.logger.warning(self.i18n.get("warn_no_svg_selected"))
+                self.logger.error(self.i18n.get("error_no_svg"))
                 return False
             svg_file = Path(svg_file)
             svg_file_str = str(svg_file).replace('\\', '/')
-            logger.info(self.i18n.get("INFO_SVG_SELECTED", filename=svg_file_str))
+            self.logger.info(self.i18n.get("INFO_SVG_SELECTED", filename=svg_file_str))
             gcode_file = self.filename_service.next_filename(svg_file)
             gcode_file_str = str(gcode_file).replace('\\', '/')
             self._debug(self.i18n.get("INFO_GCODE_OUTPUT", filename=gcode_file_str))
@@ -56,12 +54,12 @@ class SvgToGcodeWorkflow:
                 paths = svg_loader_factory(svg_file).get_paths()
                 self._debug(self.i18n.get("debug_svg_paths_extracted", count=len(paths) if paths else 0))
             except (OSError, ValueError) as e:
-                logger.error(self.i18n.get("error_loading_svg_paths", error=str(e)))
-                logger.error(self.i18n.get("error_no_svg"))
+                self.logger.error(self.i18n.get("error_loading_svg_paths", error=str(e)))
+                self.logger.error(self.i18n.get("error_no_svg"))
                 return False
             self._debug(self.i18n.get("INFO_PROCESSING_DONE"))
             if not paths or len(paths) == 0:
-                logger.warning(self.i18n.get("warn_svg_no_valid_paths", filename=svg_file_str))
+                self.logger.warning(self.i18n.get("warn_svg_no_valid_paths", filename=svg_file_str))
             if paths and len(paths) > 1:
                 self._debug(self.i18n.get("processing_paths"))
             try:
@@ -69,11 +67,11 @@ class SvgToGcodeWorkflow:
                 if hasattr(geometry_service, "calculate_bbox"):
                     bbox = geometry_service.calculate_bbox(paths)
                 else:
-                    logger.error(self.i18n.get("error_no_calculate_bbox"))
+                    self.logger.error(self.i18n.get("error_no_calculate_bbox"))
                     raise AttributeError(self.i18n.get("error_no_calculate_bbox"))
                 self._debug(self.i18n.get("debug_bbox_calculated", bbox=str(bbox)))
             except (AttributeError, ValueError) as e:
-                logger.warning(self.i18n.get("warn_bbox_failed", error=str(e)))
+                self.logger.warning(self.i18n.get("warn_bbox_failed", error=str(e)))
                 bbox = (0, 0, 0, 0)
             try:
                 _xmin, _xmax, _ymin, _ymax = bbox
@@ -81,11 +79,11 @@ class SvgToGcodeWorkflow:
                 if hasattr(geometry_service, "center"):
                     _cx, cy = geometry_service.center(bbox)
                 else:
-                    logger.error(self.i18n.get("error_no_center_method"))
+                    self.logger.error(self.i18n.get("error_no_center_method"))
                     raise AttributeError(self.i18n.get("error_no_center_method"))
                 self._debug(self.i18n.get("debug_center_calculated", cx=_cx, cy=cy))
             except (AttributeError, ValueError, TypeError) as e:
-                logger.warning(self.i18n.get("warn_center_failed", error=str(e)))
+                self.logger.warning(self.i18n.get("warn_center_failed", error=str(e)))
                 cy = 0
             transform_strategies = []
             if self.config.get_mirror_vertical():
@@ -95,7 +93,7 @@ class SvgToGcodeWorkflow:
                 min_length=1e-3,
                 remove_svg_border=self.config.get_remove_svg_border(),
                 border_tolerance=self.config.get_border_detection_tolerance(),
-                logger=logger,
+                logger=self.logger,
                 i18n=self.i18n
             )
             self._debug(self.i18n.get(
@@ -109,7 +107,7 @@ class SvgToGcodeWorkflow:
                 i18n=self.i18n
             )
             gcode_service = GCodeGenerationService(generator)
-            compression_service = create_gcode_compression_service(logger=logger, i18n=self.i18n)
+            compression_service = create_gcode_compression_service(logger=self.logger, i18n=self.i18n)
             config_reader = AdapterFactory.create_config_adapter(self.config)
             compress_use_case = CompressGcodeUseCase(compression_service, config_reader)
             svg_to_gcode_use_case = SvgToGcodeUseCase(
@@ -117,7 +115,7 @@ class SvgToGcodeWorkflow:
                 path_processing_service=path_processor,
                 gcode_generation_service=gcode_service,
                 gcode_compression_use_case=compress_use_case,
-                logger=logger,
+                logger=self.logger,
                 filename_service=self.filename_service,
                 i18n=self.i18n
             )
@@ -136,8 +134,8 @@ class SvgToGcodeWorkflow:
             try:
                 result = svg_to_gcode_use_case.execute(svg_file, context=context)
             except (OSError, ValueError) as e:
-                logger.error(self.i18n.get("error_svg_to_gcode_usecase", error=str(e)))
-                logger.error(self.i18n.get("error_no_svg"))
+                self.logger.error(self.i18n.get("error_svg_to_gcode_usecase", error=str(e)))
+                self.logger.error(self.i18n.get("error_no_svg"))
                 return False
             gcode_lines = result['compressed_gcode']
             total_lines = len(gcode_lines)
@@ -150,8 +148,8 @@ class SvgToGcodeWorkflow:
                     f.write("\n".join(gcode_lines))
                 self._debug(self.i18n.get("INFO_GCODE_WRITTEN", filename=gcode_file_str))
             except (OSError, IOError) as e:
-                logger.error(self.i18n.get("error_gcode_write", error=str(e)))
-                logger.error(self.i18n.get("error_no_svg"))
+                self.logger.error(self.i18n.get("error_gcode_write", error=str(e)))
+                self.logger.error(self.i18n.get("error_no_svg"))
                 return False
             # Separador visual antes de logs técnicos si modo dev
             self.container.event_bus.publish(
@@ -161,6 +159,6 @@ class SvgToGcodeWorkflow:
                     'gcode_file': gcode_file_str
                 }
             )
-            logger.info(self.i18n.get("INFO_GCODE_SUCCESS", filename=gcode_file_str))
+            self.logger.info(self.i18n.get("INFO_GCODE_SUCCESS", filename=gcode_file_str))
             self._debug(self.i18n.get("info_workflow_completed"))
             return True
