@@ -11,11 +11,17 @@ from typing import Callable
 class PerformanceTimer:
     " Utilidad para medir y loguear tiempos de ejecución en modo desarrollador. "
     DEBUG_ENABLED = False
-    
-    @classmethod
-    def _debug(cls, logger, msg):
-        if cls.DEBUG_ENABLED and logger:
-            logger.debug(msg)
+
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
+    def __init__(self, contener):
+        self.container = contener
+        self.logger = getattr(contener, 'logger', None)
+        if not self.logger:
+            raise ValueError("Logger not found in container. Please provide a logger instance.")
+        self.DEBUG_ENABLED = getattr(self.logger, 'debug_enabled', False) or getattr(self.logger, 'dev_mode', False)
 
     @staticmethod
     @contextlib.contextmanager

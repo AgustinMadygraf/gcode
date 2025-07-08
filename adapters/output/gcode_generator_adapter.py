@@ -5,18 +5,22 @@ Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 
 import time
 from typing import List, Optional
+import os
 from tqdm import tqdm
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from domain.entities.point import Point
 from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.ports.transform_manager_port import TransformManagerPort
+from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from domain.geometry.scale_manager import ScaleManager
 from domain.gcode.gcode_border_rectangle_detector import GCodeBorderRectangleDetector
 from domain.gcode.gcode_border_filter import GCodeBorderFilter
 from domain.ports.gcode_optimization_chain_port import GcodeOptimizationChainPort
-from domain.ports.gcode_generator_port import GcodeGeneratorPort
 from domain.ports.config_port import ConfigPort
 from domain.ports.logger_port import LoggerPort
 from domain.ports.transform_manager_port import NullTransformManager
@@ -32,29 +36,9 @@ from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
 
-
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
-    """
-    Adapter for G-code generation from SVG paths, implementing the domain port.
-
-    Dependencias inyectadas (puertos):
-    - path_sampler: PathSamplerPort
-    - feed_rate_strategy: FeedRateStrategy
-    - config: ConfigPort
-    - logger: LoggerPort
-    - transform_strategies: List[PathTransformStrategyPort]
-    - optimizer: GcodeOptimizationChainPort
-    - transform_manager: TransformManagerPort
-    - i18n: objeto de internacionalización (debe implementar .get(key, **kwargs))
-
-    Contratos esperados:
-    - Todos los puertos deben implementar los métodos definidos en sus interfaces.
-    - Las estrategias de transformación deben ser instancias de PathTransformStrategyPort.
-    - El logger debe implementar debug(msg: str) y opcionalmente info/warning/error.
-    - El config debe exponer flags como 'curvature_adjustment_factor', 'minimum_feed_factor', 'disable_gcode_compression', etc.
-    - El i18n debe proveer mensajes localizables vía get(key, **kwargs).
-    """
-    DEBUG_ENABLED = False
+    " Generador de G-code adaptado a los puertos del dominio. "
+    DEBUG_ENABLED = os.getenv("DEBUG_GCodeGeneratorAdapter", "False").lower() in ("1", "true", "yes")
 
     def _debug(self, msg, *args, **kwargs):
         if self.DEBUG_ENABLED and self.logger:
