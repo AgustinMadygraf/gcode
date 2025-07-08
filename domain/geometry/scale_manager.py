@@ -3,8 +3,22 @@ ScaleManager: Encapsula lógica de escalado SVG y validaciones.
 """
 from typing import Dict
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 class ScaleManager:
+    " Clase para manejar el escalado de SVGs y G-code, incluyendo validaciones de dimensiones."
+    DEBUG_ENABLED = os.getenv("DEBUG_ScaleManager", "False").lower() in ("1", "true", "yes")
+
+    @staticmethod
+    def _debug(msg: str):
+        "Imprime mensajes de depuración si DEBUG_ENABLED está activado."
+        if ScaleManager.DEBUG_ENABLED:
+            print(f" [ DEBUG -scale_manager.py ] {msg}")
+        else:
+            pass
+
     @staticmethod
     def _parse_length(length_str: str) -> float:
         """Convierte un string de longitud SVG a milímetros (mm)."""
@@ -29,20 +43,19 @@ class ScaleManager:
             try:
                 _, _, vb_w, _ = map(float, vb.split())
                 width_mm = ScaleManager._parse_length(width)
-                # Si el viewBox está en px y el width en mm, convierte px a mm (asume 96 px/inch)
-                # Pero si ambos están en mm, la escala será 1
-                # Aquí asumimos que viewBox siempre está en px, y width puede estar en mm/cm/in/px
-                # Por lo general, SVG usa px en viewBox
-                # Para convertir px a mm: 1 px = 25.4 / 96 mm
+                ScaleManager._debug(f"viewbox_scale: vb_w={vb_w}, width_mm={width_mm}")
                 if width.endswith("mm") or width.endswith("cm") or width.endswith("in"):
                     vb_w_mm = vb_w * 25.4 / 96.0
+                    ScaleManager._debug(f"viewbox_scale: vb_w_mm={vb_w_mm}")
                     scale = width_mm / vb_w_mm
                 else:
                     scale = width_mm / vb_w
+                ScaleManager._debug(f"viewbox_scale: scale={scale}")
                 if scale <= 0 or not scale or scale != scale:
                     raise ValueError("Escala inválida calculada")
                 return scale
             except Exception as exc:
+                ScaleManager._debug(f"viewbox_scale: error {exc}")
                 raise ValueError("Atributos SVG inválidos para calcular escala") from exc
         return 1.0
 
@@ -51,9 +64,11 @@ class ScaleManager:
         bbox = BoundingBoxCalculator.get_svg_bbox(paths)
         _, _, ymin, ymax = bbox
         height = abs(ymax - ymin) * scale
+        ScaleManager._debug(f"adjust_scale_for_max_height: bbox={bbox}, height={height}, max_height_mm={max_height_mm}, scale_in={scale}")
         if height > max_height_mm:
             factor = max_height_mm / (abs(ymax - ymin) * scale)
             scale = scale * factor
+            ScaleManager._debug(f"adjust_scale_for_max_height: factor={factor}, scale_out={scale}")
         if scale <= 0 or not scale or scale != scale:
             raise ValueError("Escala final inválida")
         return scale
@@ -64,9 +79,11 @@ class ScaleManager:
         bbox = BoundingBoxCalculator.get_svg_bbox(paths)
         xmin, xmax, _, _ = bbox
         width = abs(xmax - xmin) * scale
+        ScaleManager._debug(f"adjust_scale_for_max_width: bbox={bbox}, width={width}, max_width_mm={max_width_mm}, scale_in={scale}")
         if width > max_width_mm:
             factor = max_width_mm / (abs(xmax - xmin) * scale)
             scale = scale * factor
+            ScaleManager._debug(f"adjust_scale_for_max_width: factor={factor}, scale_out={scale}")
         if scale <= 0 or not scale or scale != scale:
             raise ValueError("Escala final inválida")
         return scale

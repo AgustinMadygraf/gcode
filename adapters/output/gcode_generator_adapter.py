@@ -3,7 +3,6 @@ Path: adapters/output/gcode_generator_adapter.py
 Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 """
 
-import time
 from typing import List, Optional
 import os
 from tqdm import tqdm
@@ -128,7 +127,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         Genera las líneas de G-code a partir de los paths y atributos SVG.
         El parámetro context permite pasar información adicional (por ejemplo, tool_diameter).
         """
-        t_start = time.time()
         # Loguear inicio del proceso de generación de G-code
         if self.logger:
             self.logger.info(self.i18n.get("INFO_START_GCODE_GEN", count=len(paths), file=svg_attr.get("filename", "N/A")))
@@ -148,9 +146,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         )
         # --- FIN: Incorporar marcas de referencia ---
         # Log orden y distancia antes de optimizar
-        ids = [self._path_id(p, i) for i, p in enumerate(paths)]
-        self._debug(self.i18n.get("DEBUG_PATHS_ORDER_ORIG", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
-        self._debug(self.i18n.get("DEBUG_TOTAL_DIST_ORIG", dist=f"{self._total_travel_distance(paths):.2f}"))
         optimizer = TrajectoryOptimizer()
         # Loguear inicio de optimización
         self._debug(self.i18n.get("INFO_OPTIMIZING_PATHS"))
@@ -180,9 +175,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         # Loguear si la optimización no tuvo efecto
         if not optimized_paths or optimized_paths == paths:
             self.logger.warning(self.i18n.get("WARN_NO_OPTIMIZATION"))
-        ids = [self._path_id(p, i) for i, p in enumerate(paths)]
-        self._debug(self.i18n.get("DEBUG_PATHS_ORDER_OPT", list=f"{ids[:20]}{'...' if len(ids) > 20 else ''}"))
-        self._debug(self.i18n.get("DEBUG_TOTAL_DIST_OPT", dist=f"{self._total_travel_distance(optimized_paths):.2f}"))
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
 
         scale_original = ScaleManager.viewbox_scale(svg_attr)
@@ -205,11 +197,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         self._debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
 
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
-        self._debug(self.i18n.get("DEBUG_REMOVE_BORDER", enabled=remove_border))
-
         use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
-        self._debug(self.i18n.get("DEBUG_RELATIVE_MOVES", enabled=use_relative_moves))
-
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
         scale = ScaleManager.viewbox_scale(svg_attr)
         scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
@@ -217,7 +205,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
         all_points = self.sample_transform_pipeline(optimized_paths, scale)
         try:
-            gcode, metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+            gcode, _metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
         except Exception:
             self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
             raise
@@ -225,33 +213,17 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.config,
             logger=self.logger
         )
-        reduction = 0
         if compression_service:
             compression_config = CompressionConfig()
-            orig_len = len(gcode)
             gcode, _ = compression_service.compress(gcode, compression_config)
-            reduction = 100 * (1 - len(gcode) / orig_len) if orig_len else 0
-        self._debug(self.i18n.get("INFO_COMPRESSION", reduction=f"{reduction:.1f}%"))
-        self._debug(self.i18n.get("DEBUG_GCODE_LINES", count=len(gcode)))
-        self._debug(self.i18n.get("DEBUG_OPTIMIZATION_METRICS", metrics=metrics))
         if remove_border:
             detector = GCodeBorderRectangleDetector()
             border_filter = GCodeBorderFilter(detector)
             # Detectar borde antes de filtrar
-            gcode_str = (
-                gcode if isinstance(gcode, str)
-                else '\n'.join(gcode)
-            )
-            border_found = detector.detect_border_pattern(
-                gcode_str
-            )
-            if not border_found:
-                self._debug(self.i18n.get("WARN_BORDER_NOT_FOUND"))
+
             gcode = border_filter.filter(gcode if isinstance(gcode, str) else '\n'.join(gcode))
             if isinstance(gcode, str):
                 gcode = gcode.split('\n')
-        elapsed_ms = int((time.time() - t_start) * 1000)
-        self._debug(self.i18n.get("INFO_GCODE_READY", ms=elapsed_ms, lines=len(gcode)))
         # --- INICIO: Incorporar marcas de referencia ---
         ref_marks_generator = ReferenceMarksGenerator(logger=self.logger, i18n=self.i18n)
         ref_marks_gcode = ref_marks_generator.generate(
@@ -271,8 +243,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             while gcode_lines and gcode_lines[0].strip() in encabezados:
                 gcode_lines.pop(0)
             gcode = ref_marks_gcode + '\n' + '\n'.join(gcode_lines)
-        if self.logger is not None:
-            self.logger.info("[REF_MARKS] Marcas de referencia incorporadas al inicio del G-code (sin duplicar encabezados).")
         # --- FIN: Incorporar marcas de referencia ---
         return gcode
 

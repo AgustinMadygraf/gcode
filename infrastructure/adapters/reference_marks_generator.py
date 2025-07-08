@@ -119,10 +119,8 @@ class ReferenceMarksGenerator:
         ]
         if enable_marks:
             header.append(cmd_up)
-        if self.logger and self.i18n:
-            self.logger.info(self.i18n.get("REF_MARKS_START", "[REF_MARKS] Inicio generación de marcas de referencia. GENERATE_REFERENCE_MARKS={}").format(enable_marks))
-        elif self.logger:
-            self.logger.info(f"[REF_MARKS] Inicio generación de marcas de referencia. GENERATE_REFERENCE_MARKS={enable_marks}")
+        self._debug(self.i18n.get("REF_MARKS_START", "[REF_MARKS] Inicio generación de marcas de referencia. GENERATE_REFERENCE_MARKS={}").format(enable_marks))
+        self._debug(f"[REF_MARKS] Inicio generación de marcas de referencia. GENERATE_REFERENCE_MARKS={enable_marks}")
         body = []
         # Marcas de referencia principales
         ref_block = ReferenceMarkBlockGenerator(feed, cmd_down, cmd_up, dwell, self.logger, self.i18n, enable_marks)

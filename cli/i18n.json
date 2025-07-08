@@ -99,26 +99,6 @@
         "en": "Useful paths after processing: {count}",
         "zh": "有效路径数: {count}"
     },
-    "DEBUG_PATHS_ORDER_ORIG": {
-        "es": "Orden original de paths: {list}",
-        "en": "Original path order: {list}",
-        "zh": "原始路径顺序: {list}"
-    },
-    "DEBUG_TOTAL_DIST_ORIG": {
-        "es": "Distancia total original: {dist} mm",
-        "en": "Original total distance: {dist} mm",
-        "zh": "原始总距离: {dist} mm"
-    },
-    "DEBUG_PATHS_ORDER_OPT": {
-        "es": "Orden optimizado de paths: {list}",
-        "en": "Optimized path order: {list}",
-        "zh": "优化后路径顺序: {list}"
-    },
-    "DEBUG_TOTAL_DIST_OPT": {
-        "es": "Distancia total optimizada: {dist} mm",
-        "en": "Optimized total distance: {dist} mm",
-        "zh": "优化后总距离: {dist} mm"
-    },
     "DEBUG_BOUNDING_BOX": {
         "es": "Bounding box: xmin={xmin}, xmax={xmax}, ymin={ymin}, ymax={ymax}",
         "en": "Bounding box: xmin={xmin}, xmax={xmax}, ymin={ymin}, ymax={ymax}",
@@ -129,11 +109,7 @@
         "en": "Scale applied: {scale}",
         "zh": "应用缩放: {scale}"
     },
-    "DEBUG_RELATIVE_MOVES": {
-        "es": "Movimientos relativos activados: {enabled}",
-        "en": "Relative moves enabled: {enabled}",
-        "zh": "相对移动已启用: {enabled}"
-    },
+
     "DEBUG_ARC_COMPRESS": {
         "es": "Compresión ArcCompressor: {percent}%",
         "en": "ArcCompressor compression: {percent}%",
@@ -144,16 +120,7 @@
         "en": "LineCompressor compression: {percent}%",
         "zh": "直线压缩率: {percent}%"
     },
-    "DEBUG_GCODE_LINES": {
-        "es": "Líneas de G-code generadas: {count}",
-        "en": "G-code lines generated: {count}",
-        "zh": "生成的 G代码行数: {count}"
-    },
-    "DEBUG_OPTIMIZATION_METRICS": {
-        "es": "Métricas de optimización: {metrics}",
-        "en": "Optimization metrics: {metrics}",
-        "zh": "优化指标: {metrics}"
-    },
+
     "INFO_GCODE_GENERATED": {
         "es": "G-code generado con {count} líneas",
         "en": "G-code generated with {count} lines",
@@ -410,21 +377,13 @@
         "en": "Optimizing paths...",
         "zh": "正在优化路径..."
     },
-    "DEBUG_REMOVE_BORDER": {
-        "es": "Eliminación de borde activada: {enabled}",
-        "en": "Eliminación de borde activada: {enabled}",
-        "zh": "边框移除已激活：{enabled}"
-    },
+
     "WARN_SCALE_REDUCED": {
         "es": "La escala fue reducida a {scale:.3f} para respetar límites físicos.",
         "en": "Scale was reduced to {scale:.3f} to fit physical limits.",
         "zh": "为适应物理限制，缩放比例已降至 {scale:.3f}。"
     },
-    "WARN_BORDER_NOT_FOUND": {
-        "es": "Se solicitó eliminar borde pero no se detectó ninguno.",
-        "en": "Border removal requested but no border was detected.",
-        "zh": "请求去除边框，但未检测到任何边框。"
-    },
+
     "INFO_GCODE_FILES_FOUND": {
         "es": "Archivos G-code encontrados:",
         "en": "G-code files found:",
@@ -464,14 +423,6 @@
     "INFO_OPTIMIZING_PATHS": {
         "es": "Optimizando trayectorias...",
         "en": "Optimizing paths..."
-    },
-    "INFO_COMPRESSION": {
-        "es": "Comenzando compresión de G-code...",
-        "en": "Starting G-code compression..."
-    },
-    "INFO_GCODE_READY": {
-        "es": "G-code listo para guardar.",
-        "en": "G-code ready to save."
     },
     "debug_workflow_started": {
         "es": "Flujo de trabajo iniciado.",
