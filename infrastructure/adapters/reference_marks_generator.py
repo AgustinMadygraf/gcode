@@ -82,27 +82,6 @@ class ReferenceMarkBlockGenerator:
 
         return body
 
-class AreaMarkBlockGenerator:
-    " Genera el bloque de G-code para las marcas de área."
-    def __init__(self, cmd_up):
-        self.cmd_up = cmd_up
-
-    def generate(self, area_name, area_xy):
-        " Genera el bloque de G-code para las marcas de un área específica."
-        wx, hy = area_xy
-        corners = [
-            (0, 0, 'abajo izquierda'),
-            (wx, 0, 'abajo derecha'),
-            (wx, hy, 'arriba derecha'),
-            (0, hy, 'arriba izquierda')
-        ]
-        body = []
-        for x, y, label in corners:
-            body.append(f"; Marca {area_name} esquina {label}")
-            body.append(f"G0 X{x} Y{y}")
-            body.append(self.cmd_up)
-        return body
-
 class ReferenceMarksGenerator:
     " Generador de marcas de referencia para G-code."
     DEBUG_ENABLED = False
@@ -147,13 +126,6 @@ class ReferenceMarksGenerator:
         ref_block = ReferenceMarkBlockGenerator(feed, cmd_down, cmd_up, dwell, self.logger, self.i18n, enable_marks)
         body.extend(ref_block.generate(width, height))
         # Marcas de área
-        area_block = AreaMarkBlockGenerator(cmd_up)
-        plotter_area = config.get("PLOTTER_MAX_AREA_MM")
-        target_area = config.get("TARGET_WRITE_AREA_MM")
-        if plotter_area:
-            body.extend(area_block.generate("PLOTTER_MAX_AREA_MM", plotter_area))
-        if target_area:
-            body.extend(area_block.generate("TARGET_WRITE_AREA_MM", target_area))
         body.append("G0 X0 Y0")
         if self.logger and self.i18n:
             self.logger.info(self.i18n.get("REF_MARKS_END", "[REF_MARKS] Finalización de la generación de marcas de referencia. Total líneas: {}"
