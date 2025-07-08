@@ -137,12 +137,12 @@ class Config:
     @property
     def plotter_max_area_mm(self):
         """Devuelve el área máxima de la plotter [ancho_mm, alto_mm] como lista de dos floats."""
-        return self._data.get("PLOTTER_MAX_AREA_MM", [300.0, 200.0])
+        return self._data.get("PLOTTER_MAX_AREA_MM", [300.0, 260.0])
 
     @property
     def target_write_area_mm(self):
         """Devuelve el área objetivo de escritura [ancho_mm, alto_mm] como lista de dos floats."""
-        return self._data.get("TARGET_WRITE_AREA_MM", [210.0, 148.0])
+        return self._data.get("TARGET_WRITE_AREA_MM", [297.0, 210.0])
 
     def get_gcode_output_dir(self):
         "Compatibilidad: Devuelve el directorio de salida de GCODE."
