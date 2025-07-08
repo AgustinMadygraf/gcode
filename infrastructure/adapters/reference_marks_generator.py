@@ -11,6 +11,12 @@ from domain.gcode.reference_mark import reference_mark_gcode
 # --- SRP/POO Refactor ---
 class ReferenceMarkGenerator:
     "Genera el G-code para una marca de referencia en una posición específica."
+    DEBUG_ENABLED = False
+
+    def _debug(self, msg, *args, **kwargs):
+        if self.DEBUG_ENABLED and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
     def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True):
         self.feed = feed
         self.cmd_down = cmd_down
@@ -19,10 +25,6 @@ class ReferenceMarkGenerator:
         self.logger = logger
         self.i18n = i18n
         self.enable_marks = enable_marks
-
-    def _debug(self, msg):
-        if self.logger:
-            self.logger.debug(msg)
 
     def generate(self, x, y, direction):
         """
