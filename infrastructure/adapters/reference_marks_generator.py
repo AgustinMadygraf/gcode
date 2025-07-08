@@ -10,9 +10,7 @@ from domain.gcode.reference_mark import reference_mark_gcode
 
 # --- SRP/POO Refactor ---
 class ReferenceMarkGenerator:
-    """
-    Genera el G-code para una marca de referencia en una posición específica.
-    """
+    "Genera el G-code para una marca de referencia en una posición específica."
     def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True):
         self.feed = feed
         self.cmd_down = cmd_down
@@ -68,12 +66,12 @@ class ReferenceMarkBlockGenerator:
         " Genera el bloque de G-code para las marcas de referencia."
         config = Config()
         target_area = config.get("TARGET_WRITE_AREA_MM", [width, height])
-        target_x, target_y = target_area[0], 0
+        target_x, target_y = target_area[0], target_area[1]
         marks = [
-            (0, 0, 'bottomleft'),  # 1ra marca
-            (target_x, target_y, 'bottomright'),  # 2da marca
-            (target_x, height, 'topright'),  # 3ra marca
-            (0, height, 'topleft')  # 4ta marca
+            (0, 0, 'bottomleft'),           # 1ra marca
+            (target_x, 0, 'bottomright'),   # 2da marca
+            (target_x, target_y, 'topright'), # 3ra marca
+            (0, target_y, 'topleft')        # 4ta marca
         ]
         body = []
         for idx, (x, y, direction) in enumerate(marks):
