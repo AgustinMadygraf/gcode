@@ -9,26 +9,18 @@ import time
 import functools
 import contextlib
 from typing import Callable
+from infrastructure.logger_helper import LoggerHelper
 
-class PerformanceTimer:
+class PerformanceTimer(LoggerHelper):
     """
     Utilidad para medir y loguear tiempos de ejecución en modo desarrollador.
     El debug se controla mediante el flag 'PerformanceTimer' en la configuración.
     """
     def __init__(self, container, config=None):
+        logger = getattr(container, 'logger', None)
+        config = config or getattr(container, 'config', None)
+        super().__init__(config=config, logger=logger)
         self.container = container
-        self.logger = getattr(container, 'logger', None)
-        self.config = config or getattr(container, 'config', None)
-
-    def _debug(self, msg, *args, **kwargs):
-        """
-        Muestra mensajes de debug solo si el flag 'PerformanceTimer' está activado en la configuración.
-        """
-        debug_enabled = False
-        if self.config and hasattr(self.config, "get_debug_flag"):
-            debug_enabled = self.config.get_debug_flag("PerformanceTimer")
-        if debug_enabled and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
 
     @contextlib.contextmanager
     def measure(self, operation_name: str, level: str = "DEBUG", skip_if_not_dev: bool = True):
@@ -56,11 +48,10 @@ class PerformanceTimer:
                 self._debug(msg)
             elif level.upper() == "DEBUG":
                 if self.logger:
-                    self.logger.debug(msg)
-                print("\n")
+                    self.logger.debug(msg, stacklevel=4)
             elif level.upper() == "INFO":
                 if self.logger:
-                    self.logger.info(msg)
+                    self.logger.info(msg, stacklevel=3)
 
     def timed_method(self, level: str = "DEBUG", skip_input: bool = True, skip_if_not_dev: bool = True):
         """
@@ -90,7 +81,7 @@ class PerformanceTimer:
                 msg = f"⏱️ Timing: {name} completed in {elapsed:.3f}s"
                 if debug_enabled:
                     if hasattr(self_, "_debug"):
-                        self_._debug(msg)
+                        self_._debug(msg) # pylint: disable=protected-access
                     elif logger:
                         logger.debug(msg)
                 elif level.upper() == "DEBUG":
