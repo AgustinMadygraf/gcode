@@ -11,7 +11,7 @@ class GcodeToGcodeWorkflow:
         self.filename_service = filename_service
         self.config = config
 
-    def run(self, config):
+    def run(self, _config):
         from adapters.input.gcode_file_selector_adapter import GcodeFileSelectorAdapter
         from application.use_cases.gcode_to_gcode_use_case import GcodeToGcodeUseCase
         from application.use_cases.gcode_rescale_use_case import GcodeRescaleUseCase

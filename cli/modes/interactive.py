@@ -1,12 +1,14 @@
 """
 Estrategia para el modo interactivo.
 """
-from .base import ModeStrategy
+from cli.modes.base import ModeStrategy
 
 class InteractiveModeStrategy(ModeStrategy):
+    " Estrategia para el modo interactivo, donde el usuario puede seleccionar operaciones a ejecutar. "
     def run(self, app):
+        " Ejecuta el modo interactivo, permitiendo al usuario seleccionar operaciones. "
         error_handler = app.container.error_handler
-        exit_keywords = {None, 0, '0', 'salir', 'exit', 'quit', 'SALIR', 'EXIT', 'QUIT'}
+        _exit_keywords = {None, 0, '0', 'salir', 'exit', 'quit', 'SALIR', 'EXIT', 'QUIT'}
         while True:
             operation_mode = app.orchestrator.select_operation_mode()
             if (isinstance(operation_mode, str) and operation_mode.strip().lower() in {'0', 'salir', 'exit', 'quit'}) or \
@@ -18,7 +20,7 @@ class InteractiveModeStrategy(ModeStrategy):
             if operation:
                 result = error_handler.wrap_execution(
                     operation.execute,
-                    app.orchestrator._get_context_info()
+                    app.orchestrator.get_context_info()
                 )
                 if not result.get('success', False):
                     error_info = result.get('message', app.i18n.get('ERROR_GENERIC'))

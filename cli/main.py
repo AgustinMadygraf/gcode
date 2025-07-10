@@ -19,19 +19,16 @@ from cli.operations.svg_to_gcode import SvgToGcodeOperation
 from cli.operations.gcode_to_gcode import GcodeToGcodeOperation
 from cli.modes.interactive import InteractiveModeStrategy
 from cli.modes.non_interactive import NonInteractiveModeStrategy
-from cli.utils.i18n_utils import detect_language
 from cli.utils.terminal_utils import supports_color
 from cli.utils.cli_event_manager import CliEventManager
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
     def __init__(self, args=None, container=None):
-        if container is not None:
-            self.container = container
-            self.logger = container.logger
-            self.i18n = container.i18n
-        else:
-            print("[Error] No container provided. Using default container with file selector.")
+        self.container = container
+        self.logger = container.logger
+        self.i18n = container.i18n
+
         self.filename_service: FilenameServicePort = self.container.filename_gen
         self.config = self.container.config
         self.config_port = self.container.config_port
@@ -53,7 +50,6 @@ class SvgToGcodeApp:
         else:
             self.logger = get_logger(use_color=self.use_colors)
         # Detección automática de idioma (refactorizado)
-        self.language = detect_language(args)
         self.colors = TerminalColors(self.use_colors)
         self.presenter = CliPresenter(i18n=self.i18n, color_service=self.colors, logger_instance=self.logger)
         self.config_manager = ConfigManager(args)
@@ -101,6 +97,4 @@ class SvgToGcodeApp:
 
     def run(self):
         """Método principal que ejecuta la aplicación"""
-        # Antes: return self.orchestrator.run()
-        # Ahora: delega en la estrategia de modo, pasando self
         return self.mode_strategy.run(self)

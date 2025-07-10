@@ -3,19 +3,16 @@ ScaleManager: Encapsula lógica de escalado SVG y validaciones.
 """
 from typing import Dict
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
-import os
-from dotenv import load_dotenv
-load_dotenv()
 
 class ScaleManager:
     " Clase para manejar el escalado de SVGs y G-code, incluyendo validaciones de dimensiones."
-    DEBUG_ENABLED = os.getenv("DEBUG_ScaleManager", "False").lower() in ("1", "true", "yes")
+    DEBUG_ENABLED = True
 
     @staticmethod
     def _debug(msg: str):
         "Imprime mensajes de depuración si DEBUG_ENABLED está activado."
         if ScaleManager.DEBUG_ENABLED:
-            print(f" [ DEBUG -scale_manager.py ] {msg}")
+            print(f"[DEBUG - scale_manager.py] {msg}")
         else:
             pass
 

@@ -4,11 +4,7 @@ Adapter for G-code generation, implementing the GcodeGeneratorPort domain port.
 """
 
 from typing import List, Optional
-import os
 from tqdm import tqdm
-
-from dotenv import load_dotenv
-load_dotenv()
 
 from domain.entities.point import Point
 from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
@@ -37,8 +33,7 @@ from adapters.output.gcode_compression_factory import GcodeCompressionFactory
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     " Generador de G-code adaptado a los puertos del dominio. "
-    DEBUG_ENABLED = os.getenv("DEBUG_GCodeGeneratorAdapter", "False").lower() in ("1", "true", "yes")
-
+    DEBUG_ENABLED = True
     def _debug(self, msg, *args, **kwargs):
         if self.DEBUG_ENABLED and self.logger:
             self.logger.debug(msg, *args, **kwargs)

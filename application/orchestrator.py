@@ -140,7 +140,7 @@ class ApplicationOrchestrator:
                     self.logger.info(self.i18n.get('INFO_EXIT_INTERRUPT'))
                 exit(0)
 
-    def _get_context_info(self):
+    def get_context_info(self):
         """Obtener información de contexto para el manejo de excepciones o UI"""
         return {
             "app_version": "1.3.0",
