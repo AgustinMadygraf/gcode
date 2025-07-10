@@ -8,7 +8,7 @@ Procesa argumentos CLI y los pasa a la aplicación.
 import traceback
 
 from cli.argument_parser import create_parser
-from cli.factories.svg_to_gcode_app_factory import create_svg_to_gcode_app
+from cli.main import SvgToGcodeApp
 from cli.i18n import MESSAGES
 from cli.utils.i18n_utils import detect_language
 from application.exceptions import (
@@ -18,34 +18,15 @@ from application.exceptions import (
     OutputGenerationError,
 )
 from infrastructure.factories.infra_factory import InfraFactory
-from infrastructure.factories.dependency_container import DependencyContainer
+from infrastructure.factories.container import Container
+from infrastructure.i18n.i18n_service import I18nService
 
 def main():
     " Punto de entrada principal de la aplicación. "
     parser = create_parser()
     args = parser.parse_args()
-    # Detectar idioma preferido
     lang = detect_language(args)
-
-    class I18n:
-        "Gestor de internacionalización"
-        def __init__(self, messages, lang):
-            self.messages = messages
-            self.lang = lang
-        def get(self, key, **kwargs):
-            " Obtiene un mensaje internacionalizado por clave. "
-            entry = self.messages.get(key)
-            if not entry:
-                return key
-            template = entry.get(self.lang) or entry.get('es') or key
-            try:
-                return template.format(**kwargs)
-            except (KeyError, ValueError, LookupError):
-                return template
-
-    i18n = I18n(MESSAGES, lang)
-
-    # Configurar logger según modo dev y color
+    i18n = I18nService(MESSAGES, lang)
     use_color = not getattr(args, 'no_color', False)
     log_level = 'DEBUG' if getattr(args, 'dev', False) else 'INFO'
     show_file_line = getattr(args, 'dev', False)
@@ -54,21 +35,12 @@ def main():
         level=log_level,
         show_file_line=show_file_line
     )
-    container = DependencyContainer(logger=logger)
+    logger.info(f"Nivel de log configurado: {log_level}")
+    container = Container( logger=logger, i18n=i18n)
     logger.debug(i18n.get("STARTING_MSG"))
-    # Ejemplo de advertencia por argumento obsoleto
-    if hasattr(args, 'foo') and getattr(args, 'foo', None) is not None:
-        logger.warning(
-            i18n.get("WARN_ARG_FOO_DEPRECATED")
-            if "WARN_ARG_FOO_DEPRECATED" in MESSAGES
-            else (
-                "El argumento '--foo' "
-                "está obsoleto y será ignorado."
-            )
-        )
     if getattr(args, 'dev', False):
         logger.debug(i18n.get("DEBUG_DEV_MODE_ON"))
-    app = create_svg_to_gcode_app(args, container=container)
+    app = SvgToGcodeApp(args, container=container)
     try:
         result = app.run()
         logger.info(i18n.get("INFO_PROCESSING_DONE"))

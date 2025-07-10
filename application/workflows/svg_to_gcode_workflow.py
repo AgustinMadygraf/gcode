@@ -40,7 +40,6 @@ class SvgToGcodeWorkflow:
             svg_file = selector.select_svg_file()
             if not svg_file:
                 self.logger.warning(self.i18n.get("warn_no_svg_selected"))
-                self.logger.error(self.i18n.get("error_no_svg"))
                 return False
             svg_file = Path(svg_file)
             svg_file_str = str(svg_file).replace('\\', '/')

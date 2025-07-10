@@ -7,6 +7,7 @@ from adapters.input.svg_loader_adapter import SvgLoaderAdapter
 from adapters.input.path_sampler import PathSampler
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from adapters.output.logger_adapter import LoggerAdapter
+from adapters.input.gcode_file_selector_adapter import GcodeFileSelectorAdapter
 
 class AdapterFactory:
     @staticmethod
@@ -28,3 +29,7 @@ class AdapterFactory:
     @staticmethod
     def create_logger_adapter():
         return LoggerAdapter()
+
+    @staticmethod
+    def create_file_selector(logger=None, i18n=None, config_provider=None):
+        return GcodeFileSelectorAdapter(config_provider=config_provider, i18n=i18n, logger=logger)

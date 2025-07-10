@@ -26,11 +26,13 @@ from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
 
 class Container:
     " Contenedor simple de dependencias para Clean Architecture. "
-    def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None, logger: LoggerPort = None, config_path=None):
+    def __init__(self, file_selector: FileSelectorPort = None, event_bus: EventBusPort = None, logger: LoggerPort = None, config_path=None, i18n=None):
         self.config = InfraFactory.create_config(config_path) if config_path else InfraFactory.create_config()
         self.config_port: ConfigPort = AdapterFactory.create_config_adapter(self.config)
         self._logger = logger
-        self._selector = file_selector  # Inyectado desde el exterior
+        self._selector = file_selector if file_selector is not None else AdapterFactory.create_file_selector(
+            logger=logger, i18n=i18n, config_provider=self.config
+        )
         self._event_bus = event_bus or SimpleEventBus()
         self._filename_gen = None
         self._error_handler = None
@@ -49,6 +51,7 @@ class Container:
         self.max_height_mm = self.config.plotter_max_area_mm[1]
         self.max_width_mm = self.config.plotter_max_area_mm[0]
         self.tool_diameter = self.config.tool_diameter
+        self.i18n = i18n
 
     @property
     def logger(self) -> LoggerPort:

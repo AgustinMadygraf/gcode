@@ -5,22 +5,13 @@ Main CLI entry point for SVG to G-code conversion (OOP version).
 Nota: Este módulo NO debe ejecutarse directamente. El único punto de entrada soportado es run.py
 """
 
-
-
-from infrastructure.factories.container import Container
-from infrastructure.i18n.i18n_service import I18nService
 from infrastructure.logger import get_logger, get_dev_logger
 
-from domain.ports.logger_port import LoggerPort
-from domain.ports.file_selector_port import FileSelectorPort
 from domain.ports.filename_service_port import FilenameServicePort
-from adapters.input.svg_file_selector_adapter import SvgFileSelectorAdapter
 from application.workflows.svg_to_gcode_workflow import SvgToGcodeWorkflow
 from application.workflows.gcode_to_gcode_workflow import GcodeToGcodeWorkflow
 from application.workflows.non_interactive_svg_to_gcode_workflow import NonInteractiveSvgToGcodeWorkflow
 from application.orchestrator import ApplicationOrchestrator
-
-from cli.i18n import MESSAGES
 from cli.terminal_colors import TerminalColors
 from cli.user_config_manager import ConfigManager
 from cli.presenters.cli_presenter import CliPresenter
@@ -34,14 +25,13 @@ from cli.utils.cli_event_manager import CliEventManager
 
 class SvgToGcodeApp:
     """ Main application class for converting SVG files to G-code. """
-    def __init__(self, args=None, logger=None, config_path=None, container=None):
+    def __init__(self, args=None, container=None):
         if container is not None:
             self.container = container
             self.logger = container.logger
+            self.i18n = container.i18n
         else:
-            file_selector: FileSelectorPort = SvgFileSelectorAdapter(logger)
-            self.container = Container(file_selector=file_selector, logger=logger, config_path=config_path)
-            self.logger: LoggerPort = self.container.logger
+            print("[Error] No container provided. Using default container with file selector.")
         self.filename_service: FilenameServicePort = self.container.filename_gen
         self.config = self.container.config
         self.config_port = self.container.config_port
@@ -64,7 +54,6 @@ class SvgToGcodeApp:
             self.logger = get_logger(use_color=self.use_colors)
         # Detección automática de idioma (refactorizado)
         self.language = detect_language(args)
-        self.i18n = I18nService(MESSAGES, default_lang=self.language)
         self.colors = TerminalColors(self.use_colors)
         self.presenter = CliPresenter(i18n=self.i18n, color_service=self.colors, logger_instance=self.logger)
         self.config_manager = ConfigManager(args)

@@ -9,4 +9,4 @@ class FileSelectorPort(ABC):
         Permite seleccionar un archivo SVG desde una ubicación dada.
         Retorna la ruta seleccionada o None si se cancela.
         """
-        pass
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass

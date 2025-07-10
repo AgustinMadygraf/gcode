@@ -4,6 +4,7 @@ Servicio de internacionalización desacoplado de la UI.
 from typing import Dict
 
 class I18nService:
+    " Servicio de internacionalización para mensajes localizados. "
     def __init__(self, messages: Dict[str, Dict[str, dict]], default_lang: str = "es"):
         """
         messages: Dict[str, Dict[str, str]]
@@ -26,6 +27,6 @@ class I18nService:
         if kwargs:
             try:
                 return msg.format(**kwargs)
-            except Exception:
+            except (KeyError, IndexError, ValueError):
                 return msg
         return msg
