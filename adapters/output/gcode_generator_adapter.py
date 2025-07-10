@@ -106,11 +106,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         Genera las líneas de G-code a partir de los paths y atributos SVG.
         El parámetro context permite pasar información adicional (por ejemplo, tool_diameter).
         """
-        # Loguear inicio del proceso de generación de G-code
-        if self.logger:
-            self.logger.info(self.i18n.get("INFO_START_GCODE_GEN", count=len(paths), file=svg_attr.get("filename", "N/A")))
-
-        # Validaciones de configuración
+        # Validaciones de configuración|
         if self.step_mm <= 0:
             self.logger.warning(self.i18n.get("WARN_STEP_MM_INVALID", value=self.step_mm))
         if not self.path_sampler:
@@ -156,10 +152,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             self.logger.warning(self.i18n.get("WARN_NO_OPTIMIZATION"))
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
 
-        scale_original = ScaleManager.viewbox_scale(svg_attr)
+        # Usar instancia de ScaleManager para debug configurable
+        scale_manager = ScaleManager(config_provider=self.config)
+        scale_original = scale_manager.viewbox_scale(svg_attr)
         scale = scale_original
-        scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
-        scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
+        scale = scale_manager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
+        scale = scale_manager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
         if scale < scale_original:
             self._debug(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
 
@@ -178,10 +176,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
         use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
-        scale = ScaleManager.viewbox_scale(svg_attr)
-        scale = ScaleManager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
-        scale = ScaleManager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
-        remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
+        # Ya se calculó scale arriba, no es necesario recalcularlo
         all_points = self.sample_transform_pipeline(optimized_paths, scale)
         try:
             gcode, _metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)

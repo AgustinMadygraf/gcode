@@ -128,7 +128,7 @@ class ReferenceMarksGenerator:
         # Marcas de área
         body.append("G0 X0 Y0")
         if self.logger and self.i18n:
-            self.logger.info(self.i18n.get("REF_MARKS_END", "[REF_MARKS] Finalización de la generación de marcas de referencia. Total líneas: {}"
+            self.logger.debug(self.i18n.get("REF_MARKS_END", "[REF_MARKS] Finalización de la generación de marcas de referencia. Total líneas: {}"
                 ).format(len(header) + len(body)))
         elif self.logger:
             self.logger.info(f"[REF_MARKS] Finalización de la generación de marcas de referencia. Total líneas: {len(header) + len(body)}")

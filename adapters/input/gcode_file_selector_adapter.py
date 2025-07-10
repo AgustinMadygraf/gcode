@@ -11,10 +11,17 @@ class GcodeFileSelectorAdapter(FileSelectorPort):
         self.logger = logger
 
     def _debug(self, message):
-        if self.logger and hasattr(self.logger, "debug"):
-            self.logger.debug(message)
-        else:
-            print(f"[DEBUG] {message}")
+        """
+        Muestra mensajes de debug solo si el flag 'GcodeFileSelectorAdapter' está activado en la configuración.
+        """
+        debug_enabled = False
+        if self.config_provider and hasattr(self.config_provider, "get_debug_flag"):
+            debug_enabled = self.config_provider.get_debug_flag("GcodeFileSelectorAdapter")
+        if debug_enabled:
+            if self.logger and hasattr(self.logger, "debug"):
+                self.logger.debug(message)
+            else:
+                print(f"[DEBUG] {message}")
 
     def select_svg_file(self, initial_dir: Optional[str] = None) -> Optional[str]:
         """
