@@ -31,7 +31,9 @@ from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
 
-class GCodeGeneratorAdapter(GcodeGeneratorPort):
+from infrastructure.logger_helper import LoggerHelper
+
+class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
     " Generador de G-code adaptado a los puertos del dominio. "
     def __init__(
         self,
@@ -51,6 +53,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         _transform_manager: Optional[TransformManagerPort] = None,
         i18n=None
     ):
+        LoggerHelper.__init__(self, config=config, logger=logger)
         self.feed = feed
         self.cmd_down = cmd_down
         self.cmd_up = cmd_up
@@ -82,11 +85,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         # Asegura que config tenga i18n para la compresión
         if self.i18n and not hasattr(self.config, 'i18n'):
             setattr(self.config, 'i18n', self.i18n)
-
-    def _debug(self, msg, *args, **kwargs):
-        # Usa el flag de configuración externa para debug
-        if self.config.get_debug_flag("GCodeGeneratorAdapter") and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
 
 
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):

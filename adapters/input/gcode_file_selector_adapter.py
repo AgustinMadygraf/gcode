@@ -6,25 +6,17 @@ Adaptador para selección de archivos GCODE desde la consola.
 import os
 from pathlib import Path
 from typing import Optional, List
+
+from infrastructure.logger_helper import LoggerHelper
 from domain.ports.file_selector_port import FileSelectorPort
 
-class GcodeFileSelectorAdapter(FileSelectorPort):
+class GcodeFileSelectorAdapter(FileSelectorPort, LoggerHelper):
     """Adaptador para selección de archivos GCODE desde la consola."""
     def __init__(self, config_provider=None, i18n=None, logger=None):
+        LoggerHelper.__init__(self, config=config_provider, logger=logger)
         self.config_provider = config_provider
         self.i18n = i18n
         self.logger = logger
-
-    def _debug(self, message):
-        "Muestra mensajes de debug solo si el flag 'GcodeFileSelectorAdapter' está activado en la configuración."
-        debug_enabled = False
-        if self.config_provider and hasattr(self.config_provider, "get_debug_flag"):
-            debug_enabled = self.config_provider.get_debug_flag("GcodeFileSelectorAdapter")
-        if debug_enabled:
-            if self.logger and hasattr(self.logger, "debug"):
-                self.logger.debug(message)
-            else:
-                print(f"[DEBUG] {message}")
 
     def select_svg_file(self, initial_dir: Optional[str] = None) -> Optional[str]:
         """

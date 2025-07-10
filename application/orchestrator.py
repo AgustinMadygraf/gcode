@@ -3,20 +3,14 @@ application/orchestrator.py
 Orquestador principal de la aplicación. Separa la lógica de orquestación de la UI.
 """
 
+
 import os
 from adapters.input.svg_file_selector_adapter import _find_svg_files_recursively
+from infrastructure.logger_helper import LoggerHelper
 
-class ApplicationOrchestrator:
+
+class ApplicationOrchestrator(LoggerHelper):
     " Orquestador principal de la aplicación SVG2GCODE. "
-    def _debug(self, msg, *args, **kwargs):
-        """
-        Muestra mensajes de debug solo si el flag 'Orchestrator' está activado en la configuración.
-        """
-        debug_enabled = False
-        if self.config and hasattr(self.config, "get_debug_flag"):
-            debug_enabled = self.config.get_debug_flag("Orchestrator")
-        if debug_enabled and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
 
     def __init__(
         self,
@@ -26,6 +20,7 @@ class ApplicationOrchestrator:
         i18n,
         args=None
     ):
+        LoggerHelper.__init__(self, config=services.get('config'), logger=getattr(container, 'logger', None))
         self.container = container
         self.i18n = i18n
         # 'services' is a dict or object containing filename_service, config, event_bus, workflows, operations

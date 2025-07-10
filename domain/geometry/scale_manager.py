@@ -87,7 +87,3 @@ class ScaleManager(LoggerHelper):
         if scale <= 0 or not scale or scale != scale:
             raise ValueError("Escala final inválida")
         return scale
-
-    def _get_debug_class_name(self):
-        """Sobrescribe el nombre para el flag de debug"""
-        return "ScaleManager"

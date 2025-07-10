@@ -5,8 +5,9 @@ Caso de uso: Orquestación completa de conversión SVG → G-code
 
 from pathlib import Path
 from domain.services.geometry_rotate import rotate_paths_90_clockwise
+from infrastructure.logger_helper import LoggerHelper
 
-class SvgToGcodeUseCase:
+class SvgToGcodeUseCase(LoggerHelper):
     """
     Orquesta la conversión de SVG a G-code, incluyendo carga, 
     procesamiento, generación y compresión.
@@ -20,6 +21,7 @@ class SvgToGcodeUseCase:
                  filename_service,
                  i18n=None,
                  config=None):
+        super().__init__(config=config, logger=logger)
         self.svg_loader_factory = svg_loader_factory
         self.path_processing_service = path_processing_service
         self.gcode_generation_service = gcode_generation_service
@@ -28,13 +30,6 @@ class SvgToGcodeUseCase:
         self.filename_service = filename_service
         self.i18n = i18n
         self.config = config
-
-    def _debug(self, msg, *args, **kwargs):
-        debug_enabled = False
-        if self.config and hasattr(self.config, "get_debug_flag"):
-            debug_enabled = self.config.get_debug_flag("SvgToGcodeUseCase")
-        if debug_enabled and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
 
     def _load_svg(self, svg_file):
         try:

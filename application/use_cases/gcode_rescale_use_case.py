@@ -6,20 +6,15 @@ from typing import Dict, Any, List, Tuple, Optional
 import re
 import math
 from domain.services.validation.gcode_validator import GCodeValidator
+from infrastructure.logger_helper import LoggerHelper
 
-class GcodeRescaleUseCase:
+class GcodeRescaleUseCase(LoggerHelper):
     " Caso de uso para reescalar archivos GCODE manteniendo su relación de aspecto. "
     def __init__(self, filename_service, logger=None, config_provider=None):
+        super().__init__(config=config_provider, logger=logger)
         self.filename_service = filename_service
         self.logger = logger
         self.config = config_provider
-
-    def _debug(self, msg, *args, **kwargs):
-        debug_enabled = False
-        if self.config and hasattr(self.config, "get_debug_flag"):
-            debug_enabled = self.config.get_debug_flag("GcodeRescaleUseCase")
-        if debug_enabled and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
 
     def execute(self, gcode_file: Path, target_height: Optional[float] = None, target_width: Optional[float] = None) -> Dict[str, Any]:
         """
