@@ -1,12 +1,12 @@
 """
 ScaleManager: Encapsula lógica de escalado SVG y validaciones.
 """
-# intento de optimizar el logging y la configuración del debug
 
 from typing import Dict
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
+from infrastructure.logger_helper import LoggerHelper
 
-class ScaleManager:
+class ScaleManager(LoggerHelper):
     """
     Clase para manejar el escalado de SVGs y G-code, incluyendo validaciones de dimensiones.
     El debug se controla mediante un flag en la configuración pasada como dependencia.
@@ -17,17 +17,9 @@ class ScaleManager:
         :param config_provider: objeto con método get_debug_flag(str), puede ser None para desactivar debug.
         :param logger: logger opcional para debug.
         """
+        super().__init__(config=config_provider, logger=logger)
         self.config_provider = config_provider
-        self.logger = logger
         self.config = config_provider
-
-    def _debug(self, msg, *args, **kwargs):
-        debug_enabled = False
-        if self.config and hasattr(self.config, "get_debug_flag"):
-            debug_enabled = self.config.get_debug_flag("ScaleManager")
-        if debug_enabled and self.logger:
-            # Usar stacklevel=3 para que el logger muestre el archivo/linea del llamador real
-            self.logger.debug(msg, *args, stacklevel=3, **kwargs)
 
     def _parse_length(self, length_str: str) -> float:
         """Convierte un string de longitud SVG a milímetros (mm)."""
@@ -95,3 +87,7 @@ class ScaleManager:
         if scale <= 0 or not scale or scale != scale:
             raise ValueError("Escala final inválida")
         return scale
+
+    def _get_debug_class_name(self):
+        """Sobrescribe el nombre para el flag de debug"""
+        return "ScaleManager"
