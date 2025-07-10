@@ -13,4 +13,9 @@ class ConfigPort(ABC):
     @abstractmethod
     def get_compression_config(self) -> CompressionConfig:
         """Obtiene configuración de compresión desde el origen de datos"""
-        pass
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass
+
+    @abstractmethod
+    def get_debug_flag(self, name: str) -> bool:
+        """Devuelve el flag de debug para un componente dado."""
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass

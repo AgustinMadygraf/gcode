@@ -33,11 +33,6 @@ from adapters.output.gcode_compression_factory import GcodeCompressionFactory
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort):
     " Generador de G-code adaptado a los puertos del dominio. "
-    DEBUG_ENABLED = True
-    def _debug(self, msg, *args, **kwargs):
-        if self.DEBUG_ENABLED and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
-
     def __init__(
         self,
         *,
@@ -87,7 +82,12 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         # Asegura que config tenga i18n para la compresión
         if self.i18n and not hasattr(self.config, 'i18n'):
             setattr(self.config, 'i18n', self.i18n)
-        # End of __init__
+
+    def _debug(self, msg, *args, **kwargs):
+        # Usa el flag de configuración externa para debug
+        if self.config.get_debug_flag("GCodeGeneratorAdapter") and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
 
     def generate_gcode_commands(self, all_points: List[List[Point]], use_relative_moves: bool = False):
         " Genera los comandos G-code a partir de los puntos muestreados y transformados"
@@ -100,22 +100,6 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
             return feed
         builder_helper = GCodeBuilderHelper(self.cmd_down, self.cmd_up, self.dwell_ms)
         return builder_helper.build(all_points, feed_fn, use_relative_moves=use_relative_moves)
-
-    def _path_id(self, path, idx):
-        # Devuelve un identificador legible para logs
-        return getattr(path, 'id', f'path_{idx}')
-
-    def _total_travel_distance(self, paths):
-        # Calcula la distancia total "en el aire" entre el final de un path y el inicio del siguiente
-        if not paths:
-            return 0.0
-        dist = 0.0
-        for i in range(len(paths) - 1):
-            end_pt = getattr(paths[i], 'end_point', None)
-            start_pt = getattr(paths[i+1], 'start_point', None)
-            if end_pt and start_pt:
-                dist += ((end_pt.x - start_pt.x)**2 + (end_pt.y - start_pt.y)**2) ** 0.5
-        return dist
 
     def generate(self, paths, svg_attr: dict, context=None) -> list:  # pylint: disable=unused-argument
         """

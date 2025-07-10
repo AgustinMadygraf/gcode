@@ -33,3 +33,7 @@ class ConfigAdapter(ConfigPort):
 
     def get(self, key, default=None):
         return getattr(self.config, key, default)
+
+    def get_debug_flag(self, name: str) -> bool:
+        """Devuelve el flag de debug para un componente dado."""
+        return self.config.get_debug_flag(name)

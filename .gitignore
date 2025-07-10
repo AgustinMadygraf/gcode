@@ -9,3 +9,4 @@ docs/00-Prompt-for-ProjectAnalysis.md
 todo.txt
 vulture_report.txt
 .env
+.coverage

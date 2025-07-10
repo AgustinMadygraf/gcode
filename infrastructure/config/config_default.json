@@ -19,8 +19,8 @@
   "MIRROR_VERTICAL": true,
   "CURVATURE_ADJUSTMENT_FACTOR": 0.25,
   "MINIMUM_FEED_FACTOR": 0.45,
-  "PLOTTER_MAX_AREA_MM": [300.0, 200.0],
-  "TARGET_WRITE_AREA_MM": [210.0, 148.0],
+  "PLOTTER_MAX_AREA_MM": [300.0, 260.0],
+  "TARGET_WRITE_AREA_MM": [297.0, 210.0],
   "SURFACE_PRESETS": {
     "A4_PORTRAIT": [210.0, 297.0],
     "A4_LANDSCAPE": [297.0, 210.0],
@@ -29,5 +29,10 @@
   },
   "TOOL_DIAMETER": 0.0,
   "COMPENSATION_TYPE": "none",
-  "ROTATE_90_CLOCKWISE": false
+  "ROTATE_90_CLOCKWISE": true,
+  "DEBUG": {
+  "GCodeGeneratorAdapter": false,
+  "ReferenceMarkGenerator": true,
+  "ScaleManager": false
+}
 }

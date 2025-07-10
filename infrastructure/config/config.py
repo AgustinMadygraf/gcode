@@ -190,3 +190,11 @@ class Config:
         if t[0] > m[0] or t[1] > m[1]:
             print(f"[Config] TARGET_WRITE_AREA_MM excede PLOTTER_MAX_AREA_MM, usando valor por defecto: {defaults['TARGET_WRITE_AREA_MM']}")
             self._data["TARGET_WRITE_AREA_MM"] = defaults["TARGET_WRITE_AREA_MM"]
+
+    def get_debug_flag(self, name: str) -> bool:
+        """
+        Devuelve el flag de debug para un componente dado, según la sección DEBUG del config.
+        Si no existe, retorna False por defecto.
+        """
+        debug_section = self._data.get("DEBUG", {})
+        return bool(debug_section.get(name, False))
