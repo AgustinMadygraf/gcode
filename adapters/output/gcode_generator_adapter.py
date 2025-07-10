@@ -153,7 +153,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort):
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
 
         # Usar instancia de ScaleManager para debug configurable
-        scale_manager = ScaleManager(config_provider=self.config)
+        scale_manager = ScaleManager(config_provider=self.config, logger=self.logger)
         scale_original = scale_manager.viewbox_scale(svg_attr)
         scale = scale_original
         scale = scale_manager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)

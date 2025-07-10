@@ -1,6 +1,8 @@
 """
 ScaleManager: Encapsula lógica de escalado SVG y validaciones.
 """
+# intento de optimizar el logging y la configuración del debug
+
 from typing import Dict
 from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
 
@@ -24,7 +26,8 @@ class ScaleManager:
         if self.config and hasattr(self.config, "get_debug_flag"):
             debug_enabled = self.config.get_debug_flag("ScaleManager")
         if debug_enabled and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
+            # Usar stacklevel=3 para que el logger muestre el archivo/linea del llamador real
+            self.logger.debug(msg, *args, stacklevel=3, **kwargs)
 
     def _parse_length(self, length_str: str) -> float:
         """Convierte un string de longitud SVG a milímetros (mm)."""
