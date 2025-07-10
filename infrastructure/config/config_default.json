@@ -32,7 +32,9 @@
   "ROTATE_90_CLOCKWISE": true,
   "DEBUG": {
   "GCodeGeneratorAdapter": false,
-  "ReferenceMarkGenerator": true,
-  "ScaleManager": false
+  "GcodeFileSelectorAdapter": false,
+  "ScaleManager": false,
+  "Orchestrator": false,
+  "ReferenceMarkGenerator": false
 }
 }

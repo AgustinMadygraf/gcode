@@ -32,7 +32,8 @@ class SvgToGcodeWorkflow:
     def run(self, selector=None):
         " Ejecuta el flujo de trabajo. "
         self._debug(self.i18n.get("debug_workflow_started"))
-        with PerformanceTimer.measure(self.logger, "SVG to GCODE Workflow"):  # Medición de tiempo
+        perf_timer = PerformanceTimer(container=self.container, config=self.config)
+        with perf_timer.measure("SVG to GCODE Workflow"):
             # Si el selector no tiene i18n, se lo inyecta (retrocompatibilidad)
             if selector and getattr(selector, 'i18n', None) is None:
                 self._debug(self.i18n.get("debug_selector_no_i18n"))

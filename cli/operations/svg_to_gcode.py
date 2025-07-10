@@ -1,14 +1,23 @@
 """
 Operation: SVG to GCODE conversion.
 """
+
 from cli.operations.base import CliOperation
-from infrastructure.performance.timing import PerformanceTimer
+
 
 class SvgToGcodeOperation(CliOperation):
-    def __init__(self, workflow, selector):
+    " Operation to convert SVG files to GCODE. "
+    def __init__(self, workflow, selector, perf_timer=None):
         self.workflow = workflow
         self.selector = selector
+        self.perf_timer = perf_timer
 
-    @PerformanceTimer.timed_method()
     def execute(self):
-        return self.workflow.run(self.selector)
+        " Execute the SVG to GCODE operation. "
+        if self.perf_timer:
+            @self.perf_timer.timed_method()
+            def _run():
+                return self.workflow.run(self.selector)
+            return _run()
+        else:
+            return self.workflow.run(self.selector)

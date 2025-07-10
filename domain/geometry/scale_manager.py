@@ -41,6 +41,7 @@ class ScaleManager:
             return float(length_str)
 
     def viewbox_scale(self, svg_attr: Dict) -> float:
+        " Calcula el factor de escala basado en el viewBox y el ancho del SVG. "
         vb = svg_attr.get("viewBox")
         width = svg_attr.get("width")
         if vb and width:
@@ -64,6 +65,7 @@ class ScaleManager:
         return 1.0
 
     def adjust_scale_for_max_height(self, paths, scale: float, max_height_mm: float) -> float:
+        " Ajusta el factor de escala para que la altura no supere max_height_mm. "
         bbox = BoundingBoxCalculator.get_svg_bbox(paths)
         _, _, ymin, ymax = bbox
         height = abs(ymax - ymin) * scale

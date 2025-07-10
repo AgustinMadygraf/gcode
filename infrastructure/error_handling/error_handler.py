@@ -2,9 +2,8 @@
 Manejador de excepciones transversal para el proyecto GCode.
 """
 import traceback
-import sys
 from typing import Callable, Dict, Type, Any
-from application.exceptions import AppError, DomainError, InfrastructureError
+from application.exceptions import DomainError, InfrastructureError
 from domain.ports.logger_port import LoggerPort
 
 class ErrorHandler:
@@ -15,16 +14,16 @@ class ErrorHandler:
     def __init__(self, logger: LoggerPort):
         self.logger = logger
         self.handlers: Dict[Type[Exception], Callable] = {}
-        
+
         # Registrar handlers por defecto para tipos de excepciones comunes
         self.register_default_handlers()
-    
+
     def register_handler(self, exception_type: Type[Exception], handler: Callable):
         """
         Registra un manejador para un tipo específico de excepción.
         """
         self.handlers[exception_type] = handler
-    
+
     def register_default_handlers(self):
         """
         Registra los manejadores por defecto para los tipos principales de excepciones.
@@ -33,7 +32,7 @@ class ErrorHandler:
         self.register_handler(DomainError, self._handle_domain_error)
         self.register_handler(InfrastructureError, self._handle_infrastructure_error)
         self.register_handler(Exception, self._handle_generic_error)
-    
+
     def _handle_domain_error(self, ex: DomainError, context: Dict[str, Any] = None):
         """Manejador para excepciones de dominio."""
         self.logger.error(f"Error de dominio: {str(ex)}")
@@ -44,7 +43,7 @@ class ErrorHandler:
             "message": str(ex),
             "context": context
         }
-    
+
     def _handle_infrastructure_error(self, ex: InfrastructureError, context: Dict[str, Any] = None):
         """Manejador para excepciones de infraestructura."""
         self.logger.error(f"Error de infraestructura: {str(ex)}")
@@ -55,7 +54,7 @@ class ErrorHandler:
             "message": str(ex),
             "context": context
         }
-    
+
     def _handle_generic_error(self, ex: Exception, context: Dict[str, Any] = None):
         """Manejador para excepciones genéricas no controladas."""
         self.logger.error(f"Error no controlado: {str(ex)}")
@@ -66,19 +65,19 @@ class ErrorHandler:
             "message": "Se ha producido un error inesperado",
             "context": context
         }
-    
+
     def handle(self, ex: Exception, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Maneja una excepción utilizando el handler correspondiente registrado.
         Si no hay un handler específico, busca en la cadena de herencia.
         """
         context = context or {}
-        
+
         # Buscar el handler más específico
         for exception_class in ex.__class__.__mro__:
             if exception_class in self.handlers:
                 return self.handlers[exception_class](ex, context)
-        
+
         # Si no se encuentra handler, usar el genérico
         return self._handle_generic_error(ex, context)
 
@@ -92,9 +91,14 @@ class ErrorHandler:
                 "success": True,
                 "result": func()
             }
-        except Exception as ex:
+        # Catch specific known exceptions first
+        except (DomainError, InfrastructureError) as ex:
             error_result = self.handle(ex, context)
             return {
                 "success": False,
                 **error_result
             }
+        except Exception as ex:
+            error_result = self.handle(ex, context)
+            self.logger.critical("Unhandled exception occurred", exc_info=True)
+            raise

@@ -8,10 +8,14 @@ from adapters.input.svg_file_selector_adapter import _find_svg_files_recursively
 
 class ApplicationOrchestrator:
     " Orquestador principal de la aplicación SVG2GCODE. "
-    DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
-
     def _debug(self, msg, *args, **kwargs):
-        if self.DEBUG_ENABLED and self.logger:
+        """
+        Muestra mensajes de debug solo si el flag 'Orchestrator' está activado en la configuración.
+        """
+        debug_enabled = False
+        if self.config and hasattr(self.config, "get_debug_flag"):
+            debug_enabled = self.config.get_debug_flag("Orchestrator")
+        if debug_enabled and self.logger:
             self.logger.debug(msg, *args, **kwargs)
 
     def __init__(

@@ -1,3 +1,8 @@
+"""
+Path: adapters/input/gcode_file_selector_adapter.py
+Adaptador para selección de archivos GCODE desde la consola.
+"""
+
 import os
 from pathlib import Path
 from typing import Optional, List
@@ -11,9 +16,7 @@ class GcodeFileSelectorAdapter(FileSelectorPort):
         self.logger = logger
 
     def _debug(self, message):
-        """
-        Muestra mensajes de debug solo si el flag 'GcodeFileSelectorAdapter' está activado en la configuración.
-        """
+        "Muestra mensajes de debug solo si el flag 'GcodeFileSelectorAdapter' está activado en la configuración."
         debug_enabled = False
         if self.config_provider and hasattr(self.config_provider, "get_debug_flag"):
             debug_enabled = self.config_provider.get_debug_flag("GcodeFileSelectorAdapter")

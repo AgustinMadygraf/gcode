@@ -86,16 +86,20 @@ class ReferenceMarkBlockGenerator:
 
 class ReferenceMarksGenerator:
     " Generador de marcas de referencia para G-code."
-    DEBUG_ENABLED = False
-
-    def __init__(self, logger=None, i18n=None):
+    def __init__(self, logger=None, i18n=None, config=None):
         " Inicializa el generador de marcas de referencia."
         self.logger = logger
         self.i18n = i18n
+        self.config = config
 
     def _debug(self, msg, *args, **kwargs):
-        " Registra un mensaje de depuración si el logger está configurado."
-        if self.DEBUG_ENABLED and self.logger:
+        """
+        Muestra mensajes de debug solo si el flag 'ReferenceMarkGenerator' está activado en la configuración.
+        """
+        debug_enabled = False
+        if self.config and hasattr(self.config, "get_debug_flag"):
+            debug_enabled = self.config.get_debug_flag("ReferenceMarkGenerator")
+        if debug_enabled and self.logger:
             self.logger.debug(msg, *args, **kwargs)
 
     def generate(self, width=None, height=None):
@@ -127,10 +131,5 @@ class ReferenceMarksGenerator:
         body.extend(ref_block.generate(width, height))
         # Marcas de área
         body.append("G0 X0 Y0")
-        if self.logger and self.i18n:
-            self.logger.debug(self.i18n.get("REF_MARKS_END", "[REF_MARKS] Finalización de la generación de marcas de referencia. Total líneas: {}"
-                ).format(len(header) + len(body)))
-        elif self.logger:
-            self.logger.info(f"[REF_MARKS] Finalización de la generación de marcas de referencia. Total líneas: {len(header) + len(body)}")
         body.append("; --- END OF AUTOMATIC REFERENCE MARKS ---")
         return "\n".join(header + body)
