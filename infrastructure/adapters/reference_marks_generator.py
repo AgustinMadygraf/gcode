@@ -7,17 +7,9 @@ Incluye marcas de referencia en las esquinas del área de trabajo y marcas para 
 from infrastructure.config.config import Config
 from domain.gcode.reference_mark import reference_mark_gcode
 
-
-# --- SRP/POO Refactor ---
 class ReferenceMarkGenerator:
     "Genera el G-code para una marca de referencia en una posición específica."
-    DEBUG_ENABLED = False
-
-    def _debug(self, msg, *args, **kwargs):
-        if self.DEBUG_ENABLED and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
-
-    def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True):
+    def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True, config=None):
         self.feed = feed
         self.cmd_down = cmd_down
         self.cmd_up = cmd_up
@@ -25,6 +17,14 @@ class ReferenceMarkGenerator:
         self.logger = logger
         self.i18n = i18n
         self.enable_marks = enable_marks
+        self.config = config
+
+    def _debug(self, msg, *args, **kwargs):
+        debug_enabled = False
+        if self.config and hasattr(self.config, "get_debug_flag"):
+            debug_enabled = self.config.get_debug_flag("ReferenceMarkGenerator")
+        if debug_enabled and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
 
     def generate(self, x, y, direction):
         """
@@ -54,8 +54,8 @@ class ReferenceMarkBlockGenerator:
     """
     Genera solo la primera marca de referencia (abajo izquierda) y su G-code.
     """
-    def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True):
-        self.mark_generator = ReferenceMarkGenerator(feed, cmd_down, cmd_up, dwell, logger, i18n, enable_marks)
+    def __init__(self, feed, cmd_down, cmd_up, dwell, logger=None, i18n=None, enable_marks=True, config=None):
+        self.mark_generator = ReferenceMarkGenerator(feed, cmd_down, cmd_up, dwell, logger, i18n, enable_marks, config)
         self.feed = feed
         self.cmd_down = cmd_down
         self.cmd_up = cmd_up
@@ -63,10 +63,18 @@ class ReferenceMarkBlockGenerator:
         self.logger = logger
         self.i18n = i18n
         self.enable_marks = enable_marks
+        self.config = config
+
+    def _debug(self, msg, *args, **kwargs):
+        debug_enabled = False
+        if self.config and hasattr(self.config, "get_debug_flag"):
+            debug_enabled = self.config.get_debug_flag("ReferenceMarkGenerator")
+        if debug_enabled and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
 
     def generate(self, width, height):
         " Genera el bloque de G-code para las marcas de referencia."
-        config = Config()
+        config = self.config or Config()
         target_area = config.get("TARGET_WRITE_AREA_MM", [width, height])
         target_x, target_y = target_area[0], target_area[1]
         marks = [
@@ -81,6 +89,7 @@ class ReferenceMarkBlockGenerator:
             body.append(f"G0 X{x} Y{y}")
             body.extend(self.mark_generator.generate(x, y, direction))
             body.append(f"G0 X{x} Y{y}")
+            self._debug(f"[REF_MARKS] Marca {idx+1} generada en ({x}, {y}) dirección {direction}")
 
         return body
 
@@ -93,9 +102,6 @@ class ReferenceMarksGenerator:
         self.config = config
 
     def _debug(self, msg, *args, **kwargs):
-        """
-        Muestra mensajes de debug solo si el flag 'ReferenceMarkGenerator' está activado en la configuración.
-        """
         debug_enabled = False
         if self.config and hasattr(self.config, "get_debug_flag"):
             debug_enabled = self.config.get_debug_flag("ReferenceMarkGenerator")

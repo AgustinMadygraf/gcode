@@ -14,13 +14,19 @@ class GcodeRescaleUseCase:
         self.logger = logger
         self.config = config_provider
 
+    def _debug(self, msg, *args, **kwargs):
+        debug_enabled = False
+        if self.config and hasattr(self.config, "get_debug_flag"):
+            debug_enabled = self.config.get_debug_flag("GcodeRescaleUseCase")
+        if debug_enabled and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
+
     def execute(self, gcode_file: Path, target_height: Optional[float] = None, target_width: Optional[float] = None) -> Dict[str, Any]:
         """
         Reescala un archivo GCODE para que encaje dentro de un área objetivo (ancho x alto), manteniendo la relación de aspecto.
         Si no se especifica target_width/target_height, se toma de la configuración.
         """
-        if self.logger:
-            self.logger.info(f"Reescalando archivo GCODE: {gcode_file}")
+        self._debug(f"Reescalando archivo GCODE: {gcode_file}")
         with open(gcode_file, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         # Validar integridad G-code antes de procesar

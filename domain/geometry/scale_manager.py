@@ -8,22 +8,23 @@ class ScaleManager:
     """
     Clase para manejar el escalado de SVGs y G-code, incluyendo validaciones de dimensiones.
     El debug se controla mediante un flag en la configuración pasada como dependencia.
+    Ahora soporta logger opcional.
     """
-    def __init__(self, config_provider=None):
+    def __init__(self, config_provider=None, logger=None):
         """
         :param config_provider: objeto con método get_debug_flag(str), puede ser None para desactivar debug.
+        :param logger: logger opcional para debug.
         """
         self.config_provider = config_provider
+        self.logger = logger
+        self.config = config_provider
 
-    def _debug(self, msg: str):
-        """
-        Imprime mensajes de depuración si el flag 'ScaleManager' está activado en la configuración.
-        """
+    def _debug(self, msg, *args, **kwargs):
         debug_enabled = False
-        if self.config_provider and hasattr(self.config_provider, "get_debug_flag"):
-            debug_enabled = self.config_provider.get_debug_flag("ScaleManager")
-        if debug_enabled:
-            print(f"[ScaleManager][DEBUG] {msg}")
+        if self.config and hasattr(self.config, "get_debug_flag"):
+            debug_enabled = self.config.get_debug_flag("ScaleManager")
+        if debug_enabled and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
 
     def _parse_length(self, length_str: str) -> float:
         """Convierte un string de longitud SVG a milímetros (mm)."""

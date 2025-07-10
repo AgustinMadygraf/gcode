@@ -11,12 +11,6 @@ class SvgToGcodeUseCase:
     Orquesta la conversión de SVG a G-code, incluyendo carga, 
     procesamiento, generación y compresión.
     """
-    DEBUG_ENABLED = False
-
-    def _debug(self, msg, *args, **kwargs):
-        if self.DEBUG_ENABLED and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
-
     def __init__(self, *,
                  svg_loader_factory,
                  path_processing_service,
@@ -24,7 +18,8 @@ class SvgToGcodeUseCase:
                  gcode_compression_use_case,
                  logger,
                  filename_service,
-                 i18n=None):
+                 i18n=None,
+                 config=None):
         self.svg_loader_factory = svg_loader_factory
         self.path_processing_service = path_processing_service
         self.gcode_generation_service = gcode_generation_service
@@ -32,6 +27,14 @@ class SvgToGcodeUseCase:
         self.logger = logger
         self.filename_service = filename_service
         self.i18n = i18n
+        self.config = config
+
+    def _debug(self, msg, *args, **kwargs):
+        debug_enabled = False
+        if self.config and hasattr(self.config, "get_debug_flag"):
+            debug_enabled = self.config.get_debug_flag("SvgToGcodeUseCase")
+        if debug_enabled and self.logger:
+            self.logger.debug(msg, *args, **kwargs)
 
     def _load_svg(self, svg_file):
         try:

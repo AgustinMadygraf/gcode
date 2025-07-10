@@ -35,6 +35,8 @@
   "GcodeFileSelectorAdapter": false,
   "ScaleManager": false,
   "Orchestrator": false,
-  "ReferenceMarkGenerator": false
+  "ReferenceMarkGenerator": false,
+  "SvgToGcodeUseCase": false,
+  "GcodeRescaleUseCase": true
 }
 }

@@ -1,4 +1,5 @@
 """
+Path: infrastructure/config/config.py
 Config loader: Loads configuration from config.json, with defaults.
 """
 
