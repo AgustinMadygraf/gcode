@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from domain.entities.point import Point
 from domain.ports.path_transform_strategy_port import PathTransformStrategyPort
-from domain.geometry.bounding_box_calculator import BoundingBoxCalculator
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.ports.transform_manager_port import TransformManagerPort
 from domain.ports.gcode_generator_port import GcodeGeneratorPort
@@ -167,47 +166,89 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
         # Loguear si la optimización no tuvo efecto
         if not optimized_paths or optimized_paths == paths:
             self.logger.warning(self.i18n.get("WARN_NO_OPTIMIZATION"))
-        bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
 
         # Usar instancia de ScaleManager para debug configurable
+        # --- INICIO: Re-escalado iterativo ---
+        MAX_ITER = 3
+        TOLERANCIA = 0.5  # mm
+        FACTOR_MINIMO = 0.05
+        factor_historial = []
+        # Factor inicial desde viewbox_scale
         scale_manager = ScaleManager(config_provider=self.config, logger=self.logger)
-        scale = scale_manager.apply_scaling(optimized_paths, svg_attr, self.max_height_mm, self.max_width_mm)
-
-        xmin, xmax, ymin, ymax = bbox
-        self._debug(
-            self.i18n.get(
-                "DEBUG_BOUNDING_BOX",
-                xmin=f"{xmin:.3f}",
-                xmax=f"{xmax:.3f}",
-                ymin=f"{ymin:.3f}",
-                ymax=f"{ymax:.3f}"
-            )
-        )
+        factor = scale_manager.viewbox_scale(svg_attr)
+        scale = factor
+        for intento in range(1, MAX_ITER + 1):
+            scale = factor
+            # Aplicar escalado para alto y ancho
+            scale = scale_manager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
+            scale = scale_manager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
+            all_points = self.sample_transform_pipeline(optimized_paths, scale)
+            flat_points = [pt for sublist in all_points for pt in sublist]
+            if flat_points:
+                xs = [pt.x for pt in flat_points]
+                ys = [pt.y for pt in flat_points]
+                real_width = max(xs) - min(xs)
+                real_height = max(ys) - min(ys)
+                self.logger.info(f"[Iteración {intento}] Escala aplicada: {scale:.4g}, ancho={real_width:.4g}mm, alto={real_height:.4g}mm")
+            else:
+                real_width = real_height = 0
+            factor_historial.append(scale)
+            excedente = False
+            if real_width > self.max_width_mm + TOLERANCIA:
+                nuevo_factor = scale * (self.max_width_mm / real_width)
+                self.logger.warning(f"Excedente de ancho: {real_width:.4g}mm > {self.max_width_mm:.4g}mm. Nuevo factor: {nuevo_factor:.4g}")
+                factor = nuevo_factor
+                excedente = True
+            if real_height > self.max_height_mm + TOLERANCIA:
+                nuevo_factor = scale * (self.max_height_mm / real_height)
+                self.logger.warning(f"Excedente de alto: {real_height:.4g}mm > {self.max_height_mm:.4g}mm. Nuevo factor: {nuevo_factor:.4g}")
+                factor = min(factor, nuevo_factor)
+                excedente = True
+            if factor < FACTOR_MINIMO:
+                self.logger.error(f"Factor de escala demasiado pequeño: {factor:.4g}. Abortando.")
+                raise ValueError("No es posible ajustar el escalado sin perder calidad.")
+            if not excedente:
+                break
+        if excedente:
+            self.logger.error("No se pudo ajustar el escalado tras el máximo de intentos.")
+            raise ValueError("No se pudo ajustar el escalado tras el máximo de intentos.")
+        # --- FIN: Re-escalado iterativo ---
         self._debug(self.i18n.get("DEBUG_SCALE_APPLIED", scale=f"{scale:.3f}"))
-
         remove_border = GcodeGenerationConfigHelper.get_remove_border(self.config)
         use_relative_moves = GcodeGenerationConfigHelper.get_use_relative_moves(self.config)
-        bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
-        # Ya se calculó scale arriba, no es necesario recalcularlo
-        all_points = self.sample_transform_pipeline(optimized_paths, scale)
-        # Loguear bounding box y escala después de todas las transformaciones
-        flat_points = [pt for sublist in all_points for pt in sublist]
-        if flat_points:
-            xs = [pt.x for pt in flat_points]
-            ys = [pt.y for pt in flat_points]
-            real_width = max(xs) - min(xs)
-            real_height = max(ys) - min(ys)
-            self.logger.info(f"Real post-transform: ancho={real_width:.4g}mm, alto={real_height:.4g}mm, escala={scale:.4g}")
-        try:
-            gcode, _metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
-        except Exception:
-            self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
-            raise
-        # Loguear bounding box del G-code final
         from adapters.output.gcode_analyzer import GCodeAnalyzer
-        gcode_width = GCodeAnalyzer.get_width_from_gcode_lines(gcode)
-        # Si tienes un método para altura, úsalo aquí. Si no, solo loguea el ancho.
-        self.logger.info(f"G-code final: ancho={gcode_width:.4g}mm")
+        MAX_ITER_GCODE = 3
+        TOLERANCIA = 0.5  # mm
+        FACTOR_MINIMO = 0.05
+        gcode_factor_historial = []
+        gcode_excedente = False
+        for intento_gcode in range(1, MAX_ITER_GCODE + 1):
+            try:
+                gcode, _metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
+            except Exception:
+                self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
+                raise
+            gcode_width = GCodeAnalyzer.get_width_from_gcode_lines(gcode)
+            # Si tienes un método para altura, úsalo aquí. Si no, solo loguea el ancho.
+            self.logger.info(f"[Iteración G-code {intento_gcode}] G-code final: ancho={gcode_width:.4g}mm")
+            gcode_factor_historial.append(scale)
+            gcode_excedente = False
+            if gcode_width > self.max_width_mm + TOLERANCIA:
+                nuevo_factor = scale * (self.max_width_mm / gcode_width)
+                self.logger.warning(f"Excedente de ancho en G-code: {gcode_width:.4g}mm > {self.max_width_mm:.4g}mm. Nuevo factor: {nuevo_factor:.4g}")
+                scale = nuevo_factor
+                # Recalcular all_points con el nuevo factor
+                all_points = self.sample_transform_pipeline(optimized_paths, scale)
+                gcode_excedente = True
+            # Si quieres controlar el alto del G-code, agrega aquí lógica similar
+            if scale < FACTOR_MINIMO:
+                self.logger.error(f"Factor de escala demasiado pequeño en G-code: {scale:.4g}. Abortando.")
+                raise ValueError("No es posible ajustar el escalado del G-code sin perder calidad.")
+            if not gcode_excedente:
+                break
+        if gcode_excedente:
+            self.logger.error("No se pudo ajustar el escalado del G-code tras el máximo de intentos.")
+            raise ValueError("No se pudo ajustar el escalado del G-code tras el máximo de intentos.")
         compression_service = GcodeCompressionFactory.get_compression_service(
             self.config,
             logger=self.logger
