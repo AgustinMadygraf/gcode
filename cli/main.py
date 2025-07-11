@@ -57,7 +57,19 @@ class SvgToGcodeApp:
         # --- Nueva gestión de eventos (refactor: delegada) ---
         self.event_manager = CliEventManager(self.presenter)
         # --- Workflows y operaciones ---
-        self.svg_to_gcode_workflow = SvgToGcodeWorkflow(self.container, self.presenter, self.filename_service, self.config)
+        # Leer argumentos de offset y centrado
+        self.offset_x = getattr(args, 'offset_x', None)
+        self.offset_y = getattr(args, 'offset_y', None)
+        self.center = getattr(args, 'center', False)
+        self.svg_to_gcode_workflow = SvgToGcodeWorkflow(
+            self.container,
+            self.presenter,
+            self.filename_service,
+            self.config,
+            offset_x=self.offset_x,
+            offset_y=self.offset_y,
+            center=self.center
+        )
         self.gcode_to_gcode_workflow = GcodeToGcodeWorkflow(
             self.container,
             self.presenter,

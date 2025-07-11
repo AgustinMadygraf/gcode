@@ -57,6 +57,18 @@ class SvgToGcodeUseCase(LoggerHelper):
     def _generate_gcode(self, processed_paths, svg_attr, context):
         try:
             self._debug(self.i18n.get('DEBUG_GCODE_CONTEXT', context=context))
+            # --- Aplicar offset a las coordenadas ---
+            offset_x = context.get('offset_x', 0) if context else 0
+            offset_y = context.get('offset_y', 0) if context else 0
+            if offset_x or offset_y:
+                def apply_offset(path):
+                    # Aplica offset solo a los dos primeros valores de cada punto
+                    return [
+                        tuple([p[0] + offset_x, p[1] + offset_y] + list(p[2:])) if isinstance(p, (list, tuple)) and len(p) >= 2 else p
+                        for p in path
+                    ]
+                processed_paths = [apply_offset(path) for path in processed_paths]
+                self._debug(f"Offset aplicado: X={offset_x}, Y={offset_y}")
             gcode_lines = self.gcode_generation_service.generate(
                 processed_paths,
                 svg_attr,

@@ -13,7 +13,30 @@ class SvgToGcodeOperation(CliOperation):
         self.perf_timer = perf_timer
 
     def execute(self):
-        " Execute the SVG to GCODE operation. "
+        " Execute the SVG to GCODE operation with interactive offset/center input. "
+        # Prompt interactivo para offset y centrado
+        print("¿Desea centrar el dibujo automáticamente? (s/n): ", end="")
+        center_input = input().strip().lower()
+        center = center_input in {"s", "si", "y", "yes"}
+        offset_x = None
+        offset_y = None
+        if not center:
+            while True:
+                try:
+                    offset_x = float(input("Ingrese offset X en mm (puede ser negativo, ENTER=0): ") or "0")
+                    break
+                except ValueError:
+                    print("Valor inválido. Intente nuevamente.")
+            while True:
+                try:
+                    offset_y = float(input("Ingrese offset Y en mm (puede ser negativo, ENTER=0): ") or "0")
+                    break
+                except ValueError:
+                    print("Valor inválido. Intente nuevamente.")
+        # Asignar los valores al workflow
+        self.workflow.offset_x = offset_x
+        self.workflow.offset_y = offset_y
+        self.workflow.center = center
         if self.perf_timer:
             @self.perf_timer.timed_method()
             def _run():

@@ -51,4 +51,21 @@ def create_parser() -> argparse.ArgumentParser:
         type=str,
         help=preset_help
     )
+    parser.add_argument(
+        "--offset-x",
+        type=float,
+        default=None,
+        help="Offset horizontal en mm (desplazamiento X del dibujo en el área útil)"
+    )
+    parser.add_argument(
+        "--offset-y",
+        type=float,
+        default=None,
+        help="Offset vertical en mm (desplazamiento Y del dibujo en el área útil)"
+    )
+    parser.add_argument(
+        "--center",
+        action="store_true",
+        help="Centrar automáticamente el dibujo en el área útil"
+    )
     return parser

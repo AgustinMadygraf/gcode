@@ -3,6 +3,7 @@ Workflow para SVG a GCODE.
 Orquesta el proceso de conversión, delegando a casos de uso y servicios.
 """
 from pathlib import Path
+
 from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 from infrastructure.factories.adapter_factory import AdapterFactory
@@ -21,7 +22,10 @@ class SvgToGcodeWorkflow:
         if self.DEBUG_ENABLED and self.logger:
             self.logger.debug(msg, *args, **kwargs)
 
-    def __init__(self, container, presenter, filename_service, config):
+    def __init__(self, container, presenter, filename_service, config, offset_x=None, offset_y=None, center=False):
+        self.offset_x = offset_x
+        self.offset_y = offset_y
+        self.center = center
         self.container = container
         self.presenter = presenter
         self.filename_service = filename_service
@@ -125,10 +129,34 @@ class SvgToGcodeWorkflow:
             if tool_type_str == "pen":
                 double_pass = getattr(self.config, 'pen_double_pass', False)
                 self._debug(self.i18n.get("debug_double_pass_configured", double_pass=double_pass))
+            # --- Offset y centrado ---
+            area_w, area_h = self.config.target_write_area_mm
+            _xmin, _xmax, _ymin, _ymax = bbox
+            drawing_w = _xmax - _xmin
+            drawing_h = _ymax - _ymin
+            offset_x = self.offset_x
+            offset_y = self.offset_y
+            if self.center:
+                offset_x = (area_w / 2) - (_xmin + drawing_w / 2)
+                offset_y = (area_h / 2) - (_ymin + drawing_h / 2)
+                self.logger.info(self.i18n.get("INFO_CENTERING_OFFSET", offset_x=offset_x, offset_y=offset_y))
+            # Validación de desbordes
+            if offset_x is not None and offset_y is not None:
+                new_xmin = _xmin + offset_x
+                new_xmax = _xmax + offset_x
+                new_ymin = _ymin + offset_y
+                new_ymax = _ymax + offset_y
+                if new_xmin < 0 or new_xmax > area_w or new_ymin < 0 or new_ymax > area_h:
+                    self.logger.warning(self.i18n.get("WARN_OFFSET_OVERFLOW", xmin=new_xmin, xmax=new_xmax, ymin=new_ymin, ymax=new_ymax, area_w=area_w, area_h=area_h))
+                else:
+                    self.logger.info(self.i18n.get("INFO_OFFSET_APPLIED", offset_x=offset_x, offset_y=offset_y))
             context = {
                 "tool_type": tool_type_str,
                 "double_pass": double_pass,
-                "tool_diameter": getattr(self.config, 'tool_diameter', 0.4)
+                "tool_diameter": getattr(self.config, 'tool_diameter', 0.4),
+                "offset_x": offset_x,
+                "offset_y": offset_y,
+                "center": self.center
             }
             self._debug(self.i18n.get("debug_executing_svg_to_gcode_usecase"))
             try:

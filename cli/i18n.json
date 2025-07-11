@@ -655,5 +655,17 @@
     "DEBUG_TOTAL_PATHS_REMOVED": {
         "es": "Total de paths eliminados como borde SVG: {removed}",
         "en": "Total paths removed as SVG border: {removed}"
+    },
+    "INFO_CENTERING_OFFSET": {
+        "es": "Offset de centrado aplicado: X={offset_x:.2f} mm, Y={offset_y:.2f} mm",
+        "en": "Centering offset applied: X={offset_x:.2f} mm, Y={offset_y:.2f} mm"
+    },
+    "INFO_OFFSET_APPLIED": {
+        "es": "Offset aplicado: X={offset_x:.2f} mm, Y={offset_y:.2f} mm",
+        "en": "Offset applied: X={offset_x:.2f} mm, Y={offset_y:.2f} mm"
+    },
+    "WARN_OFFSET_OVERFLOW": {
+        "es": "¡Advertencia! El offset provoca desbordes fuera del área útil (xmin={xmin:.2f}, xmax={xmax:.2f}, ymin={ymin:.2f}, ymax={ymax:.2f}, área={area_w:.2f}x{area_h:.2f} mm)",
+        "en": "Warning! Offset causes overflow outside the usable area (xmin={xmin:.2f}, xmax={xmax:.2f}, ymin={ymin:.2f}, ymax={ymax:.2f}, area={area_w:.2f}x{area_h:.2f} mm)"
     }
 }
