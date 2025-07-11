@@ -16,5 +16,7 @@ class BoundingBoxCalculator:
                     z = seg.point(t)
                     xs.append(z.real)
                     ys.append(z.imag)
+        if not xs or not ys:
+            return 0.0, 0.0, 0.0, 0.0
         return min(xs), max(xs), min(ys), max(ys)
 

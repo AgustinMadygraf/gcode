@@ -190,25 +190,26 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
                 real_width = max(xs) - min(xs)
                 real_height = max(ys) - min(ys)
                 self.logger.info(f"[Iteración {intento}] Escala aplicada: {scale:.4g}, ancho={real_width:.4g}mm, alto={real_height:.4g}mm")
+                factor_historial.append(scale)
+                excedente = False
+                if real_width > self.max_width_mm + TOLERANCIA:
+                    nuevo_factor = scale * (self.max_width_mm / real_width)
+                    self.logger.warning(f"Excedente de ancho: {real_width:.4g}mm > {self.max_width_mm:.4g}mm. Nuevo factor: {nuevo_factor:.4g}")
+                    factor = nuevo_factor
+                    excedente = True
+                if real_height > self.max_height_mm + TOLERANCIA:
+                    nuevo_factor = scale * (self.max_height_mm / real_height)
+                    self.logger.warning(f"Excedente de alto: {real_height:.4g}mm > {self.max_height_mm:.4g}mm. Nuevo factor: {nuevo_factor:.4g}")
+                    factor = min(factor, nuevo_factor)
+                    excedente = True
+                if factor < FACTOR_MINIMO:
+                    self.logger.error(f"Factor de escala demasiado pequeño: {factor:.4g}. Abortando.")
+                    raise ValueError("No es posible ajustar el escalado sin perder calidad.")
+                if not excedente:
+                    break
             else:
                 real_width = real_height = 0
-            factor_historial.append(scale)
-            excedente = False
-            if real_width > self.max_width_mm + TOLERANCIA:
-                nuevo_factor = scale * (self.max_width_mm / real_width)
-                self.logger.warning(f"Excedente de ancho: {real_width:.4g}mm > {self.max_width_mm:.4g}mm. Nuevo factor: {nuevo_factor:.4g}")
-                factor = nuevo_factor
-                excedente = True
-            if real_height > self.max_height_mm + TOLERANCIA:
-                nuevo_factor = scale * (self.max_height_mm / real_height)
-                self.logger.warning(f"Excedente de alto: {real_height:.4g}mm > {self.max_height_mm:.4g}mm. Nuevo factor: {nuevo_factor:.4g}")
-                factor = min(factor, nuevo_factor)
-                excedente = True
-            if factor < FACTOR_MINIMO:
-                self.logger.error(f"Factor de escala demasiado pequeño: {factor:.4g}. Abortando.")
-                raise ValueError("No es posible ajustar el escalado sin perder calidad.")
-            if not excedente:
-                break
+                factor_historial.append(scale)
         if excedente:
             self.logger.error("No se pudo ajustar el escalado tras el máximo de intentos.")
             raise ValueError("No se pudo ajustar el escalado tras el máximo de intentos.")
@@ -228,8 +229,10 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
             except Exception:
                 self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
                 raise
-            gcode_width = GCodeAnalyzer.get_width_from_gcode_lines(gcode)
-            # Si tienes un método para altura, úsalo aquí. Si no, solo loguea el ancho.
+            # Only calculate width if gcode is not empty
+            gcode_width = 0
+            if gcode:
+                gcode_width = GCodeAnalyzer.get_width_from_gcode_lines(gcode)
             self.logger.info(f"[Iteración G-code {intento_gcode}] G-code final: ancho={gcode_width:.4g}mm")
             gcode_factor_historial.append(scale)
             gcode_excedente = False
@@ -272,19 +275,35 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
         )
         # Evitar duplicación de encabezados (G21, G90, cmd_up)
         encabezados = {"G21", "G90", self.cmd_up}
-        if isinstance(gcode, list):
-            # Filtrar encabezados duplicados solo al inicio del bloque principal
-            while gcode and gcode[0].strip() in encabezados:
-                gcode.pop(0)
-            gcode = ref_marks_gcode.split('\n') + gcode
+        # Ensure gcode is a list of strings
+        if isinstance(gcode, str):
+            gcode_lines = gcode.split('\n')
+        elif isinstance(gcode, list):
+            # Flatten if nested lists
+            gcode_lines = []
+            for item in gcode:
+                if isinstance(item, str):
+                    gcode_lines.append(item)
+                elif isinstance(item, list):
+                    gcode_lines.extend(str(x) for x in item)
+                else:
+                    gcode_lines.append(str(item))
         else:
-            # Si es string, convertir a lista, filtrar y volver a unir
-            gcode_lines = gcode.split('\n') if isinstance(gcode, str) else []
-            while gcode_lines and gcode_lines[0].strip() in encabezados:
-                gcode_lines.pop(0)
-            gcode = ref_marks_gcode + '\n' + '\n'.join(gcode_lines)
+            gcode_lines = [str(gcode)]
+        # Remove duplicate headers at the start
+        while gcode_lines and gcode_lines[0].strip() in encabezados:
+            gcode_lines.pop(0)
+        # ref_marks_gcode may be string or list
+        if isinstance(ref_marks_gcode, str):
+            ref_marks_lines = ref_marks_gcode.split('\n')
+        elif isinstance(ref_marks_gcode, list):
+            ref_marks_lines = [str(x) for x in ref_marks_gcode]
+        else:
+            ref_marks_lines = [str(ref_marks_gcode)]
+        # Concatenate reference marks and gcode
+        final_gcode = ref_marks_lines + gcode_lines
         # --- FIN: Incorporar marcas de referencia ---
-        return gcode
+        return final_gcode
 
     def sample_transform_pipeline(self, paths, scale) -> List[List[Point]]:
         " Aplica el pipeline de muestreo y transformación a los paths"

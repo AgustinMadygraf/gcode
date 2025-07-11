@@ -6,7 +6,6 @@ import sys
 import os
 
 from tests.mocks.mock_strategy import MockStrategy
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.services.optimization.optimization_chain import OptimizationChain
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService

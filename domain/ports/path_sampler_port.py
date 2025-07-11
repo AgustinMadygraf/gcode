@@ -13,4 +13,4 @@ class PathSamplerPort(ABC):
     @abstractmethod
     def sample(self, path) -> Iterable[Point]:
         """Genera puntos a lo largo de un path."""
-        pass
+        pass # noqa: W0107  # pylint: disable=unnecessary-pass

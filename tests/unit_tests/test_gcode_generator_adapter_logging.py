@@ -1,22 +1,23 @@
 """
 Test de logging en GCodeGeneratorAdapter: verifica que se emiten logs clave.
 """
-import pytest
+
 import logging
 from adapters.output.gcode_generator_adapter import GCodeGeneratorAdapter
 from domain.ports.path_sampler_port import PathSamplerPort
 from domain.ports.config_port import ConfigPort
-from domain.ports.logger_port import LoggerPort
 
 class DummyPathSampler(PathSamplerPort):
-    def sample(self, *a, **kw):
+    def sample(self, *_a, **_kw):
         return []
 
 class DummyConfig(ConfigPort):
-    def get(self, *a, **kw):
+    def get(self, _key, default=None):
+        return default
+    def get_compression_config(self, *_a, **_kw):
         return None
-    def get_compression_config(self, *a, **kw):
-        return None
+    def get_debug_flag(self, name: str) -> bool:
+        return False
 
 def test_gcode_generator_adapter_logs(caplog):
     logger = logging.getLogger("test_logger_adapter")

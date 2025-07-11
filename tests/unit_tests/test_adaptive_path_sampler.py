@@ -43,5 +43,27 @@ class TestAdaptivePathSampler(unittest.TestCase):
         points = self.sampler.sample(svg_path)
         self.assertEqual(len(points), 2)
 
+    def test_sample_circle_primitive(self):
+        class DummySVGPath:
+            def __init__(self):
+                self.path = "dummy"
+        class DummyPrimitiveDetector:
+            def detect(self, _path):
+                return [{
+                    'type': 'circle',
+                    'center': (1.0, 2.0),
+                    'radius': 3.0
+                }]
+        sampler = AdaptivePathSampler(min_segment_length=0.5, max_segment_length=2.0, curvature_factor=1.0)
+        sampler.enable_primitive_detection = True
+        sampler.svg_primitive_detector = DummyPrimitiveDetector()
+        svg_path = DummySVGPath()
+        points = sampler.sample(svg_path)
+        self.assertEqual(len(points), 16)
+        for p in points:
+            self.assertIsInstance(p, Point)
+            dist = ((p.x - 1.0)**2 + (p.y - 2.0)**2)**0.5
+            self.assertAlmostEqual(dist, 3.0, places=6)
+
 if __name__ == "__main__":
     unittest.main()
