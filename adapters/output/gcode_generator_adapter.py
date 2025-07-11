@@ -24,14 +24,14 @@ from domain.compression_config import CompressionConfig
 
 from infrastructure.transform_manager import TransformManager
 from infrastructure.adapters.reference_marks_generator import ReferenceMarksGenerator
+from infrastructure.logger_helper import LoggerHelper
+
 from adapters.output.feed_rate_strategy import FeedRateStrategy
 from adapters.output.sample_transform_pipeline import SampleTransformPipeline
 from adapters.output.gcode_builder_helper import GCodeBuilderHelper
 from adapters.output.curvature_feed_calculator import CurvatureFeedCalculator
 from adapters.output.gcode_generation_config_helper import GcodeGenerationConfigHelper
 from adapters.output.gcode_compression_factory import GcodeCompressionFactory
-
-from infrastructure.logger_helper import LoggerHelper
 
 class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
     " Generador de G-code adaptado a los puertos del dominio. "
@@ -152,12 +152,7 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
 
         # Usar instancia de ScaleManager para debug configurable
         scale_manager = ScaleManager(config_provider=self.config, logger=self.logger)
-        scale_original = scale_manager.viewbox_scale(svg_attr)
-        scale = scale_original
-        scale = scale_manager.adjust_scale_for_max_height(optimized_paths, scale, self.max_height_mm)
-        scale = scale_manager.adjust_scale_for_max_width(optimized_paths, scale, self.max_width_mm)
-        if scale < scale_original:
-            self._debug(self.i18n.get("WARN_SCALE_REDUCED", scale=scale))
+        scale = scale_manager.apply_scaling(optimized_paths, svg_attr, self.max_height_mm, self.max_width_mm)
 
         xmin, xmax, ymin, ymax = bbox
         self._debug(

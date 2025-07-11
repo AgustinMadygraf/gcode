@@ -64,26 +64,59 @@ class ScaleManager(LoggerHelper):
         " Ajusta el factor de escala para que la altura no supere max_height_mm. "
         bbox = BoundingBoxCalculator.get_svg_bbox(paths)
         _, _, ymin, ymax = bbox
-        height = abs(ymax - ymin) * scale
-        self._debug(f"adjust_scale_for_max_height: bbox={bbox}, height={height}, max_height_mm={max_height_mm}, scale_in={scale}")
+        height_base = abs(ymax - ymin)
+        height = height_base * scale
+        self._debug(f"adjust_scale_for_max_height: bbox={bbox}, height={height:.4g}, max_height_mm={max_height_mm:.4g}, scale_in={scale:.4g}")
+        self._debug(f"adjust_scale_for_max_height: height_used={height_base:.4g}, height_scaled={height:.4g}, scale_in={scale:.4g}")
         if height > max_height_mm:
-            factor = max_height_mm / (abs(ymax - ymin) * scale)
+            factor = max_height_mm / height
+            self._debug(f"adjust_scale_for_max_height: factor={factor:.4g}, scale_out={(scale * factor):.4g}")
             scale = scale * factor
-            self._debug(f"adjust_scale_for_max_height: factor={factor}, scale_out={scale}")
         if scale <= 0 or not scale or scale != scale:
             raise ValueError("Escala final inválida")
+        final_height = abs(ymax - ymin) * scale
+        # INFO eliminado, se unificará tras ambos ajustes
+        self._debug(f"adjust_scale_for_max_height: FINAL height={final_height:.4g}mm, scale_final={scale:.4g}")
         return scale
 
     def adjust_scale_for_max_width(self, paths, scale: float, max_width_mm: float) -> float:
         """Ajusta el factor de escala para que el ancho no supere max_width_mm."""
         bbox = BoundingBoxCalculator.get_svg_bbox(paths)
         xmin, xmax, _, _ = bbox
-        width = abs(xmax - xmin) * scale
-        self._debug(f"adjust_scale_for_max_width: bbox={bbox}, width={width}, max_width_mm={max_width_mm}, scale_in={scale}")
+        width_base = abs(xmax - xmin)
+        width = width_base * scale
+        self._debug(f"adjust_scale_for_max_width: bbox={bbox}, width={width:.4g}, max_width_mm={max_width_mm:.4g}, scale_in={scale:.4g}")
+        self._debug(f"adjust_scale_for_max_width: width_used={width_base:.4g}, width_scaled={width:.4g}, scale_in={scale:.4g}")
         if width > max_width_mm:
-            factor = max_width_mm / (abs(xmax - xmin) * scale)
+            factor = max_width_mm / width
+            self._debug(f"adjust_scale_for_max_width: factor={factor:.4g}, scale_out={(scale * factor):.4g}")
             scale = scale * factor
-            self._debug(f"adjust_scale_for_max_width: factor={factor}, scale_out={scale}")
         if scale <= 0 or not scale or scale != scale:
             raise ValueError("Escala final inválida")
+        final_width = abs(xmax - xmin) * scale
+        # INFO eliminado, se unificará tras ambos ajustes
+        self._debug(f"adjust_scale_for_max_width: FINAL width={final_width:.4g}mm, scale_final={scale:.4g}")
+        return scale
+
+    def apply_scaling(self, paths, svg_attr: Dict, max_height_mm: float, max_width_mm: float) -> float:
+        """
+        Aplica el escalado a los paths basado en los atributos del SVG y las dimensiones máximas.
+        :param paths: Paths del SVG a escalar.
+        :param svg_attr: Atributos del SVG, incluyendo viewBox y width.
+        :param max_height_mm: Altura máxima en milímetros.
+        :param max_width_mm: Ancho máximo en milímetros.
+        """
+        scale = self.viewbox_scale(svg_attr)
+        self._debug(f"apply_scaling: scale tras viewbox_scale={scale}")
+        scale = self.adjust_scale_for_max_height(paths, scale, max_height_mm)
+        scale = self.adjust_scale_for_max_width(paths, scale, max_width_mm)
+
+        # Calcula el bbox final con el scale definitivo
+        bbox = BoundingBoxCalculator.get_svg_bbox(paths)
+        xmin, xmax, ymin, ymax = bbox
+        final_width = abs(xmax - xmin) * scale
+        final_height = abs(ymax - ymin) * scale
+
+        # Loguea el INFO con ambos valores (máximo 4 dígitos)
+        self.logger.info(f"Estimado: ancho={final_width:.4g}mm, alto={final_height:.4g}mm")
         return scale
