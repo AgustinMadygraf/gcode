@@ -99,13 +99,9 @@ class ScaleManager(LoggerHelper):
         return scale
 
     def apply_scaling(self, paths, svg_attr: Dict, max_height_mm: float, max_width_mm: float) -> float:
-        """
-        Aplica el escalado a los paths basado en los atributos del SVG y las dimensiones máximas.
-        :param paths: Paths del SVG a escalar.
-        :param svg_attr: Atributos del SVG, incluyendo viewBox y width.
-        :param max_height_mm: Altura máxima en milímetros.
-        :param max_width_mm: Ancho máximo en milímetros.
-        """
+        " Aplica el escalado a los paths basado en los atributos del SVG y las dimensiones máximas. "
+        self.logger.info(f"ScaleManager: máximos usados: ancho={max_width_mm:.4g}mm, alto={max_height_mm:.4g}mm")
+
         scale = self.viewbox_scale(svg_attr)
         self._debug(f"apply_scaling: scale tras viewbox_scale={scale}")
         scale = self.adjust_scale_for_max_height(paths, scale, max_height_mm)

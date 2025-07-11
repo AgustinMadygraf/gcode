@@ -104,6 +104,25 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
         Genera las líneas de G-code a partir de los paths y atributos SVG.
         El parámetro context permite pasar información adicional (por ejemplo, tool_diameter).
         """
+        # Usar TARGET_WRITE_AREA_MM para todos los cálculos y logs
+        # Compatibilidad con ConfigAdapter y Config
+        if hasattr(self.config, 'get_target_write_area_mm'):
+            target_write_area_mm = self.config.get_target_write_area_mm()
+        else:
+            target_write_area_mm = self.config.get("TARGET_WRITE_AREA_MM", [297.0, 210.0])
+        if hasattr(self.config, 'get_plotter_max_area_mm'):
+            plotter_max_area_mm = self.config.get_plotter_max_area_mm()
+        else:
+            plotter_max_area_mm = self.config.get("PLOTTER_MAX_AREA_MM", [300.0, 260.0])
+        self.logger.info(f"Máximos configurados: ancho={target_write_area_mm[0]:.4g}mm, alto={target_write_area_mm[1]:.4g}mm")
+        if (target_write_area_mm[0] > plotter_max_area_mm[0] or target_write_area_mm[1] > plotter_max_area_mm[1]):
+            self.logger.warning(
+                f"TARGET_WRITE_AREA_MM ({target_write_area_mm[0]}x{target_write_area_mm[1]}mm) "
+                f"excede PLOTTER_MAX_AREA_MM ({plotter_max_area_mm[0]}x{plotter_max_area_mm[1]}mm)"
+            )
+        # Usar estos valores para escalado
+        self.max_width_mm = target_write_area_mm[0]
+        self.max_height_mm = target_write_area_mm[1]
         # Validaciones de configuración|
         if self.step_mm <= 0:
             self.logger.warning(self.i18n.get("WARN_STEP_MM_INVALID", value=self.step_mm))
@@ -171,11 +190,24 @@ class GCodeGeneratorAdapter(GcodeGeneratorPort, LoggerHelper):
         bbox = BoundingBoxCalculator.get_svg_bbox(optimized_paths)
         # Ya se calculó scale arriba, no es necesario recalcularlo
         all_points = self.sample_transform_pipeline(optimized_paths, scale)
+        # Loguear bounding box y escala después de todas las transformaciones
+        flat_points = [pt for sublist in all_points for pt in sublist]
+        if flat_points:
+            xs = [pt.x for pt in flat_points]
+            ys = [pt.y for pt in flat_points]
+            real_width = max(xs) - min(xs)
+            real_height = max(ys) - min(ys)
+            self.logger.info(f"Real post-transform: ancho={real_width:.4g}mm, alto={real_height:.4g}mm, escala={scale:.4g}")
         try:
             gcode, _metrics = self.generate_gcode_commands(all_points, use_relative_moves=use_relative_moves)
         except Exception:
             self.logger.exception(self.i18n.get("ERR_GCODE_BUILD_FAILED"))
             raise
+        # Loguear bounding box del G-code final
+        from adapters.output.gcode_analyzer import GCodeAnalyzer
+        gcode_width = GCodeAnalyzer.get_width_from_gcode_lines(gcode)
+        # Si tienes un método para altura, úsalo aquí. Si no, solo loguea el ancho.
+        self.logger.info(f"G-code final: ancho={gcode_width:.4g}mm")
         compression_service = GcodeCompressionFactory.get_compression_service(
             self.config,
             logger=self.logger
