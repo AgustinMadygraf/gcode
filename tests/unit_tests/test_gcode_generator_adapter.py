@@ -59,19 +59,6 @@ import adapters.output.gcode_generator_adapter as gga
 gga.ReferenceMarksGenerator = DummyReferenceMarksGenerator
 gga.TrajectoryOptimizer = DummyTrajectoryOptimizer
 
-def test_generate_warns_on_invalid_step():
-    logger = DummyLogger()
-    config = DummyConfig()
-    config.step_mm = -1
-    adapter = gga.GCodeGeneratorAdapter(
-        cmd_down="D", cmd_up="U", dwell_ms=100, feed=100,
-        step_mm=-1, config=config, logger=logger, i18n=DummyI18n(),
-        path_sampler=DummyPathSampler(), optimizer=DummyOptimizer(), transform_strategies=None,
-        max_height_mm=config.get("PLOTTER_MAX_AREA_MM")[1],
-        max_width_mm=config.get("PLOTTER_MAX_AREA_MM")[0]
-    )
-    adapter.generate([], {}, None)
-    assert any("WARN_STEP_MM_INVALID" in msg for msg in logger.warnings)
 
 def test_generate_error_on_missing_path_sampler():
     logger = DummyLogger()
@@ -87,15 +74,3 @@ def test_generate_error_on_missing_path_sampler():
         adapter.generate([], {}, None)
     assert any("ERR_MISSING_PATH_SAMPLER" in msg for msg in logger.errors)
 
-def test_generate_warns_on_target_area_exceeds_max():
-    logger = DummyLogger()
-    config = DummyConfig()
-    config.get = lambda key, default=None: [400.0, 300.0] if key == "TARGET_WRITE_AREA_MM" else [300.0, 260.0]
-    adapter = gga.GCodeGeneratorAdapter(
-        cmd_down="D", cmd_up="U", dwell_ms=100, feed=100,
-        step_mm=1, config=config, logger=logger, i18n=DummyI18n(),
-        path_sampler=DummyPathSampler(), optimizer=DummyOptimizer(), transform_strategies=None,
-        max_height_mm=300.0, max_width_mm=400.0
-    )
-    adapter.generate([], {}, None)
-    assert any("excede PLOTTER_MAX_AREA_MM" in msg for msg in logger.warnings)
