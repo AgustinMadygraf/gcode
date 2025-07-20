@@ -12,7 +12,8 @@ from application.use_cases.gcode_generation.gcode_generation_service import GCod
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
 from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
-from domain.services.path_transform_strategies import MirrorVerticalStrategy
+from domain.services.path_transform_strategies import VerticalFlipStrategy
+from utils.gcode_offset import calcular_offset_y, aplicar_offset_y_a_gcode
 
 class SvgToGcodeWorkflow:
     " Workflow para convertir SVG a GCODE. "
@@ -90,9 +91,9 @@ class SvgToGcodeWorkflow:
                 self.logger.warning(self.i18n.get("warn_center_failed", error=str(e)))
                 cy = 0
             transform_strategies = []
-            if self.config.get_mirror_vertical():
-                transform_strategies.append(MirrorVerticalStrategy(cy))
-                self._debug(self.i18n.get("debug_vertical_mirror_applied"))
+            if self.config.get_flip_vertical():
+                transform_strategies.append(VerticalFlipStrategy(cy))
+                self._debug(self.i18n.get("debug_vertical_flip_applied"))
             path_processor = PathProcessingService(
                 min_length=1e-3,
                 remove_svg_border=self.config.get_remove_svg_border(),
@@ -121,7 +122,8 @@ class SvgToGcodeWorkflow:
                 gcode_compression_use_case=compress_use_case,
                 logger=self.logger,
                 filename_service=self.filename_service,
-                i18n=self.i18n
+                i18n=self.i18n,
+                config=config_reader
             )
             # --- Herramienta desde configuración ---
             tool_type_str = self.config.tool_type if hasattr(self.config, 'tool_type') else 'pen'
@@ -166,6 +168,10 @@ class SvgToGcodeWorkflow:
                 self.logger.error(self.i18n.get("error_no_svg"))
                 return False
             gcode_lines = result['compressed_gcode']
+            plotter_max_area_mm = self.config.plotter_max_area_mm
+            target_write_area_mm = self.config.target_write_area_mm
+            offset_y = calcular_offset_y(plotter_max_area_mm, target_write_area_mm)
+            gcode_lines = aplicar_offset_y_a_gcode(gcode_lines, offset_y)
             total_lines = len(gcode_lines)
             for i, _ in enumerate(gcode_lines, 1):
                 if i % max(1, total_lines // 100) == 0 or i == total_lines:

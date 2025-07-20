@@ -16,7 +16,10 @@
     "MIN_POINTS_FOR_ARC": 3,
     "MIN_ARC_ANGLE_DEG": 2
   },
-  "MIRROR_VERTICAL": true,
+  "TOOL_DIAMETER": 0.0,
+  "COMPENSATION_TYPE": "none",
+  "ROTATE_90_CLOCKWISE": false,
+  "FLIP_VERTICAL": false,
   "CURVATURE_ADJUSTMENT_FACTOR": 0.25,
   "MINIMUM_FEED_FACTOR": 0.45,
   "PLOTTER_MAX_AREA_MM": [300.0, 260.0],
@@ -27,9 +30,6 @@
     "A5_PORTRAIT": [148.0, 210.0],
     "A5_LANDSCAPE": [210.0, 148.0]
   },
-  "TOOL_DIAMETER": 0.0,
-  "COMPENSATION_TYPE": "none",
-  "ROTATE_90_CLOCKWISE": true,
   "DEBUG": {
   "GCodeGeneratorAdapter": false,
   "GcodeFileSelectorAdapter": false,
@@ -37,6 +37,6 @@
   "Orchestrator": false,
   "ReferenceMarkGenerator": false,
   "SvgToGcodeUseCase": false,
-  "GcodeRescaleUseCase": true
+  "GcodeRescaleUseCase": false
 }
 }

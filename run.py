@@ -45,6 +45,9 @@ def main():
         result = app.run()
         logger.info(i18n.get("INFO_PROCESSING_DONE"))
         return result
+    except KeyboardInterrupt:
+        logger.warning(i18n.get("KEYBOARD_INTERRUPT_MSG") if "KEYBOARD_INTERRUPT_MSG" in MESSAGES else "Ejecución interrumpida por el usuario (Ctrl+C). Saliendo...")
+        return 130
     except InputValidationError as e:
         logger.error(
             i18n.get(

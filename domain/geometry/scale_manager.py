@@ -97,4 +97,3 @@ class ScaleManager(LoggerHelper):
         # INFO eliminado, se unificará tras ambos ajustes
         self._debug(f"adjust_scale_for_max_width: FINAL width={final_width:.4g}mm, scale_final={scale:.4g}")
         return scale
-

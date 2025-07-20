@@ -94,10 +94,25 @@ class TestGcodeRescaleUseCase(unittest.TestCase):
         expected_scale = 20.0 / 15.0
         self.assertAlmostEqual(expected_scale, result['scale_factor'])
         self.assertAlmostEqual(20.0, result['new_dimensions']['height'])
+        # Calcular el offset Y esperado
+        plotter_max_area_mm = self.config.plotter_max_area_mm
+        target_write_area_mm = self.config.target_write_area_mm
+        from utils.gcode_offset import calcular_offset_y
+        offset_y = calcular_offset_y(plotter_max_area_mm, target_write_area_mm)
+        # El punto esperado es (10*escala, 10*escala+offset_y)
+        x_esperado = 10.0 * expected_scale
+        y_esperado = 10.0 * expected_scale + offset_y
+        linea_esperada = f"G1 X{x_esperado:.3f} Y{y_esperado:.3f}"
+        # Para el arco:
+        x_arc = 5.0 * expected_scale
+        y_arc = 5.0 * expected_scale + offset_y
+        i_arc = 5.0 * expected_scale
+        j_arc = 0.0 * expected_scale
+        linea_arc_esperada = f"G2 X{x_arc:.3f} Y{y_arc:.3f} I{i_arc:.3f} J{j_arc:.3f}"
         with open(result['output_file'], 'r', encoding='utf-8') as f:
             content = f.read()
-        self.assertIn("G1 X13.333 Y13.333", content)
-        self.assertIn("G2 X6.667 Y6.667 I6.667 J0.000", content)
+        self.assertIn(linea_esperada, content)
+        self.assertIn(linea_arc_esperada, content)
 
 if __name__ == "__main__":
     unittest.main()

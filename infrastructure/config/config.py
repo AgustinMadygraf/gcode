@@ -48,6 +48,9 @@ class Config:
         if "TOOL_DIAMETER" not in self._data or not isinstance(self._data["TOOL_DIAMETER"], (int, float)):
             self._data["TOOL_DIAMETER"] = 0.4
         self._validate_config()
+        # Print provisorio para depuración
+        print(f"[Config] ROTATE_90_CLOCKWISE cargado: {self._data.get('ROTATE_90_CLOCKWISE')}")
+        print(f"[Config] MIRROR_VERTICAL cargado: {self._data.get('MIRROR_VERTICAL')}")
     @property
     def tool_diameter(self):
         """Diámetro de la herramienta en mm (por defecto 0.4)"""
@@ -106,9 +109,9 @@ class Config:
         return self._data.get("BORDER_DETECTION_TOLERANCE", 0.05)
 
     @property
-    def mirror_vertical(self):
-        "Devuelve si se debe aplicar la inversión vertical (MIRROR_VERTICAL)."
-        return self._data.get("MIRROR_VERTICAL", True)
+    def flip_vertical(self):
+        "Devuelve si se debe aplicar el flip vertical (FLIP_VERTICAL). True = aplica flip."
+        return bool(self._data.get("FLIP_VERTICAL", False))
 
     @property
     def curvature_adjustment_factor(self):
@@ -157,9 +160,9 @@ class Config:
         "Compatibilidad: Devuelve la tolerancia para detección de borde."
         return self.border_detection_tolerance
 
-    def get_mirror_vertical(self):
-        "Compatibilidad: Devuelve si se debe aplicar la inversión vertical."
-        return self.mirror_vertical
+    def get_flip_vertical(self):
+        "Compatibilidad: Devuelve si se debe aplicar el flip vertical."
+        return self.flip_vertical
 
     def _validate_area(self, value, key, default):
         """Valida que value sea una lista de dos floats positivos. Si no, retorna default y loguea warning."""

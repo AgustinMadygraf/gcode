@@ -9,16 +9,16 @@ class LoggerHelper:
     def __init__(self, config=None, logger=None):
         self.config = config
         self.logger = logger
-        
+
     def _get_debug_class_name(self):
         """
         Returns the class name to use for the debug flag.
         Override this in subclasses if needed.
         """
         return self.__class__.__name__
-        
+
     def _debug(self, msg, *args, **kwargs):
-        debug_enabled = False
+        debug_enabled = True
         if hasattr(self, "config") and self.config and hasattr(self.config, "get_debug_flag"):
             debug_enabled = self.config.get_debug_flag(self._get_debug_class_name())
         else:

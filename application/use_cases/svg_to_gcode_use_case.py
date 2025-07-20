@@ -6,6 +6,7 @@ Caso de uso: Orquestación completa de conversión SVG → G-code
 from pathlib import Path
 from domain.services.geometry_rotate import rotate_paths_90_clockwise
 from infrastructure.logger_helper import LoggerHelper
+from application.use_cases.svgpathtools_rotate import rotate_svgpathtools_paths_90_clockwise
 
 class SvgToGcodeUseCase(LoggerHelper):
     """
@@ -36,11 +37,11 @@ class SvgToGcodeUseCase(LoggerHelper):
             svg_loader = self.svg_loader_factory(svg_file)
             paths = svg_loader.get_paths()
             svg_attr = svg_loader.get_attributes()
-            self._debug(self.i18n.get('DEBUG_SVG_ATTR', attr=svg_attr))
-            self._debug(self.i18n.get('INFO_PATHS_EXTRACTED', count=len(paths)))
+            self._debug(f"Atributos SVG: {svg_attr}")
+            self._debug(f"Paths extraídos: {len(paths)} | Tipo primer path: {type(paths[0]) if paths else 'N/A'}")
             return svg_loader, paths, svg_attr
         except Exception as e:
-            self.logger.error(self.i18n.get('ERROR_LOADING_SVG_PATHS', error=str(e)), exc_info=True)
+            self.logger.error(f"Error cargando paths del SVG: {e}", exc_info=True)
             raise
 
     def _process_paths(self, paths, svg_attr, svg_file, context=None):
@@ -103,11 +104,8 @@ class SvgToGcodeUseCase(LoggerHelper):
         svg_file: Path,
         context: dict = None
     ):
-        (
-            " Orquesta la conversión de SVG a "
-            "G-code. "
-        )
-        self._debug(self.i18n.get('DEBUG_LOADING_SVG', filename=svg_file))
+        " Orquesta la conversión de SVG a G-code, incluyendo carga, procesamiento, generación y compresión. "
+        self._debug(f"Iniciando carga de SVG: {svg_file}")
         _, paths, svg_attr = self._load_svg(svg_file)
         # Rotar paths si la configuración lo indica
         config = getattr(self, 'config', None)
@@ -118,9 +116,16 @@ class SvgToGcodeUseCase(LoggerHelper):
             rotate_90 = config.rotate_90_clockwise
         elif context and 'rotate_90_clockwise' in context:
             rotate_90 = context['rotate_90_clockwise']
+        self._debug(f"Flag rotate_90_clockwise: {rotate_90} | Tipo primer path: {type(paths[0]) if paths else 'N/A'}")
         if rotate_90:
-            paths = rotate_paths_90_clockwise(paths)
-            self._debug('INFO_PATHS_ROTATED_90_CLOCKWISE')
+            before = str(paths[0]) if paths else 'N/A'
+            # Si los paths son de svgpathtools, rotar usando la función específica
+            if 'svgpathtools' in str(type(paths[0])):
+                paths = rotate_svgpathtools_paths_90_clockwise(paths)
+            else:
+                paths = rotate_paths_90_clockwise(paths)
+            after = str(paths[0]) if paths else 'N/A'
+            self._debug(f"Se ejecutó rotación 90°. Antes: {before} | Después: {after}")
         processed_paths = self._process_paths(paths, svg_attr, svg_file, context=context)
         gcode_lines = self._generate_gcode(processed_paths, svg_attr, context)
         compressed_gcode, compression_result = self._compress_gcode(gcode_lines, svg_file)

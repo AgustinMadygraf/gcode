@@ -75,6 +75,12 @@ class GcodeRescaleUseCase(LoggerHelper):
             final_candidate = output_dir / f"{stem}{scale_tag}_v{idx:02d}.gcode"
             idx += 1
         output_file = final_candidate
+        # --- Aplicar offset Y dinámico antes de guardar ---
+        from utils.gcode_offset import calcular_offset_y, aplicar_offset_y_a_gcode
+        plotter_max_area_mm = self.config.plotter_max_area_mm if self.config else [300.0, 260.0]
+        target_write_area_mm = self.config.target_write_area_mm if self.config else [210.0, 148.0]
+        offset_y = calcular_offset_y(plotter_max_area_mm, target_write_area_mm)
+        scaled_lines = aplicar_offset_y_a_gcode(scaled_lines, offset_y)
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(''.join(scaled_lines))
         return {
