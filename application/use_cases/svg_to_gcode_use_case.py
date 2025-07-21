@@ -6,7 +6,7 @@ Caso de uso: Orquestación completa de conversión SVG → G-code
 from pathlib import Path
 from domain.services.geometry_rotate import rotate_paths_90_clockwise
 from infrastructure.logger_helper import LoggerHelper
-from application.use_cases.svgpathtools_rotate import rotate_svgpathtools_paths_90_clockwise
+from application.use_cases.svgpathtools_rotate import SvgpathtoolsRotate
 
 class SvgToGcodeUseCase(LoggerHelper):
     """
@@ -31,6 +31,7 @@ class SvgToGcodeUseCase(LoggerHelper):
         self.filename_service = filename_service
         self.i18n = i18n
         self.config = config
+        self.svgpathtools_rotate = SvgpathtoolsRotate(config=config, logger=logger)
 
     def _load_svg(self, svg_file):
         try:
@@ -119,9 +120,9 @@ class SvgToGcodeUseCase(LoggerHelper):
         self._debug(f"Flag rotate_90_clockwise: {rotate_90} | Tipo primer path: {type(paths[0]) if paths else 'N/A'}")
         if rotate_90:
             before = str(paths[0]) if paths else 'N/A'
-            # Si los paths son de svgpathtools, rotar usando la función específica
+            # Si los paths son de svgpathtools, rotar usando la clase específica
             if 'svgpathtools' in str(type(paths[0])):
-                paths = rotate_svgpathtools_paths_90_clockwise(paths)
+                paths = self.svgpathtools_rotate.rotate_svgpathtools_paths_90_clockwise(paths)
             else:
                 paths = rotate_paths_90_clockwise(paths)
             after = str(paths[0]) if paths else 'N/A'

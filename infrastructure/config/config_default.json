@@ -37,6 +37,7 @@
   "Orchestrator": false,
   "ReferenceMarkGenerator": false,
   "SvgToGcodeUseCase": false,
-  "GcodeRescaleUseCase": false
+  "GcodeRescaleUseCase": false,
+  "SvgpathtoolsRotate": false
 }
 }
