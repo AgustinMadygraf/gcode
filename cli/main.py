@@ -11,12 +11,14 @@ from domain.ports.filename_service_port import FilenameServicePort
 from application.workflows.svg_to_gcode_workflow import SvgToGcodeWorkflow
 from application.workflows.gcode_to_gcode_workflow import GcodeToGcodeWorkflow
 from application.workflows.non_interactive_svg_to_gcode_workflow import NonInteractiveSvgToGcodeWorkflow
+from application.workflows.markdown_to_gcode_workflow import MarkdownToGcodeWorkflow
 from application.orchestrator import ApplicationOrchestrator
 from cli.terminal_colors import TerminalColors
 from cli.user_config_manager import ConfigManager
 from cli.presenters.cli_presenter import CliPresenter
 from cli.operations.svg_to_gcode import SvgToGcodeOperation
 from cli.operations.gcode_to_gcode import GcodeToGcodeOperation
+from cli.operations.markdown_to_gcode import MarkdownToGcodeOperation
 from cli.modes.interactive import InteractiveModeStrategy
 from cli.modes.non_interactive import NonInteractiveModeStrategy
 from cli.utils.terminal_utils import supports_color
@@ -76,12 +78,19 @@ class SvgToGcodeApp:
             self.filename_service,
             self.config
         )
+        self.markdown_to_gcode_workflow = MarkdownToGcodeWorkflow(
+            self.container,
+            self.presenter,
+            self.filename_service,
+            self.config
+        )
         self.non_interactive_workflow = NonInteractiveSvgToGcodeWorkflow(
             self.container, self.presenter, self.filename_service, self.config
         )
         self.operations = {
             1: SvgToGcodeOperation(self.svg_to_gcode_workflow, self.selector),
-            2: GcodeToGcodeOperation(self.gcode_to_gcode_workflow, self.config)
+            2: GcodeToGcodeOperation(self.gcode_to_gcode_workflow, self.config),
+            3: MarkdownToGcodeOperation(self.markdown_to_gcode_workflow, self.config)
         }
         self.mode_strategy = (
             InteractiveModeStrategy()
@@ -98,7 +107,8 @@ class SvgToGcodeApp:
                 'workflows': {
                     'svg_to_gcode': self.svg_to_gcode_workflow,
                     'gcode_to_gcode': self.gcode_to_gcode_workflow,
-                    'non_interactive': self.non_interactive_workflow
+                    'non_interactive': self.non_interactive_workflow,
+                    'markdown_to_gcode': self.markdown_to_gcode_workflow
                 },
                 'operations': self.operations
             },

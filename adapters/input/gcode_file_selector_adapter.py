@@ -138,3 +138,54 @@ class GcodeFileSelectorAdapter(FileSelectorPort, LoggerHelper):
             self.config_provider.save(config)
         else:
             self._debug("No se puede guardar la configuración: config_provider no soporta 'save'.")
+
+    def select_markdown_file(self, initial_dir: Optional[str] = None) -> Optional[str]:
+        """
+        Permite al usuario seleccionar un archivo Markdown desde la consola.
+        Si no hay archivos, permite cambiar la carpeta de entrada o cancelar.
+        """
+        config = self._load_config()
+        md_input_dir = initial_dir or config.get('SVG_INPUT_DIR', './data/svg_input')
+        print(f"[DEBUG] Buscando Markdown en: {md_input_dir}")
+        while True:
+            md_files = self._find_markdown_files_recursively(md_input_dir)
+            if md_files:
+                print("Archivos Markdown encontrados:")
+                for idx, file in enumerate(md_files, 1):
+                    print(f"  [{idx}] {file}")
+                print("  [0] Cancelar")
+                try:
+                    choice = int(input("[INPUT] Seleccione un archivo Markdown por número: "))
+                except ValueError:
+                    print("Opción inválida.")
+                    continue
+                if choice == 0:
+                    print("Operación cancelada.")
+                    return None
+                if 1 <= choice <= len(md_files):
+                    return md_files[choice - 1]
+                print("Selección fuera de rango.")
+            else:
+                print(f"No se encontraron archivos Markdown en {md_input_dir}")
+                opt = input("[1] Cambiar carpeta | [0] Cancelar: ").strip()
+                if opt == '1':
+                    new_dir = input("Nueva carpeta de Markdown: ").strip()
+                    if os.path.isdir(new_dir):
+                        md_input_dir = new_dir
+                        config['SVG_INPUT_DIR'] = new_dir
+                        self._save_config(config)
+                        print(f"Carpeta actualizada: {new_dir}")
+                    else:
+                        print("Carpeta inválida.")
+                elif opt == '0':
+                    print("Operación cancelada.")
+                    return None
+    def _find_markdown_files_recursively(self, directory: str) -> List[str]:
+        path = Path(directory)
+        if not path.exists():
+            return []
+        result = []
+        for item in path.glob('**/*.md'):
+            if item.is_file():
+                result.append(str(item))
+        return sorted(result)

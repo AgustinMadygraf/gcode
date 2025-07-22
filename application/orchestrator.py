@@ -69,7 +69,13 @@ class ApplicationOrchestrator(LoggerHelper):
         if args and getattr(args, 'input', None) and getattr(args, 'output', None):
             if self.logger:
                 self.logger.info(self.i18n.get('INFO_DIRECT_EXECUTION'))
-            return 1 if str(args.input).lower().endswith('.svg') else 2
+            input_file = str(args.input).lower()
+            if input_file.endswith('.svg'):
+                return 1
+            elif input_file.endswith('.gcode'):
+                return 2
+            elif input_file.endswith('.md'):
+                return 3
         svg_dir = './data/svg_input'
         gcode_dir = './data/gcode_output'
         svg_files = []
@@ -114,6 +120,7 @@ class ApplicationOrchestrator(LoggerHelper):
                 self.logger.info(self.i18n.get('MENU_MAIN_TITLE'))
             self.logger.option(self.i18n.get('MENU_OPTION_CONVERT'))
             self.logger.option(self.i18n.get('MENU_OPTION_OPTIMIZE'))
+            self.logger.option(self.i18n.get('MENU_OPTION_MARKDOWN'))
             self.logger.option(self.i18n.get('MENU_OPTION_CONFIGURE_AREA'))
             try:
                 user_input = self.input_with_label(self.i18n.get('PROMPT_SELECT_OPTION'))
@@ -123,10 +130,10 @@ class ApplicationOrchestrator(LoggerHelper):
                         self.logger.info(self.i18n.get('INFO_USER_EXIT_MAIN'))
                     exit(0)
                 choice = int(user_input)
-                if choice in [1, 2]:
+                if choice in [1, 2, 3]:
                     self._debug(self.i18n.get('DEBUG_USER_SELECTED_OP', choice=choice))
                     return choice
-                elif choice == 3:
+                elif choice == 4:
                     self.configure_write_area()
                 else:
                     if self.logger:
