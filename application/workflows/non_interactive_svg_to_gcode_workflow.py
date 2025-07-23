@@ -6,6 +6,7 @@ from application.workflows.input_handler import InputHandler
 from application.workflows.processing_strategies import SvgProcessingStrategy, GcodeProcessingStrategy
 
 class NonInteractiveSvgToGcodeWorkflow:
+    " Flujo de trabajo no interactivo para convertir SVG a G-code. "
     def write_gcode_file(self, gcode_lines, output_path):
         """Método dummy para compatibilidad con flujos que lo requieran."""
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -22,6 +23,7 @@ class NonInteractiveSvgToGcodeWorkflow:
         self.input_handler = input_handler or InputHandler(self.presenter)
 
     def run(self, args):
+        " Ejecuta el flujo de trabajo no interactivo de SVG a G-code. "
         input_type, input_data, temp_path = self.input_handler.read(args)
         if input_type is None:
             return 2

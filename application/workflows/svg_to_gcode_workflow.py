@@ -3,11 +3,13 @@ Workflow para SVG a GCODE.
 Orquesta el proceso de conversión, delegando a casos de uso y servicios.
 """
 from pathlib import Path
+import re
 
 from infrastructure.factories.domain_factory import DomainFactory
 from infrastructure.factories.gcode_compression_factory import create_gcode_compression_service
 from infrastructure.factories.adapter_factory import AdapterFactory
 from infrastructure.performance.timing import PerformanceTimer
+from infrastructure.logger_helper import LoggerHelper
 from application.use_cases.gcode_generation.gcode_generation_service import GCodeGenerationService
 from application.use_cases.path_processing.path_processing_service import PathProcessingService
 from application.use_cases.gcode_compression.compress_gcode_use_case import CompressGcodeUseCase
@@ -15,15 +17,12 @@ from application.use_cases.svg_to_gcode_use_case import SvgToGcodeUseCase
 from domain.services.path_transform_strategies import VerticalFlipStrategy
 from utils.gcode_offset import calcular_offset_y, aplicar_offset_y_a_gcode
 
-class SvgToGcodeWorkflow:
-    " Workflow para convertir SVG a GCODE. "
-    DEBUG_ENABLED = False  # Controla si los logs debug están activos para esta clase
 
-    def _debug(self, msg, *args, **kwargs):
-        if self.DEBUG_ENABLED and self.logger:
-            self.logger.debug(msg, *args, **kwargs)
+class SvgToGcodeWorkflow(LoggerHelper):
+    " Workflow para convertir SVG a GCODE. "
 
     def __init__(self, container, presenter, filename_service, config, offset_x=None, offset_y=None, center=False):
+        super().__init__()
         self.offset_x = offset_x
         self.offset_y = offset_y
         self.center = center
@@ -149,7 +148,17 @@ class SvgToGcodeWorkflow:
                 new_ymin = _ymin + offset_y
                 new_ymax = _ymax + offset_y
                 if new_xmin < 0 or new_xmax > area_w or new_ymin < 0 or new_ymax > area_h:
-                    self.logger.warning(self.i18n.get("WARN_OFFSET_OVERFLOW", xmin=new_xmin, xmax=new_xmax, ymin=new_ymin, ymax=new_ymax, area_w=area_w, area_h=area_h))
+                    self.logger.warning(
+                        self.i18n.get(
+                            "WARN_OFFSET_OVERFLOW",
+                            xmin=new_xmin,
+                            xmax=new_xmax,
+                            ymin=new_ymin,
+                            ymax=new_ymax,
+                            area_w=area_w,
+                            area_h=area_h
+                        )
+                    )
                 else:
                     self.logger.info(self.i18n.get("INFO_OFFSET_APPLIED", offset_x=offset_x, offset_y=offset_y))
             context = {
@@ -170,8 +179,37 @@ class SvgToGcodeWorkflow:
             gcode_lines = result['compressed_gcode']
             plotter_max_area_mm = self.config.plotter_max_area_mm
             target_write_area_mm = self.config.target_write_area_mm
-            offset_y = calcular_offset_y(plotter_max_area_mm, target_write_area_mm)
-            gcode_lines = aplicar_offset_y_a_gcode(gcode_lines, offset_y)
+            rotate_90 = getattr(self.config, 'rotate_90_clockwise', False)
+            self._debug(f"[DEBUG] ROTATE_90_CLOCKWISE: {rotate_90}")
+            self._debug(f"[DEBUG] PLOTTER_MAX_AREA_MM: {plotter_max_area_mm}")
+            self._debug(f"[DEBUG] TARGET_WRITE_AREA_MM: {target_write_area_mm}")
+            offset_y = 0.0
+            if rotate_90:
+                offset_y = calcular_offset_y(plotter_max_area_mm, target_write_area_mm)
+                self._debug(f"[DEBUG] Offset Y calculado: {offset_y}")
+                gcode_lines = aplicar_offset_y_a_gcode(gcode_lines, offset_y)
+                self._debug("[DEBUG] Offset Y aplicado a todas las líneas G-code.")
+
+                # Validación de overflow en coordenadas Y
+                y_min = None
+                y_max = None
+                for line in gcode_lines:
+                    match = re.search(r'Y([\-\d\.]+)', line)
+                    if match:
+                        y_val = float(match.group(1))
+                        if y_min is None or y_val < y_min:
+                            y_min = y_val
+                        if y_max is None or y_val > y_max:
+                            y_max = y_val
+                area_h = target_write_area_mm[1]
+                plotter_h = plotter_max_area_mm[1]
+                if y_min is not None and (y_min < 0 or y_max > plotter_h):
+                    self.logger.warning(f"[WARN] Overflow Y detectado: y_min={y_min}, y_max={y_max}, límite plotter={plotter_h}")
+                else:
+                    self._debug(f"[DEBUG] Offset Y aplicado correctamente: y_min={y_min}, y_max={y_max}, límite plotter={plotter_h}")
+            flip_vertical = getattr(self.config, 'flip_vertical', False)
+            if flip_vertical:
+                self._debug("[DEBUG] FLIP_VERTICAL está activo y afecta la transformación geométrica.")
             total_lines = len(gcode_lines)
             for i, _ in enumerate(gcode_lines, 1):
                 if i % max(1, total_lines // 100) == 0 or i == total_lines:
